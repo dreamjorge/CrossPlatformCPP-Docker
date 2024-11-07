@@ -53,29 +53,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx (Windows)
-        uses: docker/setup-buildx-action@v2
-
-      - name: Cache Docker layers (Windows)
-        uses: actions/cache@v3
-        with:
-          path: C:/tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
+      # No Buildx setup for Windows; use standard Docker build
       - name: Build Docker Image (Windows)
-        run: |
-          docker buildx build `
-            --cache-from=type=local,src=C:/tmp/.buildx-cache `
-            --cache-to=type=local,dest=C:/tmp/.buildx-cache-new `
-            -t crossplatformapp-windows -f Dockerfile.windows . `
-            --load
-
-      - name: Move New Cache (Windows)
-        run: |
-          Remove-Item -Recurse -Force C:/tmp/.buildx-cache
-          Rename-Item C:/tmp/.buildx-cache-new C:/tmp/.buildx-cache
+        run: docker build -t crossplatformapp-windows -f Dockerfile.windows .
 
       - name: Run Docker Container (Windows)
         run: docker run --rm crossplatformapp-windows

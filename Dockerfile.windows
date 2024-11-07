@@ -1,52 +1,32 @@
-# Use Windows Server Core as the base image
+# Use Windows Server Core LTSC 2019 as the base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
-# Set shell to PowerShell with proper error handling and line continuation character
-SHELL ["powershell", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop';"]
+# Install Chocolatey
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')); `
+    SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
 
-# Add Build Tools to PATH
-ENV PATH="C:\\Windows\\System32;C:\\BuildTools\\VC\\Tools\\MSVC\\14.33.31629\\bin\\Hostx64\\x64;C:\\BuildTools\\Common7\\IDE;C:\\BuildTools\\MSBuild\\Current\\Bin;${PATH}"
+# Install Visual Studio 2022 Build Tools and CMake using Chocolatey
+RUN choco install visualstudio2022buildtools --version 17.0.0 --yes --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" && `
+    choco install cmake --version 3.26.4 --yes && `
+    choco clean --yes
 
-# Force the use of TLS 1.2 for secure connections
-RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# Update PATH environment variable to include CMake and MSVC compiler paths
+ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
 
-# Download Visual Studio Build Tools
-RUN Write-Host "Downloading Visual Studio Build Tools..."; `
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_buildtools.exe" -OutFile "vs_buildtools.exe"; `
-    if (!(Test-Path -Path "vs_buildtools.exe")) { `
-        Write-Host "Failed to download Visual Studio Build Tools. Exiting..."; `
-        exit 1; `
-    } else { `
-        Write-Host "Download successful."; `
-    }
+# Set the working directory to /build
+WORKDIR C:/build
 
-# Install Visual Studio Build Tools
-RUN Write-Host "Installing Visual Studio Build Tools..."; `
-    Start-Process -FilePath ".\\vs_buildtools.exe" -ArgumentList '--quiet', '--wait', '--norestart', '--nocache', '--installPath', 'C:\\BuildTools', `
-    '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--add', 'Microsoft.VisualStudio.Component.VC.CMake.Project' -NoNewWindow -Wait; `
-    Remove-Item -Force "vs_buildtools.exe"
+# Copy the entire C++ project into /build
+COPY . ./
 
-# Download and extract CMake
-RUN Write-Host "Downloading CMake..."; `
-    Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-windows-x86_64.zip" -OutFile "cmake.zip"; `
-    Expand-Archive -Path "cmake.zip" -DestinationPath "C:\\"; `
-    Remove-Item -Force "cmake.zip"
+# Initialize Visual Studio environment and build the project in a single RUN command
+RUN powershell -Command "& { \
+    & 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' x64; \
+    cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
+    cmake --build build --config Release; \
+}"
 
-# Add the extracted CMake path to PATH
-ENV PATH="C:\\cmake-3.26.4-windows-x86_64\\bin;${PATH}"
-
-# Check if CMake is available
-RUN cmake --version
-
-# Specify a working directory for the build
-WORKDIR C:\\build
-
-# Copy your entire C++ project into the container
-COPY . C:\\build
-
-# Run CMake to configure and build your project
-RUN cmake -S . -B build -G "Visual Studio 17 2022"; `
-    cmake --build build --config Release
-
-# Set the default command to run your built executable
+# Set the default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
