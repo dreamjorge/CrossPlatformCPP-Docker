@@ -1,8 +1,4 @@
-The error suggests that vcvarsall.bat could not be located, indicating that Visual Studio Build Tools might not have installed correctly or that the necessary components were not included in the installation.
-
-To address this:
-
-1. Verify the Package Parameters: Ensure that the correct workloads and components are specified in the choco install command to install the C
+The error suggests that vcvarsall.bat could not be located, indicating that Visual Studio Build To
 
 # Use Windows Server Core LTSC 2022 as the base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
