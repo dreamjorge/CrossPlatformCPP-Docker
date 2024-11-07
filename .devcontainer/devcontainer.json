@@ -1,6 +1,6 @@
 {
   "name": "CrossPlatformApp Dev Container",
-  "dockerFile": "./../Dockerfile.windows",  // Default to Linux Dockerfile
+  "dockerFile": "./../Dockerfile.windows",  
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash",
     "terminal.integrated.shell.windows": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
