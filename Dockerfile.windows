@@ -2,14 +2,14 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
 # Install Chocolatey
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+RUN powershell -Command " \
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; \
     iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));"
-    
+
 # Install Visual Studio 2022 Build Tools and CMake using Chocolatey
-RUN choco install visualstudio2022buildtools --version 17.0.0 --yes --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" && `
-    choco install cmake --version 3.26.4 --yes && `
+RUN choco install visualstudio2022buildtools --version 17.0.0 --yes --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" && \
+    choco install cmake --version 3.26.4 --yes && \
     choco clean --yes
 
 # Update PATH environment variable to include CMake and MSVC compiler paths
