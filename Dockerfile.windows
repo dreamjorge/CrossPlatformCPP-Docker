@@ -9,8 +9,7 @@ RUN powershell -Command " \
 
 # Install Visual Studio 2022 Build Tools and CMake using Chocolatey
 RUN choco install visualstudio2022buildtools --yes --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" && \
-    choco install cmake --version 3.26.4 --yes && \
-    choco clean --yes
+    choco install cmake --version 3.26.4 --yes
 
 # Update PATH environment variable to include CMake and MSVC compiler paths
 ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
