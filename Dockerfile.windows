@@ -4,23 +4,25 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 # Install Chocolatey
 RUN ["powershell", "-Command", "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));"]
 
-# Install Visual Studio 2022 Build Tools with additional parameters and no progress
-RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional --quiet'"]
+# Install only essential Visual Studio 2022 Build Tools components and clean up
+RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --quiet'"]
+RUN ["powershell", "-Command", "Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/*"]
 
-# Install CMake separately with no progress
+# Install CMake separately and clean up
 RUN ["powershell", "-Command", "choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums"]
+RUN ["powershell", "-Command", "Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/*"]
 
 # Ensure the build directory exists
 RUN ["powershell", "-Command", "New-Item -ItemType Directory -Path C:/build -Force"]
 
-# Diagnostic step: Verify that Visual Studio Build Tools installed correctly, limiting the search path to avoid restricted directories
+# Diagnostic step: Verify installation, limiting search path
 RUN ["powershell", "-Command", "Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -ErrorAction SilentlyContinue | Out-File C:/build/installed_files.txt"]
 
 # Diagnostic step: Check if vcvarsall.bat is present and output its path
 RUN ["powershell", "-Command", "$vcvarsPath = Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } else { Write-Output 'vcvarsall.bat found at: ' $vcvarsPath }"]
 
-# Update PATH environment variable to include CMake and MSVC compiler paths
-ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
+# Update PATH environment variable
+ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;$PATH"
 
 # Set the working directory to /build
 WORKDIR C:/build
