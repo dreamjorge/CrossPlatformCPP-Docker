@@ -7,6 +7,12 @@ RUN ["powershell", "-Command", "Set-ExecutionPolicy Bypass -Scope Process -Force
 # Install Visual Studio 2022 Build Tools and CMake using Chocolatey
 RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet'; choco install cmake --version 3.26.4 --yes"]
 
+# Diagnostic step: Verify that Visual Studio Build Tools installed correctly
+RUN ["powershell", "-Command", "Get-ChildItem -Path 'C:/BuildTools' -Recurse | Out-File C:/build/installed_files.txt"]
+
+# Diagnostic step: Check if vcvarsall.bat is present and output its path
+RUN ["powershell", "-Command", "$vcvarsPath = Get-ChildItem -Path 'C:/' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } else { Write-Output 'vcvarsall.bat found at: ' $vcvarsPath }"]
+
 # Update PATH environment variable to include CMake and MSVC compiler paths
 ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
 
@@ -16,8 +22,7 @@ WORKDIR C:/build
 # Copy the entire C++ project into /build
 COPY . ./
 
-# Initialize Visual Studio environment and build the project in a single RUN command
-# Initialize Visual Studio environment and build the project in a single RUN command
+# Initialize Visual Studio environment and build the project
 RUN ["powershell", "-Command", "& { \
     $vcvarsPath = Get-ChildItem -Path 'C:/' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; \
     if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } \
@@ -25,5 +30,6 @@ RUN ["powershell", "-Command", "& { \
     cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
     cmake --build build --config Release; \
 }"]
+
 # Set the default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
