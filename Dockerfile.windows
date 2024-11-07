@@ -10,11 +10,11 @@ RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes -
 # Ensure the build directory exists
 RUN ["powershell", "-Command", "New-Item -ItemType Directory -Path C:/build -Force"]
 
-# Diagnostic step: Verify that Visual Studio Build Tools installed correctly
-RUN ["powershell", "-Command", "Get-ChildItem -Path 'C:/BuildTools' -Recurse | Out-File C:/build/installed_files.txt"]
+# Diagnostic step: Verify that Visual Studio Build Tools installed correctly, limiting the search path to avoid restricted directories
+RUN ["powershell", "-Command", "Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -ErrorAction SilentlyContinue | Out-File C:/build/installed_files.txt"]
 
 # Diagnostic step: Check if vcvarsall.bat is present and output its path
-RUN ["powershell", "-Command", "$vcvarsPath = Get-ChildItem -Path 'C:/' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } else { Write-Output 'vcvarsall.bat found at: ' $vcvarsPath }"]
+RUN ["powershell", "-Command", "$vcvarsPath = Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } else { Write-Output 'vcvarsall.bat found at: ' $vcvarsPath }"]
 
 # Update PATH environment variable to include CMake and MSVC compiler paths
 ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
@@ -27,7 +27,7 @@ COPY . ./
 
 # Initialize Visual Studio environment and build the project
 RUN ["powershell", "-Command", "& { \
-    $vcvarsPath = Get-ChildItem -Path 'C:/' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; \
+    $vcvarsPath = Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; \
     if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } \
     & $vcvarsPath x64; \
     cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
