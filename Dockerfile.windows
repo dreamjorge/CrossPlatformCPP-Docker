@@ -11,7 +11,7 @@ RUN powershell -Command " \
 RUN powershell -Command " \
     choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet'; \
     choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums; \
-    Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/*"
+    if (Test-Path 'C:/ProgramData/chocolatey/cache') { Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/* }"
 
 # Ensure the build directory exists
 RUN powershell -Command "New-Item -ItemType Directory -Path C:/build -Force"
