@@ -1,0 +1,9 @@
+{
+  "extends": "./devcontainer.json",
+  "name": "Windows Dev Container",
+  "dockerFile": "./../Dockerfile.windows",  // Points to the Windows Dockerfile
+  "runArgs": ["--platform=windows/amd64"],
+  "settings": {
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  }
+}
