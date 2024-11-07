@@ -1,32 +1,28 @@
 # Use Windows Server Core LTSC 2022 as the base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-# Install Chocolatey
-RUN ["powershell", "-Command", "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));"]
-
-# Install only essential Visual Studio 2022 Build Tools components
-RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --quiet'"]
-
-# Clean Chocolatey cache if it exists
-RUN ["powershell", "-Command", "if (Test-Path 'C:/ProgramData/chocolatey/cache') { Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache }"]
-
-# Install CMake separately
-RUN ["powershell", "-Command", "choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums"]
-
-# Clean Chocolatey cache if it exists (again after CMake install)
-RUN ["powershell", "-Command", "if (Test-Path 'C:/ProgramData/chocolatey/cache') { Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache }"]
+# Install Chocolatey and necessary build tools in one step to minimize layers and clean up immediately
+RUN powershell -Command `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')); `
+    choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet'; `
+    choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums; `
+    Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/*
 
 # Ensure the build directory exists
-RUN ["powershell", "-Command", "New-Item -ItemType Directory -Path C:/build -Force"]
+RUN powershell -Command "New-Item -ItemType Directory -Path C:/build -Force"
 
-# Diagnostic step: Verify installation, limiting search path
-RUN ["powershell", "-Command", "Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -ErrorAction SilentlyContinue | Out-File C:/build/installed_files.txt"]
+# Verify that vcvarsall.bat exists
+RUN powershell -Command `
+    if (Test-Path 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat') { `
+        Write-Output 'vcvarsall.bat found at: C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' `
+    } else { `
+        throw 'vcvarsall.bat not found at C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' `
+    }
 
-# Diagnostic step: Check if vcvarsall.bat is present and output its path
-RUN ["powershell", "-Command", "$vcvarsPath = Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } else { Write-Output 'vcvarsall.bat found at: ' $vcvarsPath }"]
-
-# Update PATH environment variable to include CMake and MSVC compiler paths
-ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;$PATH"
+# Update PATH environment variable
+ENV PATH="C:/ProgramData/chocolatey/bin;C:/Program Files/CMake/bin;C:/BuildTools/VC/Tools/MSVC/14.41.34120/bin/Hostx64/x64;C:/BuildTools/MSBuild/Current/Bin;C:/Windows/System32;C:/Windows;C:/Program Files/Common Files;$PATH"
 
 # Set the working directory to /build
 WORKDIR C:/build
@@ -35,13 +31,10 @@ WORKDIR C:/build
 COPY . ./
 
 # Initialize Visual Studio environment and build the project
-RUN ["powershell", "-Command", "& { \
-    $vcvarsPath = Get-ChildItem -Path 'C:/Program Files (x86)/Microsoft Visual Studio' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; \
-    if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } \
-    & $vcvarsPath x64; \
-    cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
-    cmake --build build --config Release; \
-}"]
+RUN powershell -Command `
+    & 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' x64; `
+    cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; `
+    cmake --build build --config Release
 
 # Set the default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
