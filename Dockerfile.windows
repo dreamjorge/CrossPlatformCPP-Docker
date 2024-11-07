@@ -1,40 +1,39 @@
-# Use Windows Server Core LTSC 2022 as the base image
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+# escape=`
 
-# Install Chocolatey
-RUN powershell -Command " \
-    Set-ExecutionPolicy Bypass -Scope Process -Force; \
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; \
-    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));"
+# Use a base image compatible with Windows Server Core 2022
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
-# Install Visual Studio 2022 Build Tools with essential components only
-RUN powershell -Command " \
-    choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --quiet'; \
-    choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums; \
-    if (Test-Path 'C:/ProgramData/chocolatey/cache') { Remove-Item -Recurse -Force C:/ProgramData/chocolatey/cache/* }"
+# Set the shell to cmd
+SHELL ["cmd", "/S", "/C"]
 
-# Ensure the build directory exists
-RUN powershell -Command "New-Item -ItemType Directory -Path C:/build -Force"
+# Environment variables for Visual Studio Build Tools installer
+ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
-# Verify that vcvarsall.bat exists at the expected location
-RUN powershell -Command " \
-    if (Test-Path 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat') { \
-        Write-Output 'vcvarsall.bat found at: C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' \
-    } else { \
-        throw 'vcvarsall.bat not found at C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' \
-    }"
+# Download Visual Studio channel and installer
+ADD %CHANNEL_URL% C:\TEMP\VisualStudio.chman
+ADD %VS_BUILD_TOOLS_URL% C:\TEMP\vs_buildtools.exe
 
-# Set the working directory to /build
-WORKDIR C:/build
+# Install Visual Studio Build Tools with the C++ tools for native desktop workload
+RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
+    --channelUri C:\TEMP\VisualStudio.chman `
+    --installChannelUri C:\TEMP\VisualStudio.chman `
+    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+    --installPath C:\BuildTools
 
-# Copy the entire C++ project into /build
+# Clean up the TEMP directory
+RUN rmdir /S /Q C:\TEMP
+
+# Set working directory to /build
+WORKDIR C:\build
+
+# Copy the project files
 COPY . ./
 
-# Initialize Visual Studio environment and build the project
-RUN powershell -Command " \
-    & 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' x64; \
-    cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
-    cmake --build build --config Release"
+# Use Visual Studio Developer Command Prompt to build the project
+RUN C:\BuildTools\Common7\Tools\VsDevCmd.bat && `
+    cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && `
+    cmake --build build --config Release
 
-# Set the default command to run the built executable
+# Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
