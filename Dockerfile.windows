@@ -4,8 +4,11 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 # Install Chocolatey
 RUN ["powershell", "-Command", "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));"]
 
-# Install Visual Studio 2022 Build Tools with additional parameters
-RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional --quiet'; choco install cmake --version 3.26.4 --yes"]
+# Install Visual Studio 2022 Build Tools with additional parameters and no progress
+RUN ["powershell", "-Command", "choco install visualstudio2022buildtools --yes --no-progress --ignore-checksums --package-parameters '--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional --quiet'"]
+
+# Install CMake separately with no progress
+RUN ["powershell", "-Command", "choco install cmake --version 3.26.4 --yes --no-progress --ignore-checksums"]
 
 # Ensure the build directory exists
 RUN ["powershell", "-Command", "New-Item -ItemType Directory -Path C:/build -Force"]
