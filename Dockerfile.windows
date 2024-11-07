@@ -10,9 +10,12 @@ SHELL ["cmd", "/S", "/C"]
 ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
+# Create TEMP directory for downloads
+RUN mkdir C:\TEMP
+
 # Download Visual Studio channel and installer
-ADD %CHANNEL_URL% C:\TEMP\VisualStudio.chman
-ADD %VS_BUILD_TOOLS_URL% C:\TEMP\vs_buildtools.exe
+RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman"
+RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
 RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
