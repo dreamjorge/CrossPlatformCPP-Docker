@@ -1,7 +1,7 @@
 {
   "extends": "./devcontainer.json",
   "name": "Linux Dev Container",
-  "dockerFile": "./../Dockerfile.linux",  // Points to the Linux Dockerfile
+  "dockerFile": "./../Dockerfile.linux",
   "runArgs": ["--platform=linux/amd64"],
   "settings": {
     "terminal.integrated.defaultProfile.linux": "bash"
