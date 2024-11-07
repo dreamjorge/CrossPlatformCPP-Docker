@@ -17,7 +17,13 @@ WORKDIR C:/build
 COPY . ./
 
 # Initialize Visual Studio environment and build the project in a single RUN command
-RUN ["powershell", "-Command", "& { & 'C:/BuildTools/VC/Auxiliary/Build/vcvarsall.bat' x64; cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; cmake --build build --config Release; }"]
-
+# Initialize Visual Studio environment and build the project in a single RUN command
+RUN ["powershell", "-Command", "& { \
+    $vcvarsPath = Get-ChildItem -Path 'C:/' -Recurse -Filter vcvarsall.bat -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName; \
+    if ($null -eq $vcvarsPath) { throw 'vcvarsall.bat not found'; } \
+    & $vcvarsPath x64; \
+    cmake -S . -B build -G 'Visual Studio 17 2022' -A x64; \
+    cmake --build build --config Release; \
+}"]
 # Set the default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
