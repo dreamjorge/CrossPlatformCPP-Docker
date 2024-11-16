@@ -9,26 +9,26 @@ ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Create TEMP directory for downloads
-RUN mkdir C:\TEMP
+RUN mkdir C:\\TEMP
 
 # Download Visual Studio channel and installer
-RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman"
-RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\\TEMP\\VisualStudio.chman"
+RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\\TEMP\\vs_buildtools.exe"
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN powershell -Command "C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\TEMP\VisualStudio.chman --installChannelUri C:\TEMP\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath C:\BuildTools"
+RUN powershell -Command "C:\\TEMP\\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\\TEMP\\VisualStudio.chman --installChannelUri C:\\TEMP\\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath C:\\BuildTools"
 
 # Clean up the TEMP directory
-RUN rmdir /S /Q C:\TEMP
+RUN rmdir /S /Q C:\\TEMP
 
-# Set working directory to /build
-WORKDIR C:\build
+# Set working directory to C:\build
+WORKDIR C:\\build
 
 # Copy the project files
 COPY . ./
 
 # Use Visual Studio Developer Command Prompt to build the project in a single RUN command
-RUN powershell -Command "C:\BuildTools\Common7\Tools\VsDevCmd.bat && cmake -S . -B build -G 'Visual Studio 17 2019' -A x64 && cmake --build build --config Release"
+RUN powershell -Command "C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat && cmake -S . -B build -G 'Visual Studio 17 2019' -A x64 && cmake --build build --config Release"
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
