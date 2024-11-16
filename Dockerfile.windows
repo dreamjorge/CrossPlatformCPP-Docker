@@ -9,7 +9,7 @@ ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Create TEMP directory for downloads
-RUN mkdir C:\\TEMP
+RUN mkdir C:\TEMP
 
 # Download Visual Studio channel and installer
 RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\\TEMP\\VisualStudio.chman"
@@ -27,8 +27,8 @@ WORKDIR C:\\build
 # Copy the project files
 COPY . ./
 
-# Use Visual Studio Developer Command Prompt to build the project in a single RUN command
-RUN powershell -Command "C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat && cmake -S . -B build -G 'Visual Studio 17 2019' -A x64 && cmake --build build --config Release"
+# Use Command Prompt to build the project in a single RUN command
+RUN call C:\BuildTools\Common7\Tools\VsDevCmd.bat && cmake -S . -B build -G "Visual Studio 17 2019" -A x64 && cmake --build build --config Release
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
