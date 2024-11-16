@@ -10,7 +10,7 @@ ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Arguments for CMake installation
 ARG CMAKE_VERSION=3.25.2
-ARG CMAKE_INSTALLER_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.msi
+ARG CMAKE_INSTALLER_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
 
 # Create TEMP directory for downloads
 RUN New-Item -ItemType Directory -Path C:\TEMP
@@ -20,22 +20,33 @@ RUN Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile C:\TEMP\VisualStudio.chman
 RUN Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile C:\TEMP\vs_buildtools.exe
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\TEMP\VisualStudio.chman --installChannelUri C:\TEMP\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath "C:\BuildTools"
+RUN C:\TEMP\vs_buildtools.exe `
+    --quiet `
+    --wait `
+    --norestart `
+    --nocache `
+    --channelUri C:\TEMP\VisualStudio.chman `
+    --installChannelUri C:\TEMP\VisualStudio.chman `
+    --add Microsoft.VisualStudio.Workload.VCTools `
+    --includeRecommended `
+    --installPath "C:\BuildTools"
 
-# Download CMake installer
-RUN Invoke-WebRequest -Uri $env:CMAKE_INSTALLER_URL -OutFile C:\TEMP\cmake.msi
+# Download CMake ZIP installer
+RUN Invoke-WebRequest -Uri $env:CMAKE_INSTALLER_URL -OutFile C:\TEMP\cmake.zip
 
-# Install CMake silently
-RUN Start-Process msiexec.exe -ArgumentList '/i C:\TEMP\cmake.msi /quiet /norestart INSTALLDIR=C:\Program Files\CMake' -NoNewWindow -Wait
+# Extract CMake ZIP to "C:\Program Files\CMake"
+RUN Expand-Archive -Path C:\TEMP\cmake.zip -DestinationPath "C:\Program Files" -Force
 
 # Add CMake to PATH
-ENV PATH="C:\Program Files\CMake\bin;$env:PATH"
+ENV PATH="C:\Program Files\cmake-${CMAKE_VERSION}-windows-x86_64\bin;$env:PATH"
 
-# Clean up TEMP directory and CMake installer
+# Clean up TEMP directory and CMake ZIP installer
 RUN Remove-Item -Recurse -Force C:\TEMP
 
 # Verify that VsDevCmd.bat exists at the expected path
-RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat" }
+RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { `
+        Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat" `
+    }
 
 # Set working directory to C:\build
 WORKDIR C:\build
@@ -44,7 +55,9 @@ WORKDIR C:\build
 COPY . ./
 
 # Use VsDevCmd.bat to set up environment and build the project
-RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; cmake --build build --config Release
+RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; `
+    cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; `
+    cmake --build build --config Release
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
