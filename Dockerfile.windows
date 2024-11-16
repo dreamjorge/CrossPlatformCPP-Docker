@@ -20,16 +20,7 @@ RUN Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile C:\TEMP\VisualStudio.chman
 RUN Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile C:\TEMP\vs_buildtools.exe
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe `
-    --quiet `
-    --wait `
-    --norestart `
-    --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools `
-    --includeRecommended `
-    --installPath "C:\BuildTools"
+RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\TEMP\VisualStudio.chman --installChannelUri C:\TEMP\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath "C:\BuildTools"
 
 # Download CMake installer
 RUN Invoke-WebRequest -Uri $env:CMAKE_INSTALLER_URL -OutFile C:\TEMP\cmake.msi
