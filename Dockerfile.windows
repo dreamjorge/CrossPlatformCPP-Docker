@@ -1,7 +1,7 @@
 # Use Windows Server Core LTSC 2022 as the base image
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
-# Set the shell to PowerShell
+# Set the shell to PowerShell with strict error handling
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
 # Environment variables for Visual Studio Build Tools installer
@@ -20,21 +20,12 @@ RUN Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile C:\TEMP\VisualStudio.chman
 RUN Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile C:\TEMP\vs_buildtools.exe
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe `
-    --quiet `
-    --wait `
-    --norestart `
-    --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools `
-    --includeRecommended `
-    --installPath "C:\BuildTools"
+RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\TEMP\VisualStudio.chman --installChannelUri C:\TEMP\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath "C:\BuildTools"
 
 # Download CMake ZIP installer
 RUN Invoke-WebRequest -Uri $env:CMAKE_INSTALLER_URL -OutFile C:\TEMP\cmake.zip
 
-# Extract CMake ZIP to "C:\Program Files\CMake"
+# Extract CMake ZIP to "C:\Program Files"
 RUN Expand-Archive -Path C:\TEMP\cmake.zip -DestinationPath "C:\Program Files" -Force
 
 # Add CMake to PATH
@@ -44,9 +35,7 @@ ENV PATH="C:\Program Files\cmake-${CMAKE_VERSION}-windows-x86_64\bin;$env:PATH"
 RUN Remove-Item -Recurse -Force C:\TEMP
 
 # Verify that VsDevCmd.bat exists at the expected path
-RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { `
-        Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat" `
-    }
+RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat" }
 
 # Set working directory to C:\build
 WORKDIR C:\build
@@ -55,9 +44,7 @@ WORKDIR C:\build
 COPY . ./
 
 # Use VsDevCmd.bat to set up environment and build the project
-RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; `
-    cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; `
-    cmake --build build --config Release
+RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; cmake --build build --config Release
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
