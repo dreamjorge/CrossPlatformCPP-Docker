@@ -1,5 +1,40 @@
+# Use Windows Server Core LTSC 2022 as the base image
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
+
+# Set the shell to PowerShell with strict error handling
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
-RUN New-Item -ItemType Directory -Path C:\TEMP
+
+# Define build-time arguments
+ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.25.2
+ARG CMAKE_INSTALLER_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
+
+# Expose build-time arguments as environment variables
+ENV CHANNEL_URL=${CHANNEL_URL}
+ENV VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
+ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV CMAKE_INSTALLER_URL=${CMAKE_INSTALLER_URL}
+
+# Create TEMP directory for downloads; use -Force to avoid errors if it exists
+RUN New-Item -ItemType Directory -Path C:\TEMP -Force
+
+# Copy the PowerShell script into the container
 COPY install-build-tools.ps1 "C:\TEMP\install-build-tools.ps1"
+
+# Execute the PowerShell script
 RUN & "C:\TEMP\install-build-tools.ps1"
+
+# Set working directory to C:\build
+WORKDIR C:\build
+
+# Copy the project files into the container
+COPY . ./
+
+# Build the project using CMake
+RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; `
+    cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; `
+    cmake --build build --config Release
+
+# Define the default command to run the built executable
+CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
