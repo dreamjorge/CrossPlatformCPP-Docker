@@ -35,9 +35,7 @@ ENV PATH="C:\Program Files\CMake\bin;$env:PATH"
 RUN Remove-Item -Recurse -Force C:\TEMP
 
 # Verify that VsDevCmd.bat exists at the expected path
-RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { `
-        Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat"; `
-    }
+RUN if (-Not (Test-Path "C:\BuildTools\Common7\Tools\VsDevCmd.bat")) { Write-Error "VsDevCmd.bat not found at C:\BuildTools\Common7\Tools\VsDevCmd.bat" }
 
 # Set working directory to C:\build
 WORKDIR C:\build
@@ -46,9 +44,7 @@ WORKDIR C:\build
 COPY . ./
 
 # Use VsDevCmd.bat to set up environment and build the project
-RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; `
-    cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; `
-    cmake --build build --config Release
+RUN & "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ; cmake -S . -B build -G "Visual Studio 17 2019" -A x64 ; cmake --build build --config Release
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
