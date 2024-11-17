@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  build-and-run-windows-docker:
-    name: Build and Run Docker (Windows)
+  build-and-run:
+    name: Build and Run Application in Docker
     runs-on: windows-latest
     strategy:
       matrix:
@@ -19,15 +19,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Show Dockerfile (Debugging Step)
-        run: Get-Content Dockerfile.windows -Raw
-
-      - name: Build Docker Image (Windows)
+      - name: Build Docker Image
         run: docker build -t crossplatformapp-windows -f Dockerfile.windows .
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm crossplatformapp-windows cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
+          docker run --rm -e CONFIG=${{ matrix.config }} crossplatformapp-windows cmd.exe /c C:\scripts\build.cmd
 
       - name: Run Application Inside Docker
         run: docker run --rm crossplatformapp-windows
