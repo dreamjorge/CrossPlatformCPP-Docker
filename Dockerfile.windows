@@ -1,29 +1,29 @@
 # Use a base image compatible with Windows Server Core 2022
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
-# Set the shell to cmd
-SHELL ["cmd", "/S", "/C"]
+# Set the shell to PowerShell to simplify script execution
+SHELL ["powershell", "-command"]
 
 # Environment variables for Visual Studio Build Tools installer
 ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Create TEMP directory for downloads
-RUN mkdir C:\TEMP
+RUN New-Item -Path 'C:\TEMP' -ItemType Directory
 
 # Download Visual Studio channel and installer
-RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && ^
-    powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+RUN Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile 'C:\TEMP\VisualStudio.chman'; \
+    Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile 'C:\TEMP\vs_buildtools.exe'
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
-    --channelUri C:\TEMP\VisualStudio.chman ^
-    --installChannelUri C:\TEMP\VisualStudio.chman ^
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended ^
-    --installPath C:\BuildTools
+RUN Start-Process 'C:\TEMP\vs_buildtools.exe' -ArgumentList '--quiet', '--wait', '--norestart', '--nocache', \
+    '--channelUri', 'C:\TEMP\VisualStudio.chman', \
+    '--installChannelUri', 'C:\TEMP\VisualStudio.chman', \
+    '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includeRecommended', \
+    '--installPath', 'C:\BuildTools' -NoNewWindow -Wait
 
 # Clean up the TEMP directory
-RUN rmdir /S /Q C:\TEMP
+RUN Remove-Item -Path 'C:\TEMP' -Recurse -Force
 
 # Set working directory to /build
 WORKDIR /build
