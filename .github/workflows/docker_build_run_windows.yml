@@ -28,8 +28,11 @@ jobs:
 
       - name: Run Build Script Inside Docker
         shell: cmd
-        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c "build_script.cmd ${{ matrix.config }}"
-
+        run: |
+          docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
+      
       - name: Run Application Inside Docker
         shell: cmd
-        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c "run_script.cmd"
+        run: |
+          docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\run.cmd
+      
