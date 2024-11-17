@@ -10,7 +10,7 @@ on:
 
 env:
   IMAGE_NAME: crossplatformapp-windows
-  IMAGE_TAG: latest
+  IMAGE_TAG: latest  # Using 'latest' for simplicity; consider using ${{ github.sha }} for production.
 
 jobs:
   build-and-run:
@@ -24,10 +24,19 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build Docker Image
-        run: docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
 
-      - name: Run Build Script Inside Docker
-        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} build_script.cmd ${{ matrix.config }}
+      - name: Run Build Script Inside Docker for Debug
+        if: matrix.config == 'Debug'
+        run: |
+          docker run --rm "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c build_script.cmd Debug"
+
+      - name: Run Build Script Inside Docker for Release
+        if: matrix.config == 'Release'
+        run: |
+          docker run --rm "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c build_script.cmd Release"
 
       - name: Run Application Inside Docker
-        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} run_script.cmd ${{ matrix.config }}
+        run: |
+          docker run --rm "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c run_script.cmd"
