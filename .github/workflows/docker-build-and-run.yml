@@ -10,7 +10,7 @@ on:
 
 env:
   IMAGE_NAME: crossplatformapp-windows
-  IMAGE_TAG: latest  # Using 'latest' for simplicity; consider using ${{ github.sha }} for production.
+  IMAGE_TAG: latest
 
 jobs:
   build-and-run:
@@ -27,4 +27,7 @@ jobs:
         run: docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
 
       - name: Run Build Script Inside Docker
-        run: docker run
+        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} build_script.cmd ${{ matrix.config }}
+
+      - name: Run Application Inside Docker
+        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} run_script.cmd ${{ matrix.config }}
