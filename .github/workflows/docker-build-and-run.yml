@@ -1,4 +1,4 @@
-name: Docker Build and Run CrossPlatformApp
+name: Docker Build and Application Run Workflow
 
 on:
   push:
@@ -8,53 +8,56 @@ on:
     branches:
       - main
 
+env:
+  IMAGE_NAME: crossplatformapp-windows
+
 jobs:
-  build-and-run-linux-docker:
-    name: Build and Run Docker (Linux)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Build Docker Image (Linux)
-        run: |
-          docker buildx build \
-            --cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new \
-            -t crossplatformapp-linux -f Dockerfile . \
-            --load
-
-      - name: Move New Cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Run Docker Container (Linux)
-        run: docker run --rm crossplatformapp-linux
-
-  build-and-run-windows-docker:
-    name: Build and Run Docker (Windows)
+  build-docker-image:
+    name: Build Docker Image
     runs-on: windows-latest
+    outputs:
+      image_name: ${{ env.IMAGE_NAME }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Build Docker Image (Windows)
-        run: docker build -t crossplatformapp-windows -f Dockerfile.windows .
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }} -f Dockerfile.windows .
 
-      - name: Run Docker Container (Windows)
-        run: docker run --rm crossplatformapp-windows
+      - name: Save Docker Image
+        run: |
+          docker save ${{ env.IMAGE_NAME }} | gzip > image.tar.gz
+
+      - name: Upload Docker Image
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: image.tar.gz
+
+  build-and-run-code:
+    name: Build and Run Application Code
+    needs: build-docker-image
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Download Docker Image
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load Docker Image
+        run: |
+          gzip -d image.tar.gz
+          docker load < image.tar
+
+      - name: Build Project Inside Docker
+        run: |
+          docker run --rm ${{ needs.build-docker-image.outputs.image_name }} build_script.cmd ${{ matrix.config }}
+
+      - name: Run Application Inside Docker
+        run: |
+          docker run --rm ${{ needs.build-docker-image.outputs.image_name }} run_script.cmd ${{ matrix.config }}
