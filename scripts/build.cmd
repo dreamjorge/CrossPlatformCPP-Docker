@@ -21,6 +21,7 @@ if exist "CMakeLists.txt" (
     exit /b 1
 )
 
+echo Starting build process...
 CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" && ^
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && ^
 cmake --build build --config %BUILD_TYPE%
