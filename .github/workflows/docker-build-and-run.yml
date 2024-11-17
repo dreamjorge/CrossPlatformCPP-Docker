@@ -1,4 +1,4 @@
-name: Docker Build and Application Run Workflow
+name: Build and Run Docker Application
 
 on:
   push:
@@ -10,54 +10,21 @@ on:
 
 env:
   IMAGE_NAME: crossplatformapp-windows
+  IMAGE_TAG: latest  # Using 'latest' for simplicity; consider using ${{ github.sha }} for production.
 
 jobs:
-  build-docker-image:
-    name: Build Docker Image
-    runs-on: windows-latest
-    outputs:
-      image_name: ${{ env.IMAGE_NAME }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ env.IMAGE_NAME }} -f Dockerfile.windows .
-
-      - name: Save Docker Image
-        run: |
-          docker save ${{ env.IMAGE_NAME }} | gzip > image.tar.gz
-
-      - name: Upload Docker Image
-        uses: actions/upload-artifact@v3
-        with:
-          name: docker-image
-          path: image.tar.gz
-
-  build-and-run-code:
-    name: Build and Run Application Code
-    needs: build-docker-image
+  build-and-run:
+    name: Build and Run Application in Docker
     runs-on: windows-latest
     strategy:
       matrix:
         config: [Debug, Release]
     steps:
-      - name: Download Docker Image
-        uses: actions/download-artifact@v3
-        with:
-          name: docker-image
-          path: .
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-      - name: Load Docker Image
-        run: |
-          gzip -d image.tar.gz
-          docker load < image.tar
+      - name: Build Docker Image
+        run: docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
 
-      - name: Build Project Inside Docker
-        run: |
-          docker run --rm ${{ needs.build-docker-image.outputs.image_name }} build_script.cmd ${{ matrix.config }}
-
-      - name: Run Application Inside Docker
-        run: |
-          docker run --rm ${{ needs.build-docker-image.outputs.image_name }} run_script.cmd ${{ matrix.config }}
+      - name: Run Build Script Inside Docker
+        run: docker run
