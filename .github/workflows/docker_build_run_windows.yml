@@ -20,18 +20,25 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build Docker Image (Windows)
-        run: docker build --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-windows -f Dockerfile.windows .
+        run: |
+          docker build --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-windows -f Dockerfile.windows .
 
       - name: Debug - List Scripts Directory
-        run: docker run --rm crossplatformapp-windows cmd.exe /c dir C:\scripts
+        run: |
+          docker run --rm crossplatformapp-windows cmd.exe /c dir C:\scripts
 
       - name: Debug - Echo CONFIG Variable
-        run: docker run --rm -e CONFIG=${{ matrix.config }} crossplatformapp-windows cmd.exe /c echo %CONFIG%
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} crossplatformapp-windows cmd.exe /c echo %CONFIG%
+
+      - name: Debug - List App Directory
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c dir C:\app
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} crossplatformapp-windows cmd.exe /c C:\scripts\build.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\build.cmd
 
       - name: Run Application Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} crossplatformapp-windows cmd.exe /c C:\scripts\run.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\run.cmd
