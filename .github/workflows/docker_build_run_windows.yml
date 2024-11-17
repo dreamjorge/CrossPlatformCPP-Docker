@@ -1,0 +1,39 @@
+name: Build and Run Docker Application
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: crossplatformapp-windows
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-run:
+    name: Build and Run Application in Docker
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.windows
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Run Build Script Inside Docker
+        shell: cmd
+        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c "build_script.cmd ${{ matrix.config }}"
+
+      - name: Run Application Inside Docker
+        shell: cmd
+        run: docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c "run_script.cmd"
