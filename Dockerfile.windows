@@ -1,4 +1,4 @@
-# escape=^
+# escape=`
 
 # Use a base image compatible with Windows Server Core 2022
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
@@ -16,20 +16,13 @@ ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.21.
 RUN mkdir C:\TEMP
 
 # Download Visual Studio channel and installer
-RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman"
-RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
 
 # Download and install CMake
-RUN powershell -Command "Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile C:\TEMP\cmake.msi" && ^
-    msiexec /i C:\TEMP\cmake.msi /quiet /norestart && ^
-    rmdir /S /Q C:\TEMP
+RUN powershell -Command "Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile C:\TEMP\cmake.msi" && msiexec /i C:\TEMP\cmake.msi /quiet /norestart && rmdir /S /Q C:\TEMP
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
-    --channelUri C:\TEMP\VisualStudio.chman ^
-    --installChannelUri C:\TEMP\VisualStudio.chman ^
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended ^
-    --installPath C:\BuildTools
+RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache --channelUri C:\TEMP\VisualStudio.chman --installChannelUri C:\TEMP\VisualStudio.chman --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --installPath C:\BuildTools
 
 # Clean up the TEMP directory
 RUN rmdir /S /Q C:\TEMP
@@ -44,9 +37,7 @@ COPY . ./
 COPY scripts C:\scripts
 
 # Use Visual Studio Developer Command Prompt to build the project
-RUN C:\BuildTools\Common7\Tools\VsDevCmd.bat && ^
-    cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && ^
-    cmake --build build --config Release
+RUN C:\BuildTools\Common7\Tools\VsDevCmd.bat && cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && cmake --build build --config Release
 
 # Default command to run the built executable
 CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
