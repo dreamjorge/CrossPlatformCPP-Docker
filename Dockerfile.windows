@@ -1,34 +1,41 @@
+# Use a base image compatible with Windows Server Core 2022
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
 # Set the shell to PowerShell for script execution
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 # Environment variables for Visual Studio Build Tools installer
-ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
+ARG CHANNEL_URL="https://aka.ms/vs/17/release/channel"
+ARG VS_BUILD_TOOLS_URL="https://aka.ms/vs/17/release/vs_buildtools.exe"
 
 # Create TEMP directory for downloads
-RUN mkdir C:\TEMP
+RUN New-Item -ItemType Directory -Path 'C:\TEMP'
 
 # Download Visual Studio channel and installer
 RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile 'C:\\TEMP\\VisualStudio.chman'; `
-    Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile 'C:\\TEMP\\vs_buildtools.exe'
+    Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile 'C:\TEMP\VisualStudio.chman'; `
+    Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile 'C:\TEMP\vs_buildtools.exe'
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN Start-Process -FilePath 'C:\\TEMP\\vs_buildtools.exe' `
+RUN Start-Process -FilePath 'C:\TEMP\vs_buildtools.exe' `
     -ArgumentList '--quiet', '--wait', '--norestart', '--nocache', `
-    '--channelUri', 'C:\\TEMP\\VisualStudio.chman', `
-    '--installChannelUri', 'C:\\TEMP\\VisualStudio.chman', `
+    '--channelUri', 'C:\TEMP\VisualStudio.chman', `
+    '--installChannelUri', 'C:\TEMP\VisualStudio.chman', `
     '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includeRecommended', `
-    '--installPath', 'C:\\BuildTools' -NoNewWindow -Wait; `
+    '--installPath', 'C:\BuildTools' -NoNewWindow -Wait; `
     Wait-Process -Name vs_buildtools
 
-# Clean up the TEMP directory to reduce image size
-RUN Remove-Item -Path 'C:\\TEMP' -Recurse -Force
+# Clean up the TEMP directory
+RUN Remove-Item -Path 'C:\TEMP' -Recurse -Force
 
 # Set working directory to C:\build
-WORKDIR C:\\build
+WORKDIR C:\build
 
 # Copy the project files
-COPY . C:\\build
+COPY . .
+
+# Copy the scripts folder into the image (if applicable)
+# COPY scripts C:\scripts
+
+# Default command (if applicable)
+# CMD ["cmd.exe", "/k", "C:\BuildTools\Common7\Tools\VsDevCmd.bat"]
