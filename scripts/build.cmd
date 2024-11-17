@@ -9,6 +9,7 @@ IF NOT "%CONFIG%"=="" (
 )
 
 echo BUILD_TYPE is %BUILD_TYPE%
+echo BUILD_DIR is %BUILD_DIR%
 echo Current Directory: %CD%
 echo Listing files in current directory:
 dir
