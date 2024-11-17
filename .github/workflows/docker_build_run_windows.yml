@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Show Dockerfile (Debugging Step)
-        run: type Dockerfile.windows
+        run: Get-Content Dockerfile.windows
 
       - name: Build Docker Image
         shell: pwsh
@@ -32,9 +32,11 @@ jobs:
           docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG -f Dockerfile.windows .
 
       - name: Run Build Script Inside Docker
+        shell: cmd
         run: |
-          docker run --rm $env:IMAGE_NAME:$env:IMAGE_TAG cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
+          docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
       
       - name: Run Application Inside Docker
+        shell: cmd
         run: |
-          docker run --rm $env:IMAGE_NAME:$env:IMAGE_TAG cmd.exe /c C:\scripts\run.cmd
+          docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\run.cmd

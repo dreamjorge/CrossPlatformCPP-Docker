@@ -1,14 +1,14 @@
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
-# Set the shell to PowerShell to simplify script execution
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
+# Set the shell to PowerShell for script execution
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 # Environment variables for Visual Studio Build Tools installer
 ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Create TEMP directory for downloads
-RUN New-Item -Path 'C:\\TEMP' -ItemType Directory
+RUN mkdir C:\TEMP
 
 # Download Visual Studio channel and installer
 RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
@@ -24,7 +24,7 @@ RUN Start-Process -FilePath 'C:\\TEMP\\vs_buildtools.exe' `
     '--installPath', 'C:\\BuildTools' -NoNewWindow -Wait; `
     Wait-Process -Name vs_buildtools
 
-# Clean up the TEMP directory
+# Clean up the TEMP directory to reduce image size
 RUN Remove-Item -Path 'C:\\TEMP' -Recurse -Force
 
 # Set working directory to C:\build
