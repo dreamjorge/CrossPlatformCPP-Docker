@@ -1,4 +1,4 @@
-# escape=`
+# escape=^
 
 # Use a base image compatible with Windows Server Core 2022
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
@@ -9,6 +9,8 @@ SHELL ["cmd", "/S", "/C"]
 # Environment variables for Visual Studio Build Tools installer
 ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.21.3
+ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-win64-x64.msi
 
 # Create TEMP directory for downloads
 RUN mkdir C:\TEMP
@@ -16,6 +18,11 @@ RUN mkdir C:\TEMP
 # Download Visual Studio channel and installer
 RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman"
 RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+
+# Download and install CMake
+RUN powershell -Command "Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile C:\TEMP\cmake.msi" && ^
+    msiexec /i C:\TEMP\cmake.msi /quiet /norestart && ^
+    rmdir /S /Q C:\TEMP
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
 RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
