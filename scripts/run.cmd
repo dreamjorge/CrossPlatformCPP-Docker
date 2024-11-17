@@ -1,5 +1,9 @@
 @echo off
-SET BUILD_TYPE=%1
-IF "%BUILD_TYPE%"=="" SET BUILD_TYPE=Release
 
-C:\build\build\%BUILD_TYPE%\CrossPlatformApp.exe
+echo Running application in %BUILD_TYPE% mode.
+
+REM Navigate to the build output directory
+cd build\%BUILD_TYPE%
+
+REM Execute the application
+CrossPlatformApp.exe
