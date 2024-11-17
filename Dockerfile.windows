@@ -18,28 +18,28 @@ RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\V
 RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
+    --channelUri C:\TEMP\VisualStudio.chman ^
+    --installChannelUri C:\TEMP\VisualStudio.chman ^
+    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended ^
     --installPath C:\BuildTools
 
 # Clean up the TEMP directory
 RUN rmdir /S /Q C:\TEMP
 
-# Set working directory to /build
+# Set working directory to C:\build
 WORKDIR C:\build
 
 # Copy the project files
 COPY . ./
 
-# Copy the scripts folder into the image (if you have scripts)
+# Copy the scripts folder into the image
 COPY scripts C:\scripts
 
 # Use Visual Studio Developer Command Prompt to build the project
-RUN C:\BuildTools\Common7\Tools\VsDevCmd.bat && `
-    cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && `
+RUN C:\BuildTools\Common7\Tools\VsDevCmd.bat && ^
+    cmake -S . -B build -G "Visual Studio 17 2022" -A x64 && ^
     cmake --build build --config Release
 
-# Default command to run the built executable or start the shell
-CMD ["cmd.exe", "/k", "C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat"]
+# Default command to run the built executable
+CMD ["C:\\build\\build\\Release\\CrossPlatformApp.exe"]
