@@ -5,17 +5,15 @@ FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 SHELL ["cmd", "/S", "/C"]
 
 # Environment variables for Visual Studio Build Tools installer
-ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/16/release/vs_buildtools.exe
-ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0-windows-x86_64.msi
+ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 
 # Create TEMP directory for downloads
 RUN mkdir C:\TEMP
 
-# Download Visual Studio channel, installer, and CMake installer
+# Download Visual Studio channel and installer
 RUN powershell -Command "Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman"
 RUN powershell -Command "Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
-RUN powershell -Command "Invoke-WebRequest -Uri %CMAKE_URL% -OutFile C:\TEMP\cmake_install.msi"
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
 RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
@@ -24,20 +22,14 @@ RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
     --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
     --installPath C:\BuildTools
 
-# Install CMake
-RUN msiexec /i C:\TEMP\cmake_install.msi /quiet /norestart ADD_CMAKE_TO_PATH=System
-
 # Clean up the TEMP directory
 RUN rmdir /S /Q C:\TEMP
 
 # Set working directory to /build
-WORKDIR C:\build
+WORKDIR /build
 
 # Copy the project files
-COPY . ./
+COPY . .
 
-# Separating build and run logic into scripts
-COPY build_script.cmd run_script.cmd ./
-
-# Default command to run the built executable
-CMD ["run_script.cmd"]
+# Use Visual Studio Developer Command Prompt to build the project
+# (Placeholder for actual build commands)
