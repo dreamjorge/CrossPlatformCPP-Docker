@@ -8,13 +8,9 @@ on:
     branches:
       - main
 
-env:
-  IMAGE_NAME: crossplatformapp-windows
-  IMAGE_TAG: latest
-
 jobs:
-  build-and-run:
-    name: Build and Run Application in Docker
+  build-and-run-windows-docker:
+    name: Build and Run Docker (Windows)
     runs-on: windows-latest
     strategy:
       matrix:
@@ -24,20 +20,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Show Dockerfile (Debugging Step)
-        shell: pwsh
         run: Get-Content Dockerfile.windows -Raw
 
-      - name: Build Docker Image
-        shell: pwsh
-        run: |
-          docker build -t $env:IMAGE_NAME:$env:IMAGE_TAG -f Dockerfile.windows .
+      - name: Build Docker Image (Windows)
+        run: docker build -t crossplatformapp-windows -f Dockerfile.windows .
 
       - name: Run Build Script Inside Docker
-        shell: cmd
         run: |
-          docker run --rm %IMAGE_NAME%:%IMAGE_TAG% cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
-      
+          docker run --rm crossplatformapp-windows cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
+
       - name: Run Application Inside Docker
-        shell: cmd
-        run: |
-          docker run --rm %IMAGE_NAME%:%IMAGE_TAG% cmd.exe /c C:\scripts\run.cmd
+        run: docker run --rm crossplatformapp-windows
