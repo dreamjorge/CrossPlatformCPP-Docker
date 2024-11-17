@@ -25,14 +25,13 @@ jobs:
 
       - name: Build Docker Image
         shell: pwsh
-        run: docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -f Dockerfile.windows .
 
       - name: Run Build Script Inside Docker
-        shell: cmd
         run: |
           docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\build.cmd ${{ matrix.config }}
       
       - name: Run Application Inside Docker
-        shell: cmd
         run: |
           docker run --rm ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} cmd.exe /c C:\scripts\run.cmd
