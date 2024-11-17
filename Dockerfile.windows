@@ -15,7 +15,7 @@ RUN powershell -Command "New-Item -Path 'C:\TEMP' -ItemType Directory"
 RUN powershell -Command "Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile 'C:\TEMP\VisualStudio.chman'; Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile 'C:\TEMP\vs_buildtools.exe'"
 
 # Install Visual Studio Build Tools with the C++ tools for native desktop workload
-RUN powershell -Command "Start-Process -FilePath 'C:\TEMP\vs_buildtools.exe' -ArgumentList '--quiet', '--wait', '--norestart', '--nocache', '--channelUri', 'C:\TEMP\VisualStudio.chman', '--installChannelUri', 'C:\TEMP\VisualStudio.chman', '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includeRecommended', '--installPath', 'C:\BuildTools' -NoNewWindow -Wait"
+RUN powershell -Command "& 'C:\TEMP\vs_buildtools.exe' --quiet --wait --norestart --nocache --channelUri 'C:\TEMP\VisualStudio.chman' --installChannelUri 'C:\TEMP\VisualStudio.chman' --add 'Microsoft.VisualStudio.Workload.VCTools' --includeRecommended --installPath 'C:\BuildTools'"
 
 # Clean up the TEMP directory
 RUN powershell -Command "Remove-Item -Path 'C:\TEMP' -Recurse -Force"
