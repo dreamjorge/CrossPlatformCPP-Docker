@@ -18,7 +18,6 @@ ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
 ARG VS_BUILD_TOOLS_VERSION=17.12.0
 ARG CMAKE_VERSION=3.21.3
-ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-win64-x64.msi
 
 # ===================================================================
 # Environment Variables
@@ -32,7 +31,7 @@ ENV BUILD_DIR="C:\\app"
 SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Create Temporary Directory
+# Create Temporary Directory for Downloads
 # ===================================================================
 RUN mkdir C:\TEMP
 
@@ -45,27 +44,17 @@ RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.Secu
     Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
 
 # ===================================================================
-# Download and Install CMake with Retry Logic
+# Install Chocolatey Package Manager
 # ===================================================================
-RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    $attempts = 0; `
-    $maxAttempts = 3; `
-    $success = $false; `
-    while (-not $success -and $attempts -lt $maxAttempts) { `
-        try { `
-            Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile C:\TEMP\cmake.msi; `
-            $success = $true; `
-        } catch { `
-            $attempts++; `
-            Write-Host 'Attempt ' $attempts ' to download CMake failed. Retrying in 5 seconds...'; `
-            Start-Sleep -Seconds 5; `
-        } `
-    } `
-    if (-not $success) { `
-        throw 'Failed to download CMake after ' + $maxAttempts + ' attempts.'; `
-    }" && `
-    msiexec /i C:\TEMP\cmake.msi /quiet /norestart && `
-    rmdir /S /Q C:\TEMP
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# ===================================================================
+# Install CMake via Chocolatey
+# ===================================================================
+RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
