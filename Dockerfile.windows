@@ -45,10 +45,8 @@ RUN mkdir C:\TEMP && `
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
     REM Install CMake via Chocolatey && `
     choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
-    REM Manually Add CMake to PATH && `
-    setx /M PATH "C:\Program Files\CMake\bin;%PATH%" && `
     REM Install Visual Studio Build Tools with C++ Workload && `
-    C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
+    C:\TEMP\vs_buildtools.exe --quiet --wait --nocache `
         --channelUri C:\TEMP\VisualStudio.chman `
         --installChannelUri C:\TEMP\VisualStudio.chman `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
@@ -57,9 +55,14 @@ RUN mkdir C:\TEMP && `
     rmdir /S /Q C:\TEMP
 
 # ===================================================================
+# Update PATH to include CMake
+# ===================================================================
+ENV PATH "C:\Program Files\CMake\bin;%PATH%"
+
+# ===================================================================
 # Verify Installations
 # ===================================================================
-RUN echo PATH=%PATH% && C:\Program Files\CMake\bin\cmake.exe --version
+RUN echo PATH="%PATH%" && cmake --version
 
 # ===================================================================
 # Set Working Directory
