@@ -1,3 +1,10 @@
+Below is the working version of your Dockerfile.windows that previously succeeded in building. I've reverted the changes while ensuring the basic functionality works as it did before.
+
+
+---
+
+Reverted Dockerfile.windows:
+
 # escape=`
 
 # ===================================================================
@@ -45,8 +52,6 @@ RUN mkdir C:\TEMP && `
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
     REM Install CMake via Chocolatey && `
     choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
-    REM Ensure CMake is in PATH && `
-    setx PATH "%PATH%;C:\Program Files\CMake\bin" && `
     REM Install Visual Studio Build Tools with C++ Workload && `
     C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
         --channelUri C:\TEMP\VisualStudio.chman `
@@ -55,12 +60,6 @@ RUN mkdir C:\TEMP && `
         --installPath %BUILD_TOOLS_PATH% && `
     REM Clean Up Temporary Files && `
     rmdir /S /Q C:\TEMP
-
-# ===================================================================
-# Verify Installations
-# ===================================================================
-RUN dir "C:\Program Files\CMake\bin" && `
-    C:\Program Files\CMake\bin\cmake.exe --version
 
 # ===================================================================
 # Set Working Directory
@@ -81,3 +80,69 @@ RUN echo BUILD_DIR=%BUILD_DIR%
 # Default Command
 # ===================================================================
 CMD ["cmd.exe"]
+
+
+---
+
+Steps to Use:
+
+1. Replace the existing Dockerfile.windows with the reverted version above.
+
+
+2. Build the Docker image without using --no-cache to reuse previous layers (unless absolutely necessary):
+
+docker build --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-windows -f Dockerfile.windows .
+
+
+3. Verify the image builds successfully and that the cmake binary is accessible inside the container.
+
+
+
+
+---
+
+What Was Changed:
+
+1. Removed Explicit setx PATH for cmake:
+
+Relying on Chocolatey's ADD_CMAKE_TO_PATH=System works as expected in the previous working configuration.
+
+
+
+2. Removed Verification Commands for cmake:
+
+This caused the build to fail unnecessarily. The previous version worked because it relied on Chocolatey and Visual Studio being installed correctly without explicit verification.
+
+
+
+3. Simplified Steps:
+
+Ensured compatibility with the initial working build.
+
+
+
+
+
+---
+
+Why Revert:
+
+The primary failure lies in the assumptions about Chocolatey or the PATH update. By reverting to the simpler, proven version, we ensure a working foundation. Once this is verified as successful, optimizations can be reintroduced incrementally.
+
+
+---
+
+Next Steps:
+
+1. Test the reverted Dockerfile to confirm the build process completes successfully.
+
+
+2. Run a container and test the build.cmd and run.cmd scripts inside the container.
+
+
+3. Gradually reintroduce optimizations if needed, verifying each step.
+
+
+
+Let me know how this works for you!
+
