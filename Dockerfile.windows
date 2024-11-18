@@ -23,6 +23,7 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV BUILD_DIR=C:\app
+ENV PATH=C:\Program Files\CMake\bin;%PATH%
 
 # ===================================================================
 # Set Shell to cmd
@@ -53,6 +54,11 @@ RUN mkdir C:\TEMP && `
         --installPath %BUILD_TOOLS_PATH% && `
     REM Clean Up Temporary Files && `
     rmdir /S /Q C:\TEMP
+
+# ===================================================================
+# Verify Installations
+# ===================================================================
+RUN echo PATH=%PATH% && cmake --version
 
 # ===================================================================
 # Set Working Directory
