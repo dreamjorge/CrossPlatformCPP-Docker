@@ -3,6 +3,7 @@ FROM ubuntu:20.04
 
 # Set non-interactive mode to prevent prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
+
 # Install build tools and CMake
 RUN apt-get update && apt-get install -y \
     build-essential \

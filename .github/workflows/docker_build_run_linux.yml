@@ -1,4 +1,4 @@
-name: Build and Run Docker on Linux
+name: Docker Build and Run on Linux
 
 on:
   push:
@@ -12,36 +12,23 @@ jobs:
   build-and-run-linux-docker:
     name: Build and Run Docker (Linux)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+          fetch-depth: 0
 
       - name: Build Docker Image (Linux)
         run: |
-          docker buildx build \
-            --cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new \
-            -t crossplatformapp-linux -f Dockerfile.linux . \
-            --load
+          docker build --no-cache -t crossplatformapp-linux -f Dockerfile.linux .
 
-      - name: Move New Cache
+      - name: Run Build Script Inside Docker
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./build.sh"
 
-      - name: Run Docker Container (Linux)
-        run: docker run --rm crossplatformapp-linux
+      - name: Run Application Inside Docker
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./run.sh"
