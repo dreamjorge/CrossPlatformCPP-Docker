@@ -28,7 +28,7 @@ ENV BUILD_TOOLS_PATH=C:\BuildTools `
     BUILD_DIR=C:\app `
     ChocolateyUseWindowsCompression=false `
     ChocolateyInstall=C:\ProgramData\chocolatey `
-    PATH="C:\\Program Files\\CMake\\bin;${ChocolateyInstall}\\bin;${PATH}"
+    PATH="C:\\Program Files\\CMake\\bin;%ChocolateyInstall%\\bin;%PATH%"
 
 # ===================================================================
 # Set Shell to cmd
@@ -41,10 +41,10 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir C:\TEMP
 
 # ===================================================================
-# Install Chocolatey Package Manager, CMake, and Visual Studio Build Tools
+# Install Chocolatey Package Manager, CMake, and Clean Up
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "`
-        # Set TLS 1.2
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+        # Set TLS 1.2 for secure downloads
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
         # Download and install Chocolatey
         Set-ExecutionPolicy Bypass -Scope Process -Force; `
@@ -57,10 +57,10 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "`
 # ===================================================================
 # Download Visual Studio Channel and Installer
 # ===================================================================
-RUN powershell -Command "`
+RUN powershell -Command " `
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
         Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && `
-    powershell -Command "`
+    powershell -Command " `
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
         Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
 
