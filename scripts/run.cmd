@@ -1,9 +1,15 @@
+
 @echo off
 
-echo Running application in %BUILD_TYPE% mode.
+echo Running application in %CONFIG% mode.
 
-REM Navigate to the build output directory
-cd build\%BUILD_TYPE%
+REM Specify the absolute path to the executable
+C:\app\build\%BUILD_TYPE%\CrossPlatformApp.exe
 
-REM Execute the application
-CrossPlatformApp.exe
+REM Optional: Capture exit code
+IF %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Application execution failed with exit code %ERRORLEVEL%.
+    exit /b %ERRORLEVEL%
+) ELSE (
+    echo Application executed successfully.
+)
