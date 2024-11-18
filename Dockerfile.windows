@@ -1,3 +1,34 @@
+# escape=`
+
+# ===================================================================
+# Base Image
+# ===================================================================
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
+
+# ===================================================================
+# Metadata
+# ===================================================================
+LABEL maintainer="yourname@domain.com"
+LABEL description="Docker image for building and running CrossPlatformApp"
+
+# ===================================================================
+# Build Arguments
+# ===================================================================
+ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.21.3
+
+# ===================================================================
+# Environment Variables
+# ===================================================================
+ENV BUILD_TOOLS_PATH C:\BuildTools
+ENV BUILD_DIR C:\app
+
+# ===================================================================
+# Set Shell to cmd
+# ===================================================================
+SHELL ["cmd", "/S", "/C"]
+
 # ===================================================================
 # Install Dependencies
 # ===================================================================
@@ -26,9 +57,32 @@ RUN mkdir C:\TEMP && `
 # ===================================================================
 # Update PATH to include CMake
 # ===================================================================
-ENV PATH "C:\Program Files\CMake\bin;%PATH%"
+# Correctly appending CMake to PATH with proper escaping and variable expansion
+ENV PATH "C:\\Program Files\\CMake\\bin;${PATH}"
 
 # ===================================================================
 # Verify Installations
 # ===================================================================
-RUN echo PATH="%PATH%" && cmake --version
+RUN echo PATH="%PATH%" && `
+    where cmake && `
+    cmake --version
+
+# ===================================================================
+# Set Working Directory
+# ===================================================================
+WORKDIR C:\app
+
+# ===================================================================
+# Copy Scripts Directory
+# ===================================================================
+COPY scripts/windows C:\scripts\windows
+
+# ===================================================================
+# Verify BUILD_DIR Environment Variable
+# ===================================================================
+RUN echo BUILD_DIR=%BUILD_DIR%
+
+# ===================================================================
+# Default Command
+# ===================================================================
+CMD ["cmd.exe"]
