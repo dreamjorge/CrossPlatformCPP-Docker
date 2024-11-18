@@ -23,7 +23,7 @@ jobs:
 
       - name: Build Docker Image (Windows)
         run: |
-          docker build --no-cache --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-vs2017 -f Dockerfile.windows .
+          docker build --no-cache --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-vs2017 -f Dockerfile.windows.vs17 .
 
       - name: Run Build Script Inside Docker
         run: |

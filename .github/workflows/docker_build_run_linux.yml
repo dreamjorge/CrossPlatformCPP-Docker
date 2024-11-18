@@ -27,8 +27,8 @@ jobs:
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./build.sh"
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./scripts/linux/build.sh"
 
       - name: Run Application Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./run.sh"
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./scripts/linux/run.sh"
