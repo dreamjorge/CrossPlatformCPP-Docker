@@ -16,7 +16,6 @@ LABEL description="Docker image for building and running CrossPlatformApp"
 # ===================================================================
 ARG CHANNEL_URL=https://aka.ms/vs/17/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/17/release/vs_buildtools.exe
-ARG VS_BUILD_TOOLS_VERSION=17.12.0
 ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
@@ -31,44 +30,29 @@ ENV BUILD_DIR=C:\app
 SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Create Temporary Directory for Downloads
+# Install Dependencies
 # ===================================================================
-RUN mkdir C:\TEMP
-
-# ===================================================================
-# Download Visual Studio Channel and Installer
-# ===================================================================
-RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && `
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
-
-# ===================================================================
-# Install Chocolatey Package Manager
-# ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-
-# ===================================================================
-# Install CMake via Chocolatey
-# ===================================================================
-RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-# ===================================================================
-# Install Visual Studio Build Tools with C++ Workload
-# ===================================================================
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath %BUILD_TOOLS_PATH%
-
-# ===================================================================
-# Clean Up Temporary Files
-# ===================================================================
-RUN rmdir /S /Q C:\TEMP
+RUN mkdir C:\TEMP && `
+    REM Download Visual Studio Channel and Installer && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+        Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+        Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe" && `
+    REM Install Chocolatey Package Manager && `
+    powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+        Set-ExecutionPolicy Bypass -Scope Process -Force; `
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
+    REM Install CMake via Chocolatey && `
+    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
+    REM Install Visual Studio Build Tools with C++ Workload && `
+    C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
+        --channelUri C:\TEMP\VisualStudio.chman `
+        --installChannelUri C:\TEMP\VisualStudio.chman `
+        --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+        --installPath %BUILD_TOOLS_PATH% && `
+    REM Clean Up Temporary Files && `
+    rmdir /S /Q C:\TEMP
 
 # ===================================================================
 # Set Working Directory
