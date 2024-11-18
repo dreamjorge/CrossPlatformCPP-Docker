@@ -22,8 +22,8 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 # Environment Variables
 # ===================================================================
-ENV BUILD_TOOLS_PATH=C:\\BuildTools
-ENV BUILD_DIR=C:\\app
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV BUILD_DIR=C:\app
 
 # ===================================================================
 # Set Shell to cmd
@@ -79,6 +79,11 @@ WORKDIR %BUILD_DIR%
 # Copy Scripts Directory
 # ===================================================================
 COPY scripts C:\scripts
+
+# ===================================================================
+# Verify BUILD_DIR Environment Variable
+# ===================================================================
+RUN echo BUILD_DIR=%BUILD_DIR%
 
 # ===================================================================
 # Default Command
