@@ -8,8 +8,13 @@ FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 # ===================================================================
 # Metadata
 # ===================================================================
-LABEL maintainer="yourname@domain.com"
-LABEL description="Docker image for building and running CrossPlatformApp"
+LABEL maintainer="jorge-kun@live.com" `
+      description="Docker image for building and running CrossPlatformApp using Visual Studio 2022" `
+      version="1.0.0" `
+      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" `
+      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" `
+      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
+      license="MIT"
 
 # ===================================================================
 # Build Arguments
