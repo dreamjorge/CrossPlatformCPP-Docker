@@ -9,14 +9,8 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
-WORKDIR /app
+# Set up workspace
+WORKDIR /workspace
 
-# Copy the project files into the container
-COPY . .
-
-# Create a build directory and compile the project
-RUN mkdir -p build && cd build && cmake .. && make
-
-# Run the compiled executable
-CMD ["./build/CrossPlatformApp"]
+# Copy application source
+COPY . /workspace
