@@ -78,7 +78,7 @@ WORKDIR %BUILD_DIR%
 # ===================================================================
 # Copy Scripts Directory
 # ===================================================================
-COPY scripts C:\scripts
+COPY scripts/windows C:\scripts\windows
 
 # ===================================================================
 # Verify BUILD_DIR Environment Variable
