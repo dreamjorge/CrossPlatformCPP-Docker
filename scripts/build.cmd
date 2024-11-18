@@ -15,7 +15,7 @@ echo Listing files in current directory:
 dir
 
 echo Verifying CMakeLists.txt presence:
-if exist "CMakeLists.txt" (
+if exist "C:\app\CMakeLists.txt" (
     echo CMakeLists.txt found.
 ) else (
     echo ERROR: CMakeLists.txt not found!
@@ -27,5 +27,5 @@ echo Before VsDevCmd.bat: %CD%
 CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat"
 echo After VsDevCmd.bat: %CD%
 
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-cmake --build build --config %BUILD_TYPE%
+cmake -S C:\app -B C:\app\build -G "Visual Studio 17 2022" -A x64
+cmake --build C:\app\build --config %BUILD_TYPE%
