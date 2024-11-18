@@ -12,6 +12,3 @@ RUN apt-get update && apt-get install -y \
 
 # Set up workspace
 WORKDIR /workspace
-
-# Copy application source
-COPY . /workspace
