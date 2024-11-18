@@ -57,12 +57,12 @@ RUN mkdir C:\TEMP && `
 # ===================================================================
 # Update PATH to include CMake
 # ===================================================================
-ENV PATH "C:\Program Files\CMake\bin;%PATH%"
+ENV PATH C:\Program Files\CMake\bin;%PATH%
 
 # ===================================================================
 # Verify Installations
 # ===================================================================
-RUN echo PATH="%PATH%" && cmake --version
+RUN echo PATH=%PATH% && cmake --version
 
 # ===================================================================
 # Set Working Directory
