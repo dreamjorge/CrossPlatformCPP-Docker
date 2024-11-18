@@ -1,4 +1,4 @@
-name: Docker Build and Run on Windows
+name: Docker Build and Run on Windows (Visual Studio 2022)
 
 on:
   push:
