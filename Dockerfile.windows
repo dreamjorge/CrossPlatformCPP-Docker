@@ -27,8 +27,12 @@ ARG CMAKE_VERSION=3.21.3
 ENV BUILD_TOOLS_PATH=C:\BuildTools `
     BUILD_DIR=C:\app `
     ChocolateyUseWindowsCompression=false `
-    ChocolateyInstall=C:\ProgramData\chocolatey `
-    PATH=C:\\Program Files\\CMake\\bin;%ChocolateyInstall%\\bin;%PATH%
+    ChocolateyInstall=C:\ProgramData\chocolatey
+
+# ===================================================================
+# Append to PATH Environment Variable Correctly
+# ===================================================================
+ENV PATH=C:\\Program Files\\CMake\\bin;%ChocolateyInstall%\\bin;%PATH%
 
 # ===================================================================
 # Set Shell to cmd
