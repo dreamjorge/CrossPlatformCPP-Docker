@@ -8,10 +8,8 @@ FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 # ===================================================================
 # Metadata
 # ===================================================================
-LABEL maintainer="jorge-kun@live.com" `
-      description="Docker image for building and running CrossPlatformApp" `
-      version="1.0" `
-      org.opencontainers.image.source="https://github.com/dreamjorge/CrossPlatformCPP-Docker"
+LABEL maintainer="yourname@domain.com"
+LABEL description="Docker image for building and running CrossPlatformApp"
 
 # ===================================================================
 # Build Arguments
@@ -26,14 +24,6 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV BUILD_DIR=C:\app
-ENV ChocolateyUseWindowsCompression=false
-ENV ChocolateyInstall=C:\ProgramData\chocolatey
-
-# ===================================================================
-# Append to PATH Environment Variable Correctly
-# ===================================================================
-# Use separate ENV instruction and enclose the value in quotes to handle spaces
-ENV PATH="C:\\Program Files\\CMake\\bin;%ChocolateyInstall%\\bin;%PATH%"
 
 # ===================================================================
 # Set Shell to cmd
@@ -46,39 +36,34 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir C:\TEMP
 
 # ===================================================================
-# Install Chocolatey Package Manager, CMake, and Clean Up
-# ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-        # Set TLS 1.2 for secure downloads
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-        # Download and install Chocolatey
-        Set-ExecutionPolicy Bypass -Scope Process -Force; `
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
-    refreshenv && `
-    choco feature enable -n allowGlobalConfirmation && `
-    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
-    choco clean --yes
-
-# ===================================================================
 # Download Visual Studio Channel and Installer
 # ===================================================================
-RUN powershell -Command " `
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-        Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && `
-    powershell -Command " `
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-        Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman" && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe"
+
+# ===================================================================
+# Install Chocolatey Package Manager
+# ===================================================================
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# ===================================================================
+# Install CMake via Chocolatey
+# ===================================================================
+RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
 RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
-        --channelUri C:\TEMP\VisualStudio.chman `
-        --installChannelUri C:\TEMP\VisualStudio.chman `
-        --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-        --installPath %BUILD_TOOLS_PATH% && `
-    del /F /Q C:\TEMP\vs_buildtools.exe && `
-    del /F /Q C:\TEMP\VisualStudio.chman
+    --channelUri C:\TEMP\VisualStudio.chman `
+    --installChannelUri C:\TEMP\VisualStudio.chman `
+    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+    --installPath %BUILD_TOOLS_PATH%
 
 # ===================================================================
 # Clean Up Temporary Files
@@ -86,18 +71,9 @@ RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
 RUN rmdir /S /Q C:\TEMP
 
 # ===================================================================
-# Verify Installations
-# ===================================================================
-RUN echo PATH="%PATH%" && `
-    where cmake && `
-    cmake --version && `
-    where cl && `
-    cl.exe
-
-# ===================================================================
 # Set Working Directory
 # ===================================================================
-WORKDIR %BUILD_DIR%
+WORKDIR C:\app
 
 # ===================================================================
 # Copy Scripts Directory
