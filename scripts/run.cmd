@@ -2,8 +2,17 @@
 
 echo Running application in %CONFIG% mode.
 
+REM Determine BUILD_TYPE based on CONFIG
+IF NOT "%CONFIG%"=="" (
+    SET BUILD_TYPE=%CONFIG%
+) ELSE (
+    SET BUILD_TYPE=Release
+)
+
+echo BUILD_TYPE is %BUILD_TYPE%
+
 REM Specify the absolute path to the executable based on the build type
-set EXEC_PATH=C:\app\build\%BUILD_TYPE%\CrossPlatformApp.exe
+SET EXEC_PATH=C:\app\build\%BUILD_TYPE%\CrossPlatformApp.exe
 
 echo Executing: %EXEC_PATH%
 
