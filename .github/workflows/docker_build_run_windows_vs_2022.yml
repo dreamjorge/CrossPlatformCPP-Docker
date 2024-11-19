@@ -21,14 +21,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Docker Image (Windows)
+      - name: Build Base Docker Image
         run: |
-          docker build --no-cache --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-windows -f Dockerfile.windows.vs22 .
+          docker build --no-cache -t base -f Dockerfile.windows.base .
+
+      - name: Build Docker Image for Visual Studio 2022
+        run: |
+          docker build --no-cache --build-arg CMAKE_VERSION=3.21.3 -t crossplatformapp-windows-vs22 -f Dockerfile.windows.vs22 .
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\windows\build.vs22.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs22 cmd.exe /c C:\scripts\windows\build.vs22.cmd
 
       - name: Run Application Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\windows\run.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs22 cmd.exe /c C:\scripts\windows\run.cmd
