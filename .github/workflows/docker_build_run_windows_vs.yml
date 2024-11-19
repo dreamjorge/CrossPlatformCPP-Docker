@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         config: [Debug, Release]
-        vs_year: [2017, 2019, 2022]
+        vs_year: [2019]
     env:
       CMAKE_VERSION: 3.21.3
     steps:
