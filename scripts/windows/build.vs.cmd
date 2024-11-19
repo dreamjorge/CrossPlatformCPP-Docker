@@ -23,6 +23,15 @@ if "%1"=="2017" (
 )
 goto :eof
 
+:: Debugging: Print environment variables and list directories
+echo VS_YEAR=%VS_YEAR%
+echo VS_VERSION=%VS_VERSION%
+echo CONFIG=%CONFIG%
+echo Current directory:
+cd
+echo Listing C:\scripts\windows:
+dir C:\scripts\windows
+
 :: Verify CMake installation
 echo Verifying CMake installation:
 cmake --version >nul 2>&1
