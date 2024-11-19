@@ -49,4 +49,4 @@ RUN mkdir %TEMP_DIR%
 # ===================================================================
 # The installation scripts are copied into the image. These scripts contain
 # the logic for installing Visual Studio Build Tools and other dependencies.
-COPY scripts/windows/install_vs_buildtools.ps1 C:\
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
