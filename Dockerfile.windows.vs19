@@ -43,8 +43,8 @@ RUN mkdir %TEMP_DIR%
 # ===================================================================
 # Copy Installation Scripts
 # ===================================================================
-COPY scripts/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
-COPY scripts/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 
 # ===================================================================
 # Install Chocolatey Package Manager and CMake
