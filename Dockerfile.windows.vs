@@ -28,13 +28,12 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs
 
 # Install CMake
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "$cmakeVersion = (cmake --version 2>$null | Select-String -Pattern '^cmake version (\d+\.\d+\.\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }); `
-    if ($cmakeVersion -ne '${CMAKE_VERSION}') { `
-        Write-Host 'Installing CMake ${CMAKE_VERSION}...'; `
-        choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y; `
-    } else { `
-        Write-Host 'CMake ${CMAKE_VERSION} is already installed.'; `
-    }"
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); `
+    choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y; `
+    refreshenv; `
+    Write-Host 'Verifying CMake installation...'; `
+    cmake --version"
 
 # Set Working Directory
 WORKDIR C:\app
