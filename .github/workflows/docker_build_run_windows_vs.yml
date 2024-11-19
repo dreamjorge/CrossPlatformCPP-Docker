@@ -39,8 +39,8 @@ jobs:
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c dir C:\scripts\windows && cmd.exe /c C:\scripts\windows\build.vs.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c dir C:\app\scripts\windows && cmd.exe /c C:\app\scripts\windows\build.vs.cmd
 
       - name: Run Application Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c C:\scripts\windows\run.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c C:\app\scripts\windows\run.cmd
