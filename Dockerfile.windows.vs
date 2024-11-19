@@ -1,7 +1,7 @@
 # escape=`
 
 # ===================================================================
-# Build Image
+# Use Base Image
 # ===================================================================
 FROM base AS vs_build
 
@@ -22,18 +22,16 @@ ENV CMAKE_VERSION=${CMAKE_VERSION}
 # ===================================================================
 # Copy Installation Scripts
 # ===================================================================
-# Copy scripts into the container for installing CMake and Visual Studio Build Tools
 COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 
 # ===================================================================
 # Debugging: Verify Files Are Copied
 # ===================================================================
-# List the copied files to confirm they exist in the container
 RUN dir C:\scripts
 
 # ===================================================================
-# Install Chocolatey Package Manager and CMake
+# Install Chocolatey and CMake
 # ===================================================================
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco_cmake.ps1"
 
