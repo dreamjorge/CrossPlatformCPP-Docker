@@ -29,6 +29,12 @@ ENV VS_VERSION=${VS_VERSION}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
 
 # ===================================================================
+# Copy Installation Scripts
+# ===================================================================
+# Copy the installation scripts into the image
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+
+# ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
 # This step runs a PowerShell script to install the Visual Studio Build Tools with
