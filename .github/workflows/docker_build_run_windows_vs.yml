@@ -20,36 +20,66 @@ jobs:
       CMAKE_VERSION: 3.21.3
 
     steps:
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      # Step 2: Set VS_VERSION Based on VS_YEAR
       - name: Set VS_VERSION
+        shell: bash
         run: |
-          if ("${{ matrix.vs_year }}" -eq "2019") {
-            echo "VS_VERSION=16" >> $env:GITHUB_ENV
-          } elseif ("${{ matrix.vs_year }}" -eq "2022") {
-            echo "VS_VERSION=17" >> $env:GITHUB_ENV
-          }
+          if [ "${{ matrix.vs_year }}" == "2019" ]; then
+            echo "VS_VERSION=16" >> $GITHUB_ENV
+          elif [ "${{ matrix.vs_year }}" == "2022" ]; then
+            echo "VS_VERSION=17" >> $GITHUB_ENV
+          else
+            echo "Unsupported VS_YEAR: ${{ matrix.vs_year }}"
+            exit 1
+          fi
 
+      # Step 3: Debug VS_VERSION
       - name: Debug VS_VERSION
+        shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
-      - name: Build Docker Image
+      # Step 4: Build Base Docker Image
+      - name: Build Base Docker Image
+        shell: bash
+        run: |
+          docker build --no-cache -t base -f Dockerfile.windows.base .
+
+      # Step 5: Build Visual Studio Docker Image
+      - name: Build Visual Studio Docker Image
+        shell: bash
         run: |
           echo "Building Docker image for VS_YEAR=${{ matrix.vs_year }} and VS_VERSION=${{ env.VS_VERSION }}"
           docker build --no-cache \
             --build-arg VS_YEAR=${{ matrix.vs_year }} \
             --build-arg VS_VERSION=${{ env.VS_VERSION }} \
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
-            -t crossplatformapp-windows-vs${{ matrix.vs_year }} .
-        shell: bash
+            -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            -f Dockerfile.windows.vs .
 
+      # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
+        shell: bash
         run: |
           docker run --rm \
             -e CONFIG=${{ matrix.config }} \
             -e VS_YEAR=${{ matrix.vs_year }} \
-            -v "${{ github.workspace }}:C:\app" \
-            crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c dir C:\app
+            -v "${{ github.workspace }}:C:\\app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            cmd.exe /c dir C:\\app\\scripts\\windows && cmd.exe /c C:\\app\\scripts\\windows\\build.vs.cmd
+
+      # Step 7: Run Application Inside Docker
+      - name: Run Application Inside Docker
+        shell: bash
+        run: |
+          docker run --rm \
+            -e CONFIG=${{ matrix.config }} \
+            -e VS_YEAR=${{ matrix.vs_year }} \
+            -v "${{ github.workspace }}:C:\\app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            cmd.exe /c C:\\app\\scripts\\windows\\run.cmd
