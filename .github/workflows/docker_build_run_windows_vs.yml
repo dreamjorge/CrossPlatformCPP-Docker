@@ -29,10 +29,20 @@ jobs:
           chmod +x ./scripts/windows/set_vs_version.sh
           ./scripts/windows/set_vs_version.sh ${{ matrix.vs_year }}
 
-      - name: Build Base Docker Image
-        run: |
-          docker build --no-cache -t base -f Dockerfile.windows.base .
+      - name: Debug VS_VERSION
+        run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
+      - name: Build Docker Image
+        run: |
+         echo "VS_VERSION=${{ env.VS_VERSION }}" # Debug the value
+         docker build --no-cache \
+         --build-arg VS_YEAR=${{ matrix.vs_year }} \
+         --build-arg VS_VERSION=${{ env.VS_VERSION }} \
+         --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
+         -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
+         -f Dockerfile.windows.vs .
+
+          
       - name: Build Docker Image
         run: |
           docker build --no-cache --build-arg VS_YEAR=${{ matrix.vs_year }} --build-arg VS_VERSION=${{ env.VS_VERSION }} --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} -t crossplatformapp-windows-vs${{ matrix.vs_year }} -f Dockerfile.windows.vs .
