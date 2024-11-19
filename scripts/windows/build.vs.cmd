@@ -35,7 +35,7 @@ if errorlevel 1 (
 echo Starting build process for Visual Studio %VS_YEAR%...
 CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ^
     && cmake -S . -B build -G "Visual Studio %VS_VERSION% %VS_YEAR%" -A x64 ^
-    && cmake --build build --config %BUILD_TYPE%
+    && cmake --build build --config %CONFIG%
 
 :: Check if the build was successful
 if errorlevel 1 (
