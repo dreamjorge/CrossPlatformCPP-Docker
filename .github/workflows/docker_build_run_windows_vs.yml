@@ -32,13 +32,15 @@ jobs:
       - name: Debug VS_VERSION
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
-      - name: Set VS_VERSION Inline
+      - name: Set VS_VERSION
         run: |
-          if [ "${{ matrix.vs_year }}" == "2019" ]; then
-            echo "VS_VERSION=16" >> $GITHUB_ENV
-          elif [ "${{ matrix.vs_year }}" == "2022" ]; then
-            echo "VS_VERSION=17" >> $GITHUB_ENV
-          fi
+          if ("${{ matrix.vs_year }}" -eq "2019") {
+           echo "VS_VERSION=16" >> $env:GITHUB_ENV
+          } elseif ("${{ matrix.vs_year }}" -eq "2022") {
+            echo "VS_VERSION=17" >> $env:GITHUB_ENV
+          }
+
+      
       - name: Debug VS_VERSION
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
