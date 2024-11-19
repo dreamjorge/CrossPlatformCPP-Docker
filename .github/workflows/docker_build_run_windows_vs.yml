@@ -24,14 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set VS_VERSION based on VS_YEAR
-        run: |
-          chmod +x ./scripts/windows/set_vs_version.sh
-          ./scripts/windows/set_vs_version.sh ${{ matrix.vs_year }}
-
-      - name: Debug VS_VERSION
-        run: echo "VS_VERSION=${{ env.VS_VERSION }}"
-
       - name: Set VS_VERSION
         run: |
           if ("${{ matrix.vs_year }}" -eq "2019") {
@@ -58,10 +50,6 @@ jobs:
          -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
          -f Dockerfile.windows.vs .
         shell: bash
-          
-      - name: Build Docker Image
-        run: |
-          docker build --no-cache --build-arg VS_YEAR=${{ matrix.vs_year }} --build-arg VS_VERSION=${{ env.VS_VERSION }} --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} -t crossplatformapp-windows-vs${{ matrix.vs_year }} -f Dockerfile.windows.vs .
 
       - name: Run Build Script Inside Docker
         run: |
