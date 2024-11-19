@@ -19,8 +19,6 @@ LABEL maintainer="jorge-kun@live.com" `
 # ===================================================================
 # Build Arguments
 # ===================================================================
-ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/16/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
@@ -29,6 +27,7 @@ ARG CMAKE_VERSION=3.21.3
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV BUILD_DIR=C:\app
 ENV TEMP_DIR=C:\TEMP
+ENV PATH=%PATH%;C:\ProgramData\chocolatey\bin
 
 # ===================================================================
 # Set Shell to cmd
@@ -41,12 +40,17 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir %TEMP_DIR%
 
 # ===================================================================
-# Install Chocolatey Package Manager and CMake
+# Install Chocolatey Package Manager
 # ===================================================================
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Set-ExecutionPolicy Bypass -Scope Process -Force; `
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) && `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+# ===================================================================
+# Reload Environment and Install CMake
+# ===================================================================
+RUN refreshenv && `
     choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
@@ -70,16 +74,6 @@ RUN curl -sSL https://aka.ms/vs/16/release/vs_buildtools.exe -o C:\TEMP\vs_build
 # Set Working Directory
 # ===================================================================
 WORKDIR C:\app
-
-# ===================================================================
-# Copy Scripts Directory (Optional, if needed for other tools)
-# ===================================================================
-COPY scripts/windows C:\scripts\windows
-
-# ===================================================================
-# Verify BUILD_DIR Environment Variable
-# ===================================================================
-RUN echo BUILD_DIR=%BUILD_DIR%
 
 # ===================================================================
 # Default Command
