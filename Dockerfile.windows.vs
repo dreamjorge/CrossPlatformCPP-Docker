@@ -17,7 +17,7 @@ ENV CMAKE_VERSION=${CMAKE_VERSION}
 ENV CHANNEL_URL=${CHANNEL_URL}
 ENV VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
 
-# Copy scripts
+# Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 
 # Debugging: Verify Environment Variables
@@ -25,6 +25,16 @@ RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
+
+# Install CMake
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    "$cmakeVersion = (cmake --version 2>$null | Select-String -Pattern '^cmake version (\d+\.\d+\.\d+)' | ForEach-Object { $_.Matches.Groups[1].Value }); `
+    if ($cmakeVersion -ne '${CMAKE_VERSION}') { `
+        Write-Host 'Installing CMake ${CMAKE_VERSION}...'; `
+        choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y; `
+    } else { `
+        Write-Host 'CMake ${CMAKE_VERSION} is already installed.'; `
+    }"
 
 # Set Working Directory
 WORKDIR C:\app
