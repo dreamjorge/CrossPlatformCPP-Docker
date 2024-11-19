@@ -12,18 +12,17 @@ LABEL maintainer="jorge-kun@live.com" `
       issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
       license="MIT"
 
-# Environment Variables
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV TEMP_DIR=C:\TEMP
-
 # Use cmd.exe as the default shell
 SHELL ["cmd", "/S", "/C"]
 
+# Install Chocolatey
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# Set Environment Variables
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV TEMP_DIR=C:\TEMP
+
 # Create a temporary directory
 RUN mkdir %TEMP_DIR%
-
-# Copy scripts
-COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
-
-# Install Chocolatey and CMake
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco_cmake.ps1"
