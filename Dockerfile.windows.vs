@@ -1,12 +1,12 @@
 # escape=`
 
 # ===================================================================
-# Base Image
+# Build Image
 # ===================================================================
-# This Dockerfile uses a multi-stage build approach. The first stage is the base image,
-# which contains common setup steps that are shared across multiple Dockerfiles.
-# By using a base image, we can reduce redundancy, improve maintainability, and ensure
-# consistency across different Dockerfiles for various Visual Studio versions.
+# This Dockerfile uses the base image defined in the previous stage and
+# adds the necessary tools, such as CMake, for building applications. By
+# separating the build-specific tools into this Dockerfile, we can reduce
+# redundancy and maintain a lightweight base image.
 FROM base AS vs_build
 
 # ===================================================================
@@ -16,18 +16,35 @@ FROM base AS vs_build
 # Build Tools and the CMake version to be installed. They can be overridden at build time.
 ARG VS_YEAR=2022
 ARG VS_VERSION=17
-ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-# Set environment variables based on build arguments
+# Environment variables are used to define paths and directories for the build process.
 ENV VS_YEAR=${VS_YEAR}
 ENV VS_VERSION=${VS_VERSION}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
 
+# ===================================================================
+# Set Shell to cmd
+# ===================================================================
+# The default shell for running commands is set to cmd.exe. This ensures that
+# all subsequent commands are executed in the context of the Windows command prompt.
+SHELL ["cmd", "/S", "/C"]
+
+# ===================================================================
+# Copy Installation Scripts
+# ===================================================================
+# The installation scripts for installing Chocolatey and CMake are copied into the image.
+COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
+
+# ===================================================================
+# Install Chocolatey Package Manager and CMake
+# ===================================================================
+# This step runs a PowerShell script to install Chocolatey and the specified version of CMake.
+# Chocolatey is a package manager for Windows, and CMake is a build system generator.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_choco_cmake.ps1
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload

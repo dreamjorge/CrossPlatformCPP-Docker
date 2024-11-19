@@ -42,13 +42,13 @@ jobs:
 
       - name: Build Docker Image
         run: |
-         docker build --no-cache `
-           --build-arg VS_YEAR=${{ matrix.vs_year }} `
-           --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-           --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-           -t crossplatformapp-windows-vs${{ matrix.vs_year }} `
-           -f Dockerfile.windows.vs .
-         shell: pwsh
+          docker build --no-cache `
+            --build-arg VS_YEAR=${{ matrix.vs_year }} `
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
+            -t crossplatformapp-windows-vs${{ matrix.vs_year }} `
+            -f Dockerfile.windows.vs .
+          shell: pwsh
 
       - name: Debug Environment Inside Docker
         run: |

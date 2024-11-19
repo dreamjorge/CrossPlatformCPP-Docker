@@ -28,8 +28,6 @@ LABEL maintainer="jorge-kun@live.com" `
 # Environment variables are used to define paths and directories that will be
 # used throughout the Dockerfile. These variables make the Dockerfile more
 # readable and easier to maintain.
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV BUILD_DIR=C:\app
 ENV TEMP_DIR=C:\TEMP
 
 # ===================================================================
@@ -50,13 +48,5 @@ RUN mkdir %TEMP_DIR%
 # Copy Installation Scripts
 # ===================================================================
 # The installation scripts are copied into the image. These scripts contain
-# the logic for installing Chocolatey, CMake, and Visual Studio Build Tools.
-COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
-COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-
-# ===================================================================
-# Install Chocolatey Package Manager and CMake
-# ===================================================================
-# This step runs a PowerShell script to install Chocolatey and CMake. Chocolatey
-# is a package manager for Windows, and CMake is a build system generator.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_choco_cmake.ps1
+# the logic for installing Visual Studio Build Tools and other dependencies.
+COPY scripts/windows/install_vs_buildtools.ps1 C:\
