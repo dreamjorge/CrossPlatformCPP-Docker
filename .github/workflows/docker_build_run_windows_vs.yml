@@ -32,6 +32,10 @@ jobs:
       - name: Debug VS_VERSION
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
+      - name: Build Base Docker Image
+        run: |
+          docker build --no-cache -t base -f Dockerfile.windows.base .
+
       - name: Build Docker Image
         run: |
          echo "VS_VERSION=${{ env.VS_VERSION }}" # Debug the value
