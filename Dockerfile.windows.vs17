@@ -41,39 +41,20 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir %TEMP_DIR%
 
 # ===================================================================
-# Download Visual Studio Channel and Installer
+# Copy Installation Scripts
 # ===================================================================
-RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile %TEMP_DIR%\VisualStudio.chman" && `
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe"
+COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 
 # ===================================================================
-# Install Chocolatey Package Manager
+# Install Chocolatey Package Manager and CMake
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-
-# ===================================================================
-# Install CMake via Chocolatey
-# ===================================================================
-RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_choco_cmake.ps1
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
-RUN %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri %TEMP_DIR%\VisualStudio.chman `
-    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath %BUILD_TOOLS_PATH%
-
-# ===================================================================
-# Clean Up Temporary Files
-# ===================================================================
-RUN rmdir /S /Q %TEMP_DIR%
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_vs_buildtools.ps1
 
 # ===================================================================
 # Set Working Directory
