@@ -58,6 +58,8 @@ jobs:
           docker build --no-cache \
             --build-arg VS_YEAR=${{ matrix.vs_year }} \
             --build-arg VS_VERSION=${{ env.VS_VERSION }} \
+            --build-arg CHANNEL_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/channel \
+            --build-arg VS_BUILD_TOOLS_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/vs_buildtools.exe \
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
             -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
             -f Dockerfile.windows.vs .
