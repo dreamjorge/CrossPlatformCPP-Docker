@@ -47,7 +47,8 @@ jobs:
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
             -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
             -f Dockerfile.windows.vs .
-
+        shell: bash
+        
       - name: List Scripts Directory
         run: |
           docker run --rm -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c dir C:\app\scripts\windows
