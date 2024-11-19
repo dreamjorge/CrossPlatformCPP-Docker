@@ -3,18 +3,7 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
-
-# ===================================================================
-# Metadata
-# ===================================================================
-LABEL maintainer="jorge-kun@live.com" `
-      description="Docker image for building and running CrossPlatformApp using Visual Studio 2019" `
-      version="1.0.0" `
-      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" `
-      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" `
-      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
-      license="MIT"
+FROM base AS vs19
 
 # ===================================================================
 # Build Arguments
@@ -22,34 +11,6 @@ LABEL maintainer="jorge-kun@live.com" `
 ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/16/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
-
-# ===================================================================
-# Environment Variables
-# ===================================================================
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV BUILD_DIR=C:\app
-ENV TEMP_DIR=C:\TEMP
-
-# ===================================================================
-# Set Shell to cmd
-# ===================================================================
-SHELL ["cmd", "/S", "/C"]
-
-# ===================================================================
-# Create Temporary Directory for Downloads
-# ===================================================================
-RUN mkdir %TEMP_DIR%
-
-# ===================================================================
-# Copy Installation Scripts
-# ===================================================================
-COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
-COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-
-# ===================================================================
-# Install Chocolatey Package Manager and CMake
-# ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_choco_cmake.ps1
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
@@ -60,16 +21,6 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_vs_bu
 # Set Working Directory
 # ===================================================================
 WORKDIR C:\app
-
-# ===================================================================
-# Copy Scripts Directory
-# ===================================================================
-COPY scripts/windows C:\scripts\windows
-
-# ===================================================================
-# Verify BUILD_DIR Environment Variable
-# ===================================================================
-RUN echo BUILD_DIR=%BUILD_DIR%
 
 # ===================================================================
 # Default Command
