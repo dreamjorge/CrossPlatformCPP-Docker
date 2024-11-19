@@ -41,30 +41,20 @@ SHELL ["cmd", "/S", "/C"]
 RUN mkdir %TEMP_DIR%
 
 # ===================================================================
+# Copy Installation Scripts
+# ===================================================================
+COPY scripts/windows/install_choco_cmake.ps1 C:\scripts\install_choco_cmake.ps1
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+
+# ===================================================================
 # Install Chocolatey Package Manager and CMake
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) && `
-    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_choco_cmake.ps1
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
-RUN curl -sSL https://aka.ms/vs/16/release/vs_buildtools.exe -o C:\TEMP\vs_buildtools.exe && `
-    C:\TEMP\vs_buildtools.exe `
-        --quiet `
-        --wait `
-        --norestart `
-        --nocache `
-        --installPath C:\BuildTools `
-        --add Microsoft.VisualStudio.Workload.VCTools `
-        --add Microsoft.VisualStudio.Workload.MSBuildTools `
-        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-        --add Microsoft.VisualStudio.Component.VC.ATL && `
-    del C:\TEMP\vs_buildtools.exe
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_vs_buildtools.ps1
 
 # ===================================================================
 # Set Working Directory
@@ -72,7 +62,7 @@ RUN curl -sSL https://aka.ms/vs/16/release/vs_buildtools.exe -o C:\TEMP\vs_build
 WORKDIR C:\app
 
 # ===================================================================
-# Copy Scripts Directory (Optional, if needed for other tools)
+# Copy Scripts Directory
 # ===================================================================
 COPY scripts/windows C:\scripts\windows
 
