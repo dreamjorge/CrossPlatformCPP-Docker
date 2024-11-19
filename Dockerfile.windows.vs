@@ -14,10 +14,19 @@ FROM base AS vs_build
 # ===================================================================
 # These arguments are used to specify the URLs for downloading the Visual Studio
 # Build Tools and the CMake version to be installed. They can be overridden at build time.
-ARG VS_VERSION=16
+ARG VS_YEAR=2022
+ARG VS_VERSION=17
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
+
+# ===================================================================
+# Environment Variables
+# ===================================================================
+# Set environment variables based on build arguments
+ENV VS_YEAR=${VS_YEAR}
+ENV VS_VERSION=${VS_VERSION}
+ENV CMAKE_VERSION=${CMAKE_VERSION}
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
