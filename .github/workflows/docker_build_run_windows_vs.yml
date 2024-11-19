@@ -1,0 +1,41 @@
+name: Docker Build and Run on Windows
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-run-windows-docker:
+    name: Build and Run Docker (Windows)
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    env:
+      VS_VERSION: 16
+      CMAKE_VERSION: 3.21.3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build Base Docker Image
+        run: |
+          docker build --no-cache -t base -f Dockerfile.windows.base .
+
+      - name: Build Docker Image
+        run: |
+          docker build --no-cache --build-arg VS_VERSION=${{ env.VS_VERSION }} --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} -t crossplatformapp-windows-vs${{ env.VS_VERSION }} -f Dockerfile.windows.vs .
+
+      - name: Run Build Script Inside Docker
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ env.VS_VERSION }} cmd.exe /c C:\scripts\windows\build.vs${{ env.VS_VERSION }}.cmd
+
+      - name: Run Application Inside Docker
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ env.VS_VERSION }} cmd.exe /c C:\scripts\windows\run.cmd
