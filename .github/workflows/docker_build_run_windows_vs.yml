@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         config: [Debug, Release]
-        vs_year: [2019]
+        vs_year: [2017, 2019, 2022]
     env:
       CMAKE_VERSION: 3.21.3
     steps:
@@ -26,13 +26,8 @@ jobs:
 
       - name: Set VS_VERSION based on VS_YEAR
         run: |
-          if [ "${{ matrix.vs_year }}" == "2017" ]; then
-            echo "VS_VERSION=15" >> $GITHUB_ENV
-          elif [ "${{ matrix.vs_year }}" == "2019" ]; then
-            echo "VS_VERSION=16" >> $GITHUB_ENV
-          elif [ "${{ matrix.vs_year }}" == "2022" ]; then
-            echo "VS_VERSION=17" >> $GITHUB_ENV
-          fi
+          chmod +x ./scripts/windows/set_vs_version.sh
+          ./scripts/windows/set_vs_version.sh ${{ matrix.vs_year }}
 
       - name: Build Base Docker Image
         run: |
