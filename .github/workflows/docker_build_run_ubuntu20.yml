@@ -1,0 +1,38 @@
+name: Docker Build and Run on Linux
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-run-linux-docker:
+    name: Build and Run Docker (Linux)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Step 2: Build Docker Image
+      - name: Build Docker Image (Linux)
+        run: |
+          docker build --no-cache -t crossplatformapp-linux -f Dockerfile.ubuntu20 .
+
+      # Step 3: Build the Project Inside Docker
+      - name: Build Project Inside Docker
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./scripts/linux/build.sh"
+
+      # Step 4: Run the Application Inside Docker
+      - name: Run Application Inside Docker
+        run: |
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:/workspace" crossplatformapp-linux bash -c "./scripts/linux/run.sh"
