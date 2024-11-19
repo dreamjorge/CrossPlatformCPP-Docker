@@ -1,26 +1,12 @@
-# Create TEMP directory for downloads; use -Force to avoid errors if it exists
-New-Item -ItemType Directory -Path C:\TEMP -Force
-
-# Download Visual Studio channel manifest and Build Tools installer
-Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile C:\TEMP\VisualStudio.chman
-Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile C:\TEMP\vs_buildtools.exe
-
-# Install Visual Studio Build Tools with the C++ workload
-& C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools `
-    --includeRecommended `
-    --installPath "C:\BuildTools"
-
-# Download CMake ZIP installer
-Invoke-WebRequest -Uri $env:CMAKE_INSTALLER_URL -OutFile C:\TEMP\cmake.zip
-
-# Extract CMake ZIP to "C:\Program Files"
-Expand-Archive -Path C:\TEMP\cmake.zip -DestinationPath "C:\Program Files" -Force
-
-# Add CMake to PATH
-$env:PATH = "C:\Program Files\cmake-${env:CMAKE_VERSION}-windows-x86_64\bin;" + $env:PATH
-
-# Clean up TEMP directory
-Remove-Item -Recurse -Force C:\TEMP
+# install_vs_buildtools.ps1
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile "$env:TEMP_DIR\VisualStudio.chman"
+Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile "$env:TEMP_DIR\vs_buildtools.exe"
+Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList `
+    '--quiet', '--wait', '--norestart', '--nocache', `
+    '--channelUri', "$env:TEMP_DIR\VisualStudio.chman", `
+    '--installChannelUri', "$env:TEMP_DIR\VisualStudio.chman", `
+    '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includeRecommended', `
+    '--installPath', "$env:BUILD_TOOLS_PATH" `
+    -NoNewWindow -Wait
+Remove-Item -Path "$env:TEMP_DIR" -Recurse -Force
