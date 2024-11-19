@@ -32,6 +32,16 @@ jobs:
       - name: Debug VS_VERSION
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
+      - name: Set VS_VERSION Inline
+        run: |
+          if [ "${{ matrix.vs_year }}" == "2019" ]; then
+            echo "VS_VERSION=16" >> $GITHUB_ENV
+          elif [ "${{ matrix.vs_year }}" == "2022" ]; then
+            echo "VS_VERSION=17" >> $GITHUB_ENV
+          fi
+      - name: Debug VS_VERSION
+        run: echo "VS_VERSION=${{ env.VS_VERSION }}"
+
       - name: Build Base Docker Image
         run: |
           docker build --no-cache -t base -f Dockerfile.windows.base .
