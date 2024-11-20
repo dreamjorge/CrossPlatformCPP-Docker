@@ -1,12 +1,12 @@
 @echo off
 setlocal
 
-:: Define a dictionary-like structure for Visual Studio versions and years
+:: Define Visual Studio versions and years
 set "VS_VERSION_2017=15"
 set "VS_VERSION_2019=16"
 set "VS_VERSION_2022=17"
 
-:: Set default Visual Studio year and version if not already set
+:: Set default Visual Studio year and version if not set
 if "%VS_YEAR%"=="" (
     echo INFO: VS_YEAR not set. Defaulting to 2019.
     set "VS_YEAR=2019"
@@ -33,13 +33,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Start the Visual Studio environment and build process
-set "VS_DEV_CMD=C:\Program Files (x86)\Microsoft Visual Studio\%VS_YEAR%\BuildTools\Common7\Tools\VsDevCmd.bat"
+:: Dynamically locate VsDevCmd.bat
+for /f "delims=" %%I in ('powershell -Command "(Get-ChildItem -Path 'C:\Program Files (x86)\Microsoft Visual Studio\' -Recurse -Filter VsDevCmd.bat | Sort-Object -Property FullName -Descending | Select-Object -First 1).FullName"') do set "VS_DEV_CMD=%%I"
+
 if not exist "%VS_DEV_CMD%" (
-    echo ERROR: VsDevCmd.bat not found at %VS_DEV_CMD%.
+    echo ERROR: VsDevCmd.bat not found.
     exit /b 1
 )
 
+:: Start the Visual Studio environment and build process
 echo Starting build process for Visual Studio %VS_YEAR%...
 CALL "%VS_DEV_CMD%" ^
     && cmake -S . -B build -G "Visual Studio %VS_VERSION% %VS_YEAR%" -A x64 ^
