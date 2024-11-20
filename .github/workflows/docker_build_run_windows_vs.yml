@@ -44,48 +44,43 @@ jobs:
           # Set the VS_VERSION environment variable using the step output
           echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $env:GITHUB_ENV
 
-      # Step 4: Debug VS_VERSION
-      - name: Debug VS_VERSION
-        shell: pwsh
+
+      - name: Build Base Docker Image
+        shell: bash
+        run: docker build --no-cache -t base -f Dockerfile.windows.base .
+
+      - name: Build Visual Studio Docker Image
+        shell: bash
         run: |
-          Write-Host "DEBUG: VS_VERSION is set to '$env:VS_VERSION'"
+          docker build --no-cache \
+            --build-arg VS_YEAR=${{ matrix.vs_year }} \
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} \
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
+            -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            -f Dockerfile.windows.vs .
 
-      # - name: Build Base Docker Image
-      #   shell: bash
-      #   run: docker build --no-cache -t base -f Dockerfile.windows.base .
+      - name: Debug Environment Inside Docker
+        run: |
+          & docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -e VS_VERSION=${{ env.VS_VERSION }} `
+            -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c set
 
-      # - name: Build Visual Studio Docker Image
-      #   shell: bash
-      #   run: |
-      #     docker build --no-cache \
-      #       --build-arg VS_YEAR=${{ matrix.vs_year }} \
-      #       --build-arg VS_VERSION=${{ env.VS_VERSION }} \
-      #       --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
-      #       -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
-      #       -f Dockerfile.windows.vs .
-
-      # - name: Debug Environment Inside Docker
-      #   run: |
-      #     & docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -e VS_VERSION=${{ env.VS_VERSION }} `
-      #       -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c set
-
-      # - name: Run Build Script Inside Docker
-      #   shell: bash
-      #   run: |
-      #     docker run --rm \
-      #       -e CONFIG=${{ matrix.config }} \
-      #       -e VS_YEAR=${{ matrix.vs_year }} \
-      #       -v "${{ github.workspace }}:C:/app" \
-      #       crossplatformapp-windows-vs${{ matrix.vs_year }} \
-      #       powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
+      - name: Run Build Script Inside Docker
+        shell: bash
+        run: |
+          docker run --rm \
+            -e CONFIG=${{ matrix.config }} \
+            -e VS_YEAR=${{ matrix.vs_year }} \
+            -v "${{ github.workspace }}:C:/app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
           
-      # - name: Run Application Inside Docker
-      #   shell: bash
-      #   run: |
-      #     docker run --rm \
-      #       -e CONFIG=${{ matrix.config }} \
-      #       -e VS_YEAR=${{ matrix.vs_year }} \
-      #       -v "${{ github.workspace }}:C:/app" \
-      #       crossplatformapp-windows-vs${{ matrix.vs_year }} \
-      #       powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
+      - name: Run Application Inside Docker
+        shell: bash
+        run: |
+          docker run --rm \
+            -e CONFIG=${{ matrix.config }} \
+            -e VS_YEAR=${{ matrix.vs_year }} \
+            -v "${{ github.workspace }}:C:/app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
       
