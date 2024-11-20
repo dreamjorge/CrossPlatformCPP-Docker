@@ -25,17 +25,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set VS_VERSION
+      - name: Get VS_VERSION from VS_YEAR
+        id: get-vs-version
         shell: pwsh
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/set_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
+          $vs_version = ./scripts/windows/get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
+          Write-Host "VS_VERSION=$vs_version"
+          echo "::set-output name=vs_version::$vs_version"
   
-      - name: Load Environment Variables
-        shell: bash
-        run: |
-          # Ensure the variables written to $GITHUB_ENV are loaded
-          source $GITHUB_ENV
-  
+      - name: Set VS_VERSION in Environment
+        run: echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $GITHUB_ENV
+
       - name: Debug VS_VERSION
         shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
