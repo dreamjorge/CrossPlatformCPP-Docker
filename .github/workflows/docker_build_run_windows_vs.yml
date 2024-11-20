@@ -29,7 +29,11 @@ jobs:
         shell: pwsh
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/set_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
-
+  
+      - name: Check GITHUB_ENV Contents
+        shell: bash
+        run: cat $GITHUB_ENV
+  
       - name: Debug VS_VERSION
         shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
