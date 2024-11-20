@@ -25,20 +25,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Step 2: Get VS_VERSION from VS_YEAR
       - name: Get VS_VERSION from VS_YEAR
         id: get-vs-version
         shell: pwsh
         run: |
+          # Run the PowerShell script and capture its output
           $vs_version = ./scripts/windows/get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
-          Write-Host "VS_VERSION=$vs_version"
-          echo "::set-output name=vs_version::$vs_version"
-  
-      - name: Set VS_VERSION in Environment
-        run: echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $GITHUB_ENV
+          Write-Host "INFO: Retrieved VS_VERSION=$vs_version"
+          
+          # Set the output variable for this step
+          echo "vs_version=$vs_version" >> $env:GITHUB_OUTPUT
 
+      # Step 3: Set VS_VERSION Environment Variable
+      - name: Set VS_VERSION in Environment
+        shell: pwsh
+        run: |
+          # Set the VS_VERSION environment variable using the step output
+          echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $env:GITHUB_ENV
+
+      # Step 4: Debug VS_VERSION
       - name: Debug VS_VERSION
-        shell: bash
-        run: echo "VS_VERSION=${{ env.VS_VERSION }}"
+        shell: pwsh
+        run: |
+          Write-Host "DEBUG: VS_VERSION is set to '$env:VS_VERSION'"
 
       # - name: Build Base Docker Image
       #   shell: bash
