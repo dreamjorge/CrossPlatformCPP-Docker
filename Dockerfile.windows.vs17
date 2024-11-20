@@ -3,40 +3,74 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-# This Dockerfile uses a multi-stage build approach. The first stage is the base image,
-# which contains common setup steps that are shared across multiple Dockerfiles.
-# By using a base image, we can reduce redundancy, improve maintainability, and ensure
-# consistency across different Dockerfiles for various Visual Studio versions.
+# Use the base image with shared setup steps
 FROM base AS vs17
 
 # ===================================================================
 # Build Arguments
 # ===================================================================
-# These arguments are used to specify the URLs for downloading the Visual Studio
-# Build Tools and the CMake version to be installed. They can be overridden at build time.
-ARG CHANNEL_URL=https://aka.ms/vs/15/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/15/release/vs_buildtools.exe
+# These arguments specify Visual Studio and CMake versions,
+# as well as the URLs for downloading necessary tools.
+ARG VS_YEAR=2017
+ARG VS_VERSION=15
+ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
-# Install Visual Studio Build Tools with C++ Workload
+# Environment Variables
 # ===================================================================
-# This step runs a PowerShell script to install the Visual Studio Build Tools with
-# the C++ workload. The script uses the build arguments to download and install
-# the necessary components.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\scripts\install_vs_buildtools.ps1
+# Set environment variables for consistent setup.
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
+    CMAKE_VERSION=${CMAKE_VERSION} `
+    CHANNEL_URL=${CHANNEL_URL} `
+    VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
+
+# ===================================================================
+# Copy Installation Scripts
+# ===================================================================
+# Copy PowerShell scripts for installing Visual Studio Build Tools and CMake,
+# and additional scripts for building and running applications.
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
+COPY scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
+COPY scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
+
+# ===================================================================
+# Debugging: Verify Environment Variables
+# ===================================================================
+# Output environment variables for debugging and validation.
+RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_URL"
+
+# ===================================================================
+# Install Visual Studio Build Tools
+# ===================================================================
+# Install Visual Studio 2017 Build Tools with the C++ workload.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
+
+# ===================================================================
+# Install CMake
+# ===================================================================
+# Install CMake using the provided PowerShell script.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1"
+
+# ===================================================================
+# Verify CMake Installation
+# ===================================================================
+# Run a quick check to ensure CMake is installed and available in the PATH.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Verifying CMake installation..."; `
+    cmake --version
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-# The working directory is set to C:\app, where the application code will be copied
-# and built. This ensures that all subsequent commands are run in the context of
-# this directory.
+# Set the working directory to where application code will be copied and executed.
 WORKDIR C:\app
 
 # ===================================================================
 # Default Command
 # ===================================================================
-# The default command to run when the container starts. In this case, it starts
-# a command prompt (cmd.exe) to allow for interactive use or further commands.
+# Start a command prompt (cmd.exe) when the container runs.
 CMD ["cmd.exe"]
