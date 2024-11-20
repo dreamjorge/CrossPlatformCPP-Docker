@@ -2,27 +2,33 @@
 
 echo Running application in %CONFIG% mode.
 
-REM Determine BUILD_TYPE based on CONFIG
-IF NOT "%CONFIG%"=="" (
-    SET BUILD_TYPE=%CONFIG%
-) ELSE (
-    SET BUILD_TYPE=Release
+:: Determine BUILD_TYPE based on CONFIG
+if not "%CONFIG%"=="" (
+    set BUILD_TYPE=%CONFIG%
+) else (
+    set BUILD_TYPE=Release
 )
 
 echo BUILD_TYPE is %BUILD_TYPE%
 
-REM Specify the absolute path to the executable based on the build type
-SET EXEC_PATH=C:\app\build\%BUILD_TYPE%\CrossPlatformApp.exe
+:: Specify the absolute path to the executable based on the build type
+set EXEC_PATH=C:\app\build\%BUILD_TYPE%\CrossPlatformApp.exe
+
+:: Check if the executable exists
+if not exist "%EXEC_PATH%" (
+    echo ERROR: Executable not found: %EXEC_PATH%.
+    exit /b 1
+)
 
 echo Executing: %EXEC_PATH%
 
-REM Execute the application
+:: Execute the application
 "%EXEC_PATH%"
 
-REM Capture and handle the exit code
-IF %ERRORLEVEL% NEQ 0 (
+:: Capture and handle the exit code
+if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Application execution failed with exit code %ERRORLEVEL%.
     exit /b %ERRORLEVEL%
-) ELSE (
+) else (
     echo Application executed successfully.
 )
