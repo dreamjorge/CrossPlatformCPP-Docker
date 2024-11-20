@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         config: [Debug, Release]
-        vs_year: [2019]
+        vs_year: [2019, 2022]
     env:
       CMAKE_VERSION: 3.21.3
 
@@ -26,29 +26,34 @@ jobs:
           fetch-depth: 0
 
       - name: Set VS_VERSION
+        shell: bash
         run: |
-          if ("${{ matrix.vs_year }}" -eq "2019") {
-           echo "VS_VERSION=16" >> $env:GITHUB_ENV
-          } elseif ("${{ matrix.vs_year }}" -eq "2022") {
-            echo "VS_VERSION=17" >> $env:GITHUB_ENV
-          }
+          if [ "${{ matrix.vs_year }}" == "2019" ]; then
+            echo "VS_VERSION=16" >> $GITHUB_ENV
+          elif [ "${{ matrix.vs_year }}" == "2022" ]; then
+            echo "VS_VERSION=17" >> $GITHUB_ENV
+          else
+            echo "Unsupported VS_YEAR: ${{ matrix.vs_year }}"
+            exit 1
+          fi
 
       - name: Debug VS_VERSION
+        shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
       - name: Build Base Docker Image
-        run: |
-          docker build --no-cache -t base -f Dockerfile.windows.base .
+        shell: bash
+        run: docker build --no-cache -t base -f Dockerfile.windows.base .
 
-      - name: Build Docker Image
+      - name: Build Visual Studio Docker Image
+        shell: bash
         run: |
-          docker build --no-cache `
-            --build-arg VS_YEAR=${{ matrix.vs_year }} `
-            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t crossplatformapp-windows-vs${{ matrix.vs_year }} `
+          docker build --no-cache \
+            --build-arg VS_YEAR=${{ matrix.vs_year }} \
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} \
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
+            -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
             -f Dockerfile.windows.vs .
-          shell: pwsh
 
       - name: Debug Environment Inside Docker
         run: |
@@ -57,6 +62,7 @@ jobs:
 
       # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
+        shell: bash
         shell: bash
         run: |
           docker run --rm \
@@ -68,6 +74,7 @@ jobs:
 
       # Step 7: Run Application Inside Docker
       - name: Run Application Inside Docker
+        shell: bash
         shell: bash
         run: |
           docker run --rm \

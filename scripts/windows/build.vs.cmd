@@ -57,4 +57,14 @@ if errorlevel 1 (
 goto :eof
 
 :get_vs_version
-if "%1"=="2017" 
+if "%1"=="2017" (
+    set "VS_VERSION=%VS_VERSION_2017%"
+) else if "%1"=="2019" (
+    set "VS_VERSION=%VS_VERSION_2019%"
+) else if "%1"=="2022" (
+    set "VS_VERSION=%VS_VERSION_2022%"
+) else (
+    echo ERROR: Unsupported Visual Studio year: %1
+    exit /b 1
+)
+goto :eof

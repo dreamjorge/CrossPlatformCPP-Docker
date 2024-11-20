@@ -1,19 +1,9 @@
 # escape=`
 
-# ===================================================================
 # Base Image
-# ===================================================================
-# This Dockerfile defines the base image that contains common setup steps
-# shared across multiple Dockerfiles. By using a base image, we can reduce
-# redundancy, improve maintainability, and ensure consistency across different
-# Dockerfiles for various Visual Studio versions.
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS base
 
-# ===================================================================
 # Metadata
-# ===================================================================
-# Metadata labels provide information about the image, such as the maintainer,
-# description, version, repository, documentation, issues, and license.
 LABEL maintainer="jorge-kun@live.com" `
       description="Base Docker image for building and running CrossPlatformApp" `
       version="1.0.0" `
@@ -22,31 +12,18 @@ LABEL maintainer="jorge-kun@live.com" `
       issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
       license="MIT"
 
-# ===================================================================
-# Environment Variables
-# ===================================================================
-# Environment variables are used to define paths and directories that will be
-# used throughout the Dockerfile. These variables make the Dockerfile more
-# readable and easier to maintain.
-ENV TEMP_DIR=C:\TEMP
-
-# ===================================================================
-# Set Shell to cmd
-# ===================================================================
-# The default shell for running commands is set to cmd.exe. This ensures that
-# all subsequent commands are executed in the context of the Windows command prompt.
+# Use cmd.exe as the default shell
 SHELL ["cmd", "/S", "/C"]
 
-# ===================================================================
-# Create Temporary Directory for Downloads
-# ===================================================================
-# A temporary directory is created to store downloaded files. This directory
-# will be used to download and install the necessary tools and components.
+# Set Environment Variables
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV TEMP_DIR=C:\TEMP
+
+# Create a temporary directory
 RUN mkdir %TEMP_DIR%
 
-# ===================================================================
-# Copy Installation Scripts
-# ===================================================================
-# The installation scripts are copied into the image. These scripts contain
-# the logic for installing Visual Studio Build Tools and other dependencies.
-COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+# Copy the Chocolatey installation script
+COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
+
+# Install Chocolatey using the script
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
