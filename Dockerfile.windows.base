@@ -15,14 +15,15 @@ LABEL maintainer="jorge-kun@live.com" `
 # Use cmd.exe as the default shell
 SHELL ["cmd", "/S", "/C"]
 
-# Install Chocolatey
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-
 # Set Environment Variables
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV TEMP_DIR=C:\TEMP
 
 # Create a temporary directory
 RUN mkdir %TEMP_DIR%
+
+# Copy the Chocolatey installation script
+COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
+
+# Install Chocolatey using the script
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
