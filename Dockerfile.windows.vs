@@ -19,6 +19,7 @@ ENV VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
 
 # Debugging: Verify Environment Variables
 RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_URL"
@@ -26,12 +27,13 @@ RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
 
-# Install CMake Silently
+# Install CMake using the PowerShell script
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1"
+
+# Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); `
-    Write-Host 'Installing CMake ${CMAKE_VERSION} silently...'; `
-    choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress"
+    Write-Host "Verifying CMake installation..."; `
+    cmake --version
 
 # Set Working Directory
 WORKDIR C:\app
