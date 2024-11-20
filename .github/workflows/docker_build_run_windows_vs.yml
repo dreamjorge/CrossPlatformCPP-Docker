@@ -26,10 +26,12 @@ jobs:
           fetch-depth: 0
 
       - name: Set VS_VERSION
+        env:
+          VS_YEAR: ${{ matrix.vs_year }}
         shell: pwsh
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/set_vs_version.ps1
-          
+
       - name: Debug VS_VERSION
         shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
