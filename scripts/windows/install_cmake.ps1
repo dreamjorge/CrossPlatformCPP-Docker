@@ -13,8 +13,13 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
 # Define the required CMake version
 $RequiredCMakeVersion = $env:CMAKE_VERSION
 
-# Check if the desired version of CMake is already installed
-$InstalledCMakeVersion = (cmake --version 2>$null | Select-String -Pattern '^cmake version (\d+\.\d+\.\d+)' | ForEach-Object { $_.Matches.Groups[1].Value })
+# Install CMake if not already installed
+$InstalledCMakeVersion = ""
+try {
+    $InstalledCMakeVersion = (cmake --version 2>$null | Select-String -Pattern '^cmake version (\d+\.\d+\.\d+)' | ForEach-Object { $_.Matches.Groups[1].Value })
+} catch {
+    Write-Host "CMake is not currently available."
+}
 
 if ($InstalledCMakeVersion -eq $RequiredCMakeVersion) {
     Write-Host "CMake $RequiredCMakeVersion is already installed."
@@ -22,11 +27,11 @@ if ($InstalledCMakeVersion -eq $RequiredCMakeVersion) {
     Write-Host "Installing CMake $RequiredCMakeVersion via Chocolatey..."
     choco install cmake --version=$RequiredCMakeVersion --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
 
-    # Add CMake to PATH manually if not automatically added
+    # Add CMake to the current PATH (for the running session)
     $CMakePath = "C:\Program Files\CMake\bin"
     if (-not ($env:PATH -split ";" | Where-Object { $_ -eq $CMakePath })) {
-        Write-Host "Adding CMake to system PATH..."
-        [System.Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$CMakePath", [System.EnvironmentVariableTarget]::Machine)
+        Write-Host "Adding CMake to PATH for the current session..."
+        $env:PATH = "$env:PATH;$CMakePath"
     }
 }
 
