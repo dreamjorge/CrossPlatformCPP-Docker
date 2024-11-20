@@ -20,4 +20,7 @@ switch ($VS_YEAR) {
         Write-Output "17"
     }
     default {
-        Write-Error "ERROR:
+        Write-Error "ERROR: Unsupported VS_YEAR: $VS_YEAR"
+        exit 1
+    }
+}
