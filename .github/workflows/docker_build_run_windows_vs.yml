@@ -28,8 +28,8 @@ jobs:
       - name: Set VS_VERSION
         shell: pwsh
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/windows/set_vs_version.ps1
-
+          powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/set_vs_version.ps1
+          
       - name: Debug VS_VERSION
         shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
