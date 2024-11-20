@@ -20,13 +20,11 @@ jobs:
       CMAKE_VERSION: 3.21.3
 
     steps:
-      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # Step 2: Set VS_VERSION Based on VS_YEAR
       - name: Set VS_VERSION
         shell: bash
         run: |
@@ -39,32 +37,24 @@ jobs:
             exit 1
           fi
 
-      # Step 3: Debug VS_VERSION
       - name: Debug VS_VERSION
         shell: bash
         run: echo "VS_VERSION=${{ env.VS_VERSION }}"
 
-      # Step 4: Build Base Docker Image
       - name: Build Base Docker Image
         shell: bash
-        run: |
-          docker build --no-cache -t base -f Dockerfile.windows.base .
+        run: docker build --no-cache -t base -f Dockerfile.windows.base .
 
-      # Step 5: Build Visual Studio Docker Image
       - name: Build Visual Studio Docker Image
         shell: bash
         run: |
-          echo "Building Docker image for VS_YEAR=${{ matrix.vs_year }} and VS_VERSION=${{ env.VS_VERSION }}"
           docker build --no-cache \
             --build-arg VS_YEAR=${{ matrix.vs_year }} \
             --build-arg VS_VERSION=${{ env.VS_VERSION }} \
-            --build-arg CHANNEL_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/channel \
-            --build-arg VS_BUILD_TOOLS_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/vs_buildtools.exe \
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
             -t crossplatformapp-windows-vs${{ matrix.vs_year }} \
             -f Dockerfile.windows.vs .
 
-      # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
         shell: bash
         run: |
@@ -73,9 +63,8 @@ jobs:
             -e VS_YEAR=${{ matrix.vs_year }} \
             -v "${{ github.workspace }}:C:\\app" \
             crossplatformapp-windows-vs${{ matrix.vs_year }} \
-            cmd.exe /c dir C:\\app\\scripts\\windows && cmd.exe /c C:\\app\\scripts\\windows\\build.vs.cmd
+            cmd.exe /c dir C:\\app\\scripts\\windows && cmd.exe /c C:\\app\\scripts\\windows\\build.cmd
 
-      # Step 7: Run Application Inside Docker
       - name: Run Application Inside Docker
         shell: bash
         run: |
