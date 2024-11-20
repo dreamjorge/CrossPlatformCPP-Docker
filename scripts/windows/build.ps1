@@ -10,6 +10,8 @@ if (-not $env:VS_YEAR) {
     $env:VS_VERSION = "16"
 } elseif ($env:VS_YEAR -eq "2017") {
     $env:VS_VERSION = "15"
+} elseif ($env:VS_YEAR -eq "2019") {
+    $env:VS_VERSION = "16"
 } elseif ($env:VS_YEAR -eq "2022") {
     $env:VS_VERSION = "17"
 } else {
