@@ -28,4 +28,15 @@ switch ($VS_YEAR) {
         Write-Host "INFO: Detected VS_YEAR=2022, setting VS_VERSION=17"
     }
     default {
-        Write-Er
+        Write-Error "ERROR: Unsupported VS_YEAR: $VS_YEAR"
+        exit 1
+    }
+}
+
+# Export VS_VERSION to GitHub Actions environment
+if ($env:GITHUB_ENV) {
+    Write-Host "INFO: Exporting VS_VERSION=$env:VS_VERSION to GitHub Actions environment"
+    Write-Host "VS_VERSION=$env:VS_VERSION" | Out-File -Append -FilePath $env:GITHUB_ENV
+} else {
+    Write-Host "INFO: VS_VERSION=$env:VS_VERSION"
+}
