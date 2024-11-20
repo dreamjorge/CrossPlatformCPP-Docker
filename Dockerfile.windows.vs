@@ -26,14 +26,12 @@ RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
 
-# Install CMake
+# Install CMake Silently
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); `
-    choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y; `
-    refreshenv; `
-    Write-Host 'Verifying CMake installation...'; `
-    cmake --version"
+    Write-Host 'Installing CMake ${CMAKE_VERSION} silently...'; `
+    choco install cmake --version=${CMAKE_VERSION} --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress"
 
 # Set Working Directory
 WORKDIR C:\app
