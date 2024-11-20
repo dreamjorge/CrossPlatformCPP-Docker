@@ -63,7 +63,6 @@ jobs:
       # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
         shell: bash
-        shell: bash
         run: |
           docker run --rm \
             -e CONFIG=${{ matrix.config }} \
@@ -74,7 +73,6 @@ jobs:
 
       # Step 7: Run Application Inside Docker
       - name: Run Application Inside Docker
-        shell: bash
         shell: bash
         run: |
           docker run --rm \
