@@ -25,7 +25,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Step 2: Get VS_VERSION from VS_YEAR
       - name: Get VS_VERSION from VS_YEAR
         id: get-vs-version
         shell: pwsh
@@ -37,13 +36,11 @@ jobs:
           # Set the output variable for this step
           echo "vs_version=$vs_version" >> $env:GITHUB_OUTPUT
 
-      # Step 3: Set VS_VERSION Environment Variable
       - name: Set VS_VERSION in Environment
         shell: pwsh
         run: |
           # Set the VS_VERSION environment variable using the step output
           echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $env:GITHUB_ENV
-
 
       - name: Build Base Docker Image
         shell: bash
