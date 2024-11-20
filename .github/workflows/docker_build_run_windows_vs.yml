@@ -55,12 +55,24 @@ jobs:
           & docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -e VS_VERSION=${{ env.VS_VERSION }} `
             -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c set
 
+      # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
+        shell: bash
         run: |
-          & docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -e VS_VERSION=${{ env.VS_VERSION }} `
-            -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c C:\app\scripts\windows\build.vs.cmd
+          docker run --rm \
+            -e CONFIG=${{ matrix.config }} \
+            -e VS_YEAR=${{ matrix.vs_year }} \
+            -v "${{ github.workspace }}:C:/app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            cmd.exe /c dir C:/app/scripts/windows && cmd.exe /c C:/app/scripts/windows/build.cmd
 
+      # Step 7: Run Application Inside Docker
       - name: Run Application Inside Docker
+        shell: bash
         run: |
-          & docker run --rm -e CONFIG=${{ matrix.config }} -e VS_YEAR=${{ matrix.vs_year }} -e VS_VERSION=${{ env.VS_VERSION }} `
-            -v "${{ github.workspace }}:C:\app" crossplatformapp-windows-vs${{ matrix.vs_year }} cmd.exe /c C:\app\scripts\windows\run.cmd
+          docker run --rm \
+            -e CONFIG=${{ matrix.config }} \
+            -e VS_YEAR=${{ matrix.vs_year }} \
+            -v "${{ github.workspace }}:C:/app" \
+            crossplatformapp-windows-vs${{ matrix.vs_year }} \
+            cmd.exe /c C:/app/scripts/windows/run.cmd
