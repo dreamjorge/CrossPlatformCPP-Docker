@@ -1,7 +1,7 @@
 # escape=`
 
 # Use Base Image
-FROM base AS vs_build
+FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
 ARG VS_YEAR=2022

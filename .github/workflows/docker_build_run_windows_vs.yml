@@ -72,6 +72,12 @@ jobs:
             -t $imageTag `
             -f Dockerfile.windows.vs .
 
+      # Optional Step: List Docker Images for Verification (Useful for Debugging)
+      - name: List Docker Images
+        shell: pwsh
+        run: |
+          docker images
+
       # Step 6: Debug the environment inside the Docker container
       - name: Debug Environment Inside Docker
         shell: pwsh
