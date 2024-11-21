@@ -19,10 +19,31 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Install Chocolatey directly using PowerShell with SSL validation bypassed
+# Step 1: Download cacert.pem using PowerShell with SSL validation bypassed
 RUN powershell -Command " \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; \
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }; \
+    try { \
+        Write-Host 'Downloading cacert.pem...'; \
+        Invoke-WebRequest -Uri 'https://curl.se/ca/cacert.pem' -OutFile 'C:/TEMP/cacert.pem'; \
+        Write-Host 'cacert.pem downloaded successfully.'; \
+    } catch { \
+        Write-Error 'Failed to download cacert.pem: $_'; \
+        exit 1; \
+    }"
+
+# Step 2: Import cacert.pem into the certificate store
+RUN powershell -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    $certPath = 'C:/TEMP/cacert.pem'; \
+    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
+    $cert.Import($certPath); \
+    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
+    Remove-Item -Path $certPath -Force"
+
+# Step 3: Install Chocolatey using PowerShell
+RUN powershell -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     try { \
         Write-Host 'Installing Chocolatey...'; \
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); \
@@ -32,7 +53,7 @@ RUN powershell -Command " \
         exit 1; \
     }"
 
-# Optional: Verify Chocolatey installation
+# Step 4: Verify Chocolatey installation
 RUN powershell -Command " \
     if (Get-Command choco -ErrorAction SilentlyContinue) { \
         Write-Host 'Chocolatey version:'; \
