@@ -70,7 +70,7 @@ jobs:
 
       # Step 6: Build the base Docker image (only for the first matrix iteration)
       - name: Build Base Docker Image
-        if: ${{ matrix.vs_year == 2017 }}  # Build base image only once
+        if: ${{ matrix.vs_year == 2019 }}  # Build base image only once
         shell: powershell
         run: |
           # Build the base Docker image without using the cache for a fresh build
