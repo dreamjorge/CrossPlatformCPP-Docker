@@ -74,7 +74,7 @@ jobs:
         shell: powershell
         run: |
           # Build the base Docker image without using the cache for a fresh build
-          docker build --no-cache -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows10.base .
+          docker build -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows10.base .
           Write-Host "INFO: Built base Docker image: $env:DOCKER_NAME_BASE-base"
 
       # Step 7: Build Visual Studio-specific Docker images
@@ -85,7 +85,7 @@ jobs:
           $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
           
           # Build the Visual Studio-specific Docker image
-          docker build --no-cache `
+          docker build `
             --build-arg VS_YEAR=${{ matrix.vs_year }} `
             --build-arg VS_VERSION=${{ env.VS_VERSION }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `

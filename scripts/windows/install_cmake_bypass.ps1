@@ -12,7 +12,7 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         Write-Host "Chocolatey installed successfully."
     } catch {
-        Write-Error "Failed to install Chocolatey: $($_)"
+        Write-Error "Failed to install Chocolatey: $(${_})"
         exit 1
     }
 } else {
@@ -31,14 +31,14 @@ try {
 }
 
 if ($InstalledCMakeVersion -eq $RequiredCMakeVersion) {
-    Write-Host "CMake $RequiredCMakeVersion is already installed."
+    Write-Host "CMake ${RequiredCMakeVersion} is already installed."
 } else {
-    Write-Host "Installing CMake $RequiredCMakeVersion via Chocolatey..."
+    Write-Host "Installing CMake ${RequiredCMakeVersion} via Chocolatey..."
     try {
-        choco install cmake --version=$RequiredCMakeVersion --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
-        Write-Host "CMake $RequiredCMakeVersion installation completed successfully."
+        choco install cmake --version=${RequiredCMakeVersion} --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
+        Write-Host "CMake ${RequiredCMakeVersion} installation completed successfully."
     } catch {
-        Write-Error "Failed to install CMake $RequiredCMakeVersion: $($_)"
+        Write-Error "Failed to install CMake ${RequiredCMakeVersion}: $(${_})"
         exit 1
     }
 
@@ -56,6 +56,6 @@ try {
     cmake --version
     Write-Host "CMake installation verified successfully."
 } catch {
-    Write-Error "CMake installation verification failed: $($_)"
+    Write-Error "CMake installation verification failed: $(${_})"
     exit 1
 }
