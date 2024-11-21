@@ -1,6 +1,6 @@
 # install_choco.ps1
 
-# Ensure TLS 1.2 is enabled
+# Enable TLS 1.2
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Write-Host "TLS 1.2 enabled."
 
