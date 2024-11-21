@@ -1,0 +1,29 @@
+# escape=`
+
+# Dockerfile.windows.base
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019 AS crossplatformapp-windows-base
+
+# Metadata
+LABEL maintainer="jorge-kun@live.com" `
+      description="Base Docker image for building and running CrossPlatformApp" `
+      version="1.0.0" `
+      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" `
+      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" `
+      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
+      license="MIT"
+
+# Use cmd.exe as the default shell
+SHELL ["cmd", "/S", "/C"]
+
+# Set Environment Variables
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV TEMP_DIR=C:\TEMP
+
+# Create a temporary directory
+RUN mkdir %TEMP_DIR%
+
+# Copy the Chocolatey installation script
+COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
+
+# Install Chocolatey using the script
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
