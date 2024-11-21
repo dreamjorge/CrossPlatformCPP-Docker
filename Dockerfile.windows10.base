@@ -23,12 +23,11 @@ RUN mkdir %TEMP_DIR%
 COPY cacert.pem C:/TEMP/cacert.pem
 
 # Step 8/11: Import the cacert.pem certificate
-RUN powershell -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    $certPath = 'C:/TEMP/cacert.pem'; \
-    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
-    $cert.Import($certPath); \
-    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
+RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    $certPath = 'C:/TEMP/cacert.pem'; `
+    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; `
+    $cert.Import($certPath); `
+    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; `
     Remove-Item -Path $certPath -Force"
 
 # Step 9/11: Create the C:\scripts\ directory using PowerShell
@@ -38,9 +37,9 @@ RUN powershell -Command "New-Item -ItemType Directory -Path 'C:/scripts' -Force"
 COPY scripts/windows/install_choco.ps1 C:/scripts/install_choco.ps1
 
 # Step 11/11: Run the Chocolatey installation script with enhanced TLS handling
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    if (-Not (Test-Path 'C:/scripts/install_choco.ps1')) { \
-        Write-Error 'install_choco.ps1 not found at C:/scripts/install_choco.ps1'; exit 1; \
-    } \
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    if (-Not (Test-Path 'C:/scripts/install_choco.ps1')) { `
+        Write-Error 'install_choco.ps1 not found at C:/scripts/install_choco.ps1'; `
+        exit 1; `
+    } `
     & 'C:/scripts/install_choco.ps1'"
