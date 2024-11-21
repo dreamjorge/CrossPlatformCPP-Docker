@@ -10,8 +10,8 @@ if (Get-Command choco -ErrorAction SilentlyContinue) {
     # Ensure TLS 1.2 for secure downloads
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Download and execute Chocolatey installation script
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    # Download and execute Chocolatey installation script using Invoke-WebRequest
+    iex (Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -UseBasicParsing).Content
 
     # Verify installation
     if (Get-Command choco -ErrorAction SilentlyContinue) {
