@@ -35,15 +35,15 @@ RUN powershell -Command " \
         exit 1; \
     }"
 
-# Step 3: Install Chocolatey using PowerShell
-RUN powershell -Command " \
+# Step 3: Install Chocolatey using PowerShell with Enhanced Error Logging
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     try { \
         Write-Host 'Installing Chocolatey...'; \
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); \
         Write-Host 'Chocolatey installed successfully.'; \
     } catch { \
-        Write-Error 'Failed to install Chocolatey: $_'; \
+        Write-Error \"Failed to install Chocolatey: $_\"; \
         exit 1; \
     }"
 
