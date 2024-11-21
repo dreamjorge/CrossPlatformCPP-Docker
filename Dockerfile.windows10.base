@@ -19,24 +19,23 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 7/10: Copy cacert.pem into the Docker image and import it
+# Step 7/10: Copy cacert.pem into the Docker image
 COPY cacert.pem C:/TEMP/cacert.pem
 
+# Step 8/10: Import the cacert.pem certificate
 RUN powershell -Command " \
-    # Ensure TLS 1.2 is used \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    # Define the path to cacert.pem \
     $certPath = 'C:/TEMP/cacert.pem'; \
-    # Create a new certificate object and import cacert.pem \
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
     $cert.Import($certPath); \
-    # Import the certificate into the Trusted Root Certification Authorities store \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
-    # Remove the cacert.pem file to clean up \
     Remove-Item -Path $certPath -Force"
 
-# Step 8/10: Copy the Chocolatey installation script
+# **New Step 9/10: Create the C:\scripts\ directory**
+RUN mkdir C:\scripts
+
+# Step 10/10: Copy the Chocolatey installation script
 COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
 
-# Step 9/10: Run the Chocolatey installation script
+# Optional: Run the Chocolatey installation script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
