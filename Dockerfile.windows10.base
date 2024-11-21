@@ -19,28 +19,39 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 7/11: Copy cacert.pem into the Docker image
-COPY cacert.pem C:/TEMP/cacert.pem
+# Step 7/14: Download cacert.pem using curl
+RUN curl --etag-compare etag.txt --etag-save etag.txt --remote-name https://curl.se/ca/cacert.pem && \
+    MOVE /Y cacert.pem C:/TEMP/cacert.pem
 
-# Step 8/11: Import the cacert.pem certificate
-RUN powershell -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+# Step 8/14: Import the cacert.pem certificate
+RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     $certPath = 'C:/TEMP/cacert.pem'; \
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
     $cert.Import($certPath); \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
     Remove-Item -Path $certPath -Force"
 
-# Optional: Verify imported certificates
-RUN powershell -Command "Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*GlobalSign*' } | Format-List Subject, Thumbprint"
+# Step 9/14: Verify imported certificates (Optional but recommended)
+RUN powershell -Command "Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*GlobalSign*' -or $_.Subject -like '*DigiCert*' } | Format-List Subject, Thumbprint"
 
-# Step 9/11: Create the C:\scripts\ directory using PowerShell
+# Step 10/14: Create the C:\scripts\ directory using PowerShell
 RUN powershell -Command "New-Item -ItemType Directory -Path 'C:/scripts' -Force"
 
-# Step 10/11: Copy the Chocolatey installation script
+# Step 11/14: Copy the Chocolatey installation script
 COPY scripts/windows/install_choco.ps1 C:/scripts/install_choco.ps1
 
-# Step 11/11: Run the Chocolatey installation script with enhanced TLS handling
+# Step 12/14: Test SSL connectivity to Chocolatey (Optional for debugging)
+RUN powershell -Command " \
+    try { \
+        Write-Host 'Testing SSL connectivity to Chocolatey...'; \
+        Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -UseBasicParsing -OutFile 'C:/scripts/test_install.ps1'; \
+        Write-Host 'SSL connectivity test succeeded.'; \
+    } catch { \
+        Write-Error 'SSL connectivity test failed: $_'; \
+        exit 1; \
+    }"
+
+# Step 13/14: Run the Chocolatey installation script with enhanced TLS handling
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     if (-Not (Test-Path 'C:/scripts/install_choco.ps1')) { \
@@ -48,3 +59,6 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
         exit 1; \
     } \
     & 'C:/scripts/install_choco.ps1'"
+
+# Step 14/14: Clean up test_install.ps1 if it exists (Optional)
+RUN powershell -Command "if (Test-Path 'C:/scripts/test_install.ps1') { Remove-Item 'C:/scripts/test_install.ps1' -Force }"
