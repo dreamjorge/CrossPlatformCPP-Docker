@@ -23,7 +23,7 @@ jobs:
     # Use a matrix strategy to build images for different VS versions
     strategy:
       matrix:
-        vs_year: [2017, 2019, 2022]
+        vs_year: [2019]
 
     steps:
       # Step 1: Checkout the repository code
@@ -103,7 +103,7 @@ jobs:
     strategy:
       matrix:
         config: [Debug, Release]
-        vs_year: [2017, 2019, 2022]
+        vs_year: [2019]
 
     # Define environment variables for consistency and maintainability
     env:
