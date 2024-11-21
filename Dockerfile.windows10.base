@@ -19,12 +19,22 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 7/14: Download cacert.pem using curl
-RUN curl --etag-compare etag.txt --etag-save etag.txt --remote-name https://curl.se/ca/cacert.pem && \
-    MOVE /Y cacert.pem C:/TEMP/cacert.pem
+# Step 7/14: Download cacert.pem using PowerShell with SSL validation bypassed
+RUN powershell -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; \
+    try { \
+        Write-Host 'Downloading cacert.pem...'; \
+        Invoke-WebRequest -Uri 'https://curl.se/ca/cacert.pem' -OutFile 'C:/TEMP/cacert.pem'; \
+        Write-Host 'cacert.pem downloaded successfully.'; \
+    } catch { \
+        Write-Error 'Failed to download cacert.pem: $_'; \
+        exit 1; \
+    }"
 
 # Step 8/14: Import the cacert.pem certificate
-RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+RUN powershell -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     $certPath = 'C:/TEMP/cacert.pem'; \
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
     $cert.Import($certPath); \
@@ -32,7 +42,8 @@ RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.Secu
     Remove-Item -Path $certPath -Force"
 
 # Step 9/14: Verify imported certificates (Optional but recommended)
-RUN powershell -Command "Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*GlobalSign*' -or $_.Subject -like '*DigiCert*' } | Format-List Subject, Thumbprint"
+RUN powershell -Command " \
+    Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*GlobalSign*' -or $_.Subject -like '*DigiCert*' } | Format-List Subject, Thumbprint"
 
 # Step 10/14: Create the C:\scripts\ directory using PowerShell
 RUN powershell -Command "New-Item -ItemType Directory -Path 'C:/scripts' -Force"
