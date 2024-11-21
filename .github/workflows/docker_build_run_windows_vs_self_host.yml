@@ -136,7 +136,7 @@ jobs:
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e VS_YEAR=${{ matrix.vs_year }} `
-            -e VS_VERSION=${{ env:VS_VERSION }} `
+            -e VS_VERSION=${{ env.VS_VERSION }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
             powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
@@ -152,7 +152,7 @@ jobs:
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e VS_YEAR=${{ matrix.vs_year }} `
-            -e VS_VERSION=${{ env:VS_VERSION }} `
+            -e VS_VERSION=${{ env.VS_VERSION }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
             powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
