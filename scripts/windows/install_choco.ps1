@@ -1,17 +1,23 @@
 # Exit immediately if a command fails
 $ErrorActionPreference = "Stop"
 
+# Ensure TLS 1.2 for secure downloads
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 # Check if Chocolatey is already installed
 if (Get-Command choco -ErrorAction SilentlyContinue) {
     Write-Host "Chocolatey is already installed at $(Get-Command choco)."
 } else {
     Write-Host "Installing Chocolatey..."
 
-    # Ensure TLS 1.2 for secure downloads
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-    # Download and execute Chocolatey installation script using Invoke-WebRequest
-    iex (Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -UseBasicParsing).Content
+    try {
+        # Download and execute Chocolatey installation script
+        iex (Invoke-WebRequest -Uri 'https://community.chocolatey.org/install.ps1' -UseBasicParsing).Content
+        Write-Host "Chocolatey installation script executed successfully."
+    } catch {
+        Write-Error "Failed to execute Chocolatey installation script: $_"
+        exit 1
+    }
 
     # Verify installation
     if (Get-Command choco -ErrorAction SilentlyContinue) {
