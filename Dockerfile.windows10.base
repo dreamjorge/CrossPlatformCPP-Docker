@@ -37,8 +37,9 @@ RUN powershell -Command "New-Item -ItemType Directory -Path 'C:/scripts' -Force"
 # Step 10/11: Copy the Chocolatey installation script
 COPY scripts/windows/install_choco.ps1 C:/scripts/install_choco.ps1
 
-# Step 11/11: Run the Chocolatey installation script with verification
+# Step 11/11: Run the Chocolatey installation script with enhanced TLS handling
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     if (-Not (Test-Path 'C:/scripts/install_choco.ps1')) { \
         Write-Error 'install_choco.ps1 not found at C:/scripts/install_choco.ps1'; exit 1; \
     } \
