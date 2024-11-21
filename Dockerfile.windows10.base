@@ -19,10 +19,10 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 7/10: Copy cacert.pem into the Docker image
+# Step 7/11: Copy cacert.pem into the Docker image
 COPY cacert.pem C:/TEMP/cacert.pem
 
-# Step 8/10: Import the cacert.pem certificate
+# Step 8/11: Import the cacert.pem certificate
 RUN powershell -Command " \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     $certPath = 'C:/TEMP/cacert.pem'; \
@@ -31,11 +31,15 @@ RUN powershell -Command " \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
     Remove-Item -Path $certPath -Force"
 
-# **New Step 9/10: Create the C:\scripts\ directory**
-RUN mkdir C:\scripts
+# Step 9/11: Create the C:\scripts\ directory
+RUN mkdir C:/scripts
 
-# Step 10/10: Copy the Chocolatey installation script
-COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
+# Step 10/11: Copy the Chocolatey installation script
+COPY scripts/windows/install_choco.ps1 C:/scripts/install_choco.ps1
 
-# Optional: Run the Chocolatey installation script
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
+# Step 11/11: Run the Chocolatey installation script with verification
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
+    if (-Not (Test-Path 'C:/scripts/install_choco.ps1')) { \
+        Write-Error 'install_choco.ps1 not found at C:/scripts/install_choco.ps1'; exit 1; \
+    } \
+    & 'C:/scripts/install_choco.ps1'"
