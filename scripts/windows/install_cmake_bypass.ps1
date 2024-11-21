@@ -1,5 +1,3 @@
-# install_cmake.ps1
-
 # Exit immediately if a command fails
 $ErrorActionPreference = "Stop"
 
@@ -11,18 +9,11 @@ Write-Host "TLS 1.2 enabled."
 if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Write-Host "Chocolatey is not installed. Installing Chocolatey..."
     try {
-        # Bypass SSL certificate validation for this operation
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }
-        
-        # Download and install Chocolatey
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         Write-Host "Chocolatey installed successfully."
     } catch {
-        Write-Error "Failed to install Chocolatey: $_"
+        Write-Error "Failed to install Chocolatey: $($_)"
         exit 1
-    } finally {
-        # Reset SSL certificate validation to default
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
     }
 } else {
     Write-Host "Chocolatey is already installed."
@@ -44,17 +35,11 @@ if ($InstalledCMakeVersion -eq $RequiredCMakeVersion) {
 } else {
     Write-Host "Installing CMake $RequiredCMakeVersion via Chocolatey..."
     try {
-        # Bypass SSL certificate validation for this operation
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }
-        
         choco install cmake --version=$RequiredCMakeVersion --installargs 'ADD_CMAKE_TO_PATH=System' -y --no-progress
         Write-Host "CMake $RequiredCMakeVersion installation completed successfully."
     } catch {
-        Write-Error "Failed to install CMake $RequiredCMakeVersion: $_"
+        Write-Error "Failed to install CMake $RequiredCMakeVersion: $($_)"
         exit 1
-    } finally {
-        # Reset SSL certificate validation to default
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
     }
 
     # Add CMake to the current PATH (for the running session)
@@ -71,6 +56,6 @@ try {
     cmake --version
     Write-Host "CMake installation verified successfully."
 } catch {
-    Write-Error "CMake installation verification failed: $_"
+    Write-Error "CMake installation verification failed: $($_)"
     exit 1
 }
