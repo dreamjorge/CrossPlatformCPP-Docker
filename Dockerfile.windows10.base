@@ -37,6 +37,8 @@ RUN powershell -Command " \
 
 # Step 3: Install Chocolatey using PowerShell with Enhanced Error Logging
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
+    # Bypass SSL certificate validation for this operation \
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }; \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
     try { \
         Write-Host 'Installing Chocolatey...'; \
@@ -46,7 +48,6 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
         Write-Error \"Failed to install Chocolatey: $_\"; \
         exit 1; \
     }"
-
 # Step 4: Verify Chocolatey installation
 RUN powershell -Command " \
     if (Get-Command choco -ErrorAction SilentlyContinue) { \
