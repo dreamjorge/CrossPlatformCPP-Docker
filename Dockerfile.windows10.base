@@ -19,27 +19,21 @@ ENV TEMP_DIR=C:\TEMP
 # Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 1: Download cacert.pem using PowerShell with SSL validation bypassed
-RUN powershell -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }; \
-    try { \
-        Write-Host 'Downloading cacert.pem...'; \
-        Invoke-WebRequest -Uri 'https://curl.se/ca/cacert.pem' -OutFile 'C:/TEMP/cacert.pem'; \
-        Write-Host 'cacert.pem downloaded successfully.'; \
-    } catch { \
-        Write-Error 'Failed to download cacert.pem: $_'; \
-        exit 1; \
-    }"
+# Step 1: Copy cacert.pem from build context
+COPY scripts/windows/cacert.pem C:/TEMP/cacert.pem
 
 # Step 2: Import cacert.pem into the certificate store
 RUN powershell -Command " \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    $certPath = 'C:/TEMP/cacert.pem'; \
-    $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
-    $cert.Import($certPath); \
-    Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
-    Remove-Item -Path $certPath -Force"
+    try { \
+        Write-Host 'Importing cacert.pem into the certificate store...'; \
+        Import-Certificate -FilePath 'C:/TEMP/cacert.pem' -CertStoreLocation Cert:\LocalMachine\Root; \
+        Write-Host 'cacert.pem imported successfully.'; \
+        Remove-Item -Path 'C:/TEMP/cacert.pem' -Force; \
+    } catch { \
+        Write-Error 'Failed to import cacert.pem: $_'; \
+        exit 1; \
+    }"
 
 # Step 3: Install Chocolatey using PowerShell
 RUN powershell -Command " \
