@@ -9,30 +9,30 @@ LABEL maintainer="jorge-kun@live.com" \
       issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" \
       license="MIT"
 
+# Use CMD shell
 SHELL ["cmd", "/S", "/C"]
 
+# Set environment variables
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV TEMP_DIR=C:\TEMP
 
+# Create TEMP directory
 RUN mkdir %TEMP_DIR%
 
-# Step 7/9: Bypass SSL/TLS validation and import root certificates
+# Step 7/9: Copy cacert.pem into the Docker image and import it
+COPY cacert.pem C:\TEMP\cacert.pem
+
 RUN powershell -Command " \
-    # Bypass SSL certificate validation (Not recommended for production environments) \
-    [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }; \
-    # Set TLS 1.2 as the security protocol \
+    # Ensure TLS 1.2 is used \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    # Define the URL and destination path for cacert.pem \
-    $certUrl = 'https://curl.se/ca/cacert.pem'; \
+    # Define the path to cacert.pem \
     $certPath = 'C:\\TEMP\\cacert.pem'; \
-    # Download cacert.pem using Invoke-WebRequest \
-    Invoke-WebRequest -Uri $certUrl -OutFile $certPath; \
     # Create a new certificate object and import cacert.pem \
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
     $cert.Import($certPath); \
     # Import the certificate into the Trusted Root Certification Authorities store \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
-    # Remove the downloaded cacert.pem file \
+    # Remove the cacert.pem file to clean up \
     Remove-Item -Path $certPath -Force"
 
 # Step 8/9: Copy the Chocolatey installation script
