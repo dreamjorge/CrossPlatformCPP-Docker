@@ -16,21 +16,27 @@ ENV TEMP_DIR=C:\TEMP
 
 RUN mkdir %TEMP_DIR%
 
-# Update Root Certificates
+# Step 7/9: Bypass SSL/TLS validation and import root certificates
 RUN powershell -Command " \
-    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    # Bypass SSL certificate validation (Not recommended for production environments) \
+    [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }; \
+    # Set TLS 1.2 as the security protocol \
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    Import-Module BitsTransfer; \
+    # Define the URL and destination path for cacert.pem \
     $certUrl = 'https://curl.se/ca/cacert.pem'; \
     $certPath = 'C:\\TEMP\\cacert.pem'; \
-    Start-BitsTransfer -Source $certUrl -Destination $certPath; \
+    # Download cacert.pem using Invoke-WebRequest \
+    Invoke-WebRequest -Uri $certUrl -OutFile $certPath; \
+    # Create a new certificate object and import cacert.pem \
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2; \
     $cert.Import($certPath); \
+    # Import the certificate into the Trusted Root Certification Authorities store \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
-    Remove-Item $certPath -Force"
+    # Remove the downloaded cacert.pem file \
+    Remove-Item -Path $certPath -Force"
 
-# Copy the modified install_choco.ps1 script
+# Step 8/9: Copy the Chocolatey installation script
 COPY scripts/windows/install_choco.ps1 C:\scripts\install_choco.ps1
 
-# Run the modified install_choco.ps1 script
+# Step 9/9: Run the Chocolatey installation script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_choco.ps1"
