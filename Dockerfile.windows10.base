@@ -31,8 +31,8 @@ RUN powershell -Command " \
     Import-Certificate -FilePath $certPath -CertStoreLocation Cert:\LocalMachine\Root; \
     Remove-Item -Path $certPath -Force"
 
-# Step 9/11: Create the C:\scripts\ directory
-RUN mkdir C:/scripts
+# Step 9/11: Create the C:\scripts\ directory using PowerShell
+RUN powershell -Command "New-Item -ItemType Directory -Path 'C:/scripts' -Force"
 
 # Step 10/11: Copy the Chocolatey installation script
 COPY scripts/windows/install_choco.ps1 C:/scripts/install_choco.ps1
