@@ -19,7 +19,7 @@ ENV VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-COPY scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
+COPY scripts/windows/install_cmake_bypass.ps1 C:\scripts\install_cmake_bypass.ps1
 # Copy PowerShell scripts
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
