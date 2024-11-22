@@ -83,10 +83,9 @@ jobs:
         shell: powershell
         run: |
           # Define the Docker image tag using the base name and VS year
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-    
-    # Build the Visual Studio-specific Docker image with no cache
-          docker build `
+              $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          # Build the Visual Studio-specific Docker image with no cach
+              docker build `
            --no-cache `
            --build-arg VS_YEAR=${{ matrix.vs_year }} `
            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
