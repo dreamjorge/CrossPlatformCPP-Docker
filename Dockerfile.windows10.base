@@ -22,6 +22,7 @@ WORKDIR C:/app
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
+COPY scripts/windows/get_vs_version.ps1 C:/app/scripts/windows/get_vs_version.ps1
 
 # Debugging: Output the values of the environment variables
 RUN powershell -NoProfile -Command "Write-Host 'DEBUG: Expanded CHANNEL_URL=' + $env:CHANNEL_URL; Write-Host 'DEBUG: Expanded BUILD_TOOLS_URL=' + $env:BUILD_TOOLS_URL"
@@ -31,8 +32,11 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\\scripts\\inst
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    Write-Host "INFO: Verifying CMake installation..."; `
+    Write-Host 'INFO: Verifying CMake installation...'; `
     cmake --version
+
+# Set Working Directory
+WORKDIR C:/app
 
 # Default Command
 CMD ["cmd.exe"]
