@@ -88,14 +88,23 @@ Start-Process -FilePath $installerPath `
     -ArgumentList $arguments `
     -NoNewWindow -Wait
 
+# Always output the log
+if (Test-Path $logPath) {
+    Write-Host "----- BEGIN vs_installation.log -----"
+    Get-Content $logPath | Write-Host
+    Write-Host "----- END vs_installation.log -----"
+}
+else {
+    Write-Host "WARNING: Log file not found at $logPath"
+}
+
+# Additional Diagnostic: List contents of C:\BuildTools
+Write-Host "INFO: Listing contents of C:\BuildTools to verify installation..."
+Get-ChildItem -Path "C:\BuildTools" -Recurse | Select-Object FullName | Write-Host
+
 # Verify installation
 if ($LASTEXITCODE -ne 0) {
     Write-Error "ERROR: Visual Studio Build Tools installation failed. Check logs at $logPath"
-    if (Test-Path $logPath) {
-        Write-Host "----- BEGIN vs_installation.log -----"
-        Get-Content $logPath | Write-Host
-        Write-Host "----- END vs_installation.log -----"
-    }
     exit $LASTEXITCODE
 }
 
