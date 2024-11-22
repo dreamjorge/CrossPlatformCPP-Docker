@@ -19,6 +19,11 @@ if (-not $vsInstallers.ContainsKey($VsVersion)) {
 $buildToolsUrl = $vsInstallers[$VsVersion]
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
 
+# Ensure the C:\temp directory exists
+if (-not (Test-Path -Path "C:\temp")) {
+    New-Item -ItemType Directory -Path "C:\temp" | Out-Null
+}
+
 # Download the Visual Studio Build Tools installer
 try {
     Invoke-WebRequest -Uri $buildToolsUrl -OutFile $buildToolsPath -UseBasicParsing -ErrorAction Stop
