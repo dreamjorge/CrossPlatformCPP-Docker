@@ -82,16 +82,16 @@ jobs:
       - name: Build Visual Studio Docker Image
         shell: powershell
         run: |
-          # Define the Docker image tag using the base name and VS year
-              $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          # Build the Visual Studio-specific Docker image with no cach
-              docker build `
-           --no-cache `
-           --build-arg VS_YEAR=${{ matrix.vs_year }} `
-           --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-           --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-           -t $imageTag `
-           -f Dockerfile.windows.vs .
+          # Construct the Docker image tag using the base name and VS year
+          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          
+          # Build the Docker image with the necessary build arguments
+          docker build --no-cache `
+            --build-arg VS_YEAR=${{ matrix.vs_year }} `
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
+            -t $imageTag `
+            -f Dockerfile.windows.vs .
     
           Write-Host "INFO: Built Docker image: $imageTag"
 
