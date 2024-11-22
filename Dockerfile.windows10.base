@@ -13,11 +13,14 @@ ENV http_proxy="http://sia-proxy.geo.conti.de:3128" `
     https_proxy="http://sia-proxy.geo.conti.de:3128" `
     no_proxy="localhost,127.0.0.1,.conti.de"
 
-# Install Chocolatey
+
+# Install Chocolatey with proxy and TLS configuration
 RUN powershell -NoProfile -Command `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; `
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    $webClient = New-Object System.Net.WebClient; `
+    $webClient.Proxy = New-Object System.Net.WebProxy("${http_proxy}", $true); `
+    $webClient.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials; `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-Expression ($webClient.DownloadString('https://chocolatey.org/install.ps1'))
 
 # Configure Chocolatey Proxy
 RUN choco config set proxy http://sia-proxy.geo.conti.de:3128
