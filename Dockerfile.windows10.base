@@ -1,6 +1,5 @@
 # escape=`
 
-# Stage 1: Base Image Setup
 FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS base
 
 # Build Arguments
@@ -16,19 +15,25 @@ ENV http_proxy="http://sia-proxy.geo.conti.de:3128" `
 # Copy Corporate Root Certificate
 COPY CorporateITSecurity.crt /certs/CorporateITSecurity.crt
 
-# Add the corporate root certificate to the system store
+# Add corporate root certificate
 RUN powershell -NoProfile -Command `
-    Write-Host 'INFO: Importing corporate root certificate...'; `
-    certutil -addstore -f "Root" C:\certs\CorporateITSecurity.crt
+    certutil -addstore -f "Root" C:/certs/CorporateITSecurity.crt
 
-# Install Chocolatey with proxy and TLS configuration
+# Preinstall .NET Framework 4.8
+RUN powershell -NoProfile -Command `
+    Invoke-WebRequest -Uri "https://download.visualstudio.microsoft.com/download/pr/2d6bb6b2-226a-4baa-bdec-798822606ff1/8494001c276a4b96804cde7829c04d7f/ndp48-x86-x64-allos-enu.exe" -OutFile C:/windows/temp/dotnet48.exe; `
+    Start-Process -FilePath C:/windows/temp/dotnet48.exe -ArgumentList "/quiet /norestart" -NoNewWindow -Wait; `
+    Write-Host "INFO: .NET Framework 4.8 installation completed."
+
+# Install Chocolatey
 RUN powershell -NoProfile -Command `
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     Invoke-WebRequest -Uri 'https://chocolatey.org/install.ps1' -OutFile C:/windows/temp/install.ps1 -UseBasicParsing; `
     powershell -NoProfile -ExecutionPolicy Bypass -File C:/windows/temp/install.ps1
 
-# Configure Chocolatey Proxy
-RUN choco config set proxy http://sia-proxy.geo.conti.de:3128
+# Refresh PATH to include Chocolatey
+RUN powershell -NoProfile -Command `
+    [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\\ProgramData\\chocolatey\\bin", [System.EnvironmentVariableTarget]::Machine)
 
 # Install Visual Studio Build Tools and CMake using Chocolatey
 RUN choco install visualstudio2019buildtools --version=${VS_VERSION}.0.0 --package-parameters "--quiet --norestart" -y; `
@@ -41,8 +46,6 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Write-Host 'INFO: Verifying CMake installation...'; `
     cmake --version
 
-# Set Working Directory
 WORKDIR C:/app
 
-# Default Command
 CMD ["cmd.exe"]
