@@ -1,8 +1,8 @@
 param (
     [Parameter(Mandatory = $true)]
-    [string]$ChannelUrl,
+    [string]$ChannelUrl,  # URL to the Visual Studio Channel
     [Parameter(Mandatory = $true)]
-    [string]$BuildToolsUrl
+    [string]$BuildToolsUrl  # URL to the Visual Studio Build Tools installer
 )
 
 # Exit immediately if an error occurs

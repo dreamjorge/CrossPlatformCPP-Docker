@@ -1,4 +1,4 @@
-name: Docker Build and Run on Windows Self Host
+name: Docker Build and Run on Windows Señf Host
 
 on:
   push:
@@ -58,8 +58,6 @@ jobs:
           docker build --no-cache `
             --build-arg VS_YEAR=${{ matrix.vs_year }} `
             --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-            --build-arg CHANNEL_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/channel `
-            --build-arg BUILD_TOOLS_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/vs_buildtools.exe `
             -t $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }} `
             -f Dockerfile.windows10.base .
           Write-Host "INFO: Built Docker image: $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
@@ -113,7 +111,7 @@ jobs:
             -e VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1 -Config $env:CONFIG -BuildDir C:/app/build
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:/app/scripts/windows/build.ps1' -Config '$env:CONFIG' -BuildDir C:/app/build"
 
       # Step 5: Run the application inside the Docker container
       - name: Run Application Inside Docker
@@ -126,4 +124,4 @@ jobs:
             -e VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1 -Config $env:CONFIG -BuildDir C:/app/build
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:/app/scripts/windows/run.ps1' -Config '$env:CONFIG' -BuildDir C:/app/build"
