@@ -1,30 +1,61 @@
-# Exit on error
+param (
+    [Parameter(Mandatory = $true)]
+    [string]$ChannelUrl,  # URL to the Visual Studio Channel
+    [Parameter(Mandatory = $true)]
+    [string]$BuildToolsUrl  # URL to the Visual Studio Build Tools installer
+)
+
+# Exit immediately if an error occurs
 $ErrorActionPreference = "Stop"
 
-# Validate required variables
-if (-not $env:CHANNEL_URL) {
-    Write-Error "CHANNEL_URL environment variable is not set."
+Write-Host "INFO: Starting Visual Studio Build Tools installation..."
+
+# Temporary paths
+$tempDir = "C:\temp"
+$installerPath = "$tempDir\vs_buildtools.exe"
+$logPath = "$tempDir\vs_installation.log"
+
+# Create temporary directory
+if (!(Test-Path -Path $tempDir)) {
+    Write-Host "INFO: Creating temporary directory at $tempDir"
+    New-Item -ItemType Directory -Path $tempDir | Out-Null
+}
+
+# Download the Visual Studio Build Tools installer
+Write-Host "INFO: Downloading Visual Studio Build Tools from $BuildToolsUrl"
+Invoke-WebRequest -Uri $BuildToolsUrl -OutFile $installerPath -UseBasicParsing
+
+# Verify installer download
+if (!(Test-Path -Path $installerPath)) {
+    Write-Error "ERROR: Failed to download Visual Studio Build Tools installer."
     exit 1
 }
-if (-not $env:VS_BUILD_TOOLS_URL) {
-    Write-Error "VS_BUILD_TOOLS_URL environment variable is not set."
-    exit 1
+
+Write-Host "INFO: Installer downloaded successfully to $installerPath"
+
+# Execute the installer
+Write-Host "INFO: Installing Visual Studio Build Tools..."
+Start-Process -FilePath $installerPath `
+    -ArgumentList `
+    "--quiet", `
+    "--norestart", `
+    "--wait", `
+    "--add Microsoft.VisualStudio.Workload.VCTools;includeRecommended" `
+    "--channelUri $ChannelUrl" `
+    "--installPath C:\BuildTools" `
+    "--log $logPath" `
+    -NoNewWindow -Wait
+
+# Verify installation
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "ERROR: Visual Studio Build Tools installation failed. Check logs at $logPath"
+    exit $LASTEXITCODE
 }
 
-# Download Visual Studio Channel
-Write-Host "Downloading Visual Studio Channel from $env:CHANNEL_URL"
-Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile "$env:TEMP_DIR\VisualStudioChannel.json"
+Write-Host "INFO: Visual Studio Build Tools installed successfully!"
 
-# Download Visual Studio Build Tools
-Write-Host "Downloading Visual Studio Build Tools from $env:VS_BUILD_TOOLS_URL"
-Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile "$env:TEMP_DIR\vs_buildtools.exe"
+# Cleanup temporary files
+Write-Host "INFO: Cleaning up temporary files..."
+Remove-Item -Path $tempDir -Recurse -Force
 
-# Install Visual Studio Build Tools
-Write-Host "Installing Visual Studio Build Tools..."
-Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList `
-    '--quiet', '--wait', '--norestart', '--nocache', `
-    '--channelUri', "$env:TEMP_DIR\VisualStudioChannel.json", `
-    '--installPath', "$env:BUILD_TOOLS_PATH", `
-    '--add', 'Microsoft.VisualStudio.Workload.VCTools', `
-    '--includeRecommended' -Wait
-Write-Host "Visual Studio Build Tools installation completed successfully."
+Write-Host "INFO: Visual Studio Build Tools installation completed successfully."
