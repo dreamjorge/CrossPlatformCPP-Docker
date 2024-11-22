@@ -1,59 +1,39 @@
-# Dockerfile.windows10.base
-FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019 AS crossplatformapp-windows-base
+# escape=`
 
-LABEL maintainer="jorge-kun@live.com" \
-      description="Base Docker image for building and running CrossPlatformApp" \
-      version="1.0.0" \
-      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" \
-      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" \
-      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" \
-      license="MIT"
+# Use Base Image
+FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS base
 
-# Use CMD shell
-SHELL ["cmd", "/S", "/C"]
+# Build Arguments
+ARG VS_YEAR=2019
+ARG VS_VERSION=16
+ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
+ARG BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.21.3
 
-# Set environment variables
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV TEMP_DIR=C:\TEMP
+# Environment Variables
+ENV VS_YEAR=${VS_YEAR}
+ENV VS_VERSION=${VS_VERSION}
+ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV CHANNEL_URL=${CHANNEL_URL}
+ENV BUILD_TOOLS_URL=${BUILD_TOOLS_URL}
 
-# Create TEMP directory
-RUN mkdir %TEMP_DIR%
+# Copy Installation Scripts
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
+COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
-# Step 1: Copy cacert.pem from build context
-COPY scripts/windows/cacert.pem C:/TEMP/cacert.pem
+# Install Visual Studio Build Tools
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
+    -ChannelUrl $env:CHANNEL_URL `
+    -BuildToolsUrl $env:BUILD_TOOLS_URL
 
-# Step 2: Import cacert.pem into the certificate store
-RUN powershell -Command " \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    try { \
-        Write-Host 'Importing cacert.pem into the certificate store...'; \
-        Import-Certificate -FilePath 'C:/TEMP/cacert.pem' -CertStoreLocation Cert:\LocalMachine\Root; \
-        Write-Host 'cacert.pem imported successfully.'; \
-        Remove-Item -Path 'C:/TEMP/cacert.pem' -Force; \
-    } catch { \
-        Write-Error 'Failed to import cacert.pem: $_'; \
-        exit 1; \
-    }"
+# Verify CMake Installation
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Verifying CMake installation..."; `
+    cmake --version
 
-# Step 3: Install Chocolatey using PowerShell with Enhanced Error Logging
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " \
-    # Bypass SSL certificate validation for this operation \
-    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { param($sender, $certificate, $chain, $sslPolicyErrors) $true }; \
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-    try { \
-        Write-Host 'Installing Chocolatey...'; \
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); \
-        Write-Host 'Chocolatey installed successfully.'; \
-    } catch { \
-        Write-Error \"Failed to install Chocolatey: $_\"; \
-        exit 1; \
-    }"
-# Step 4: Verify Chocolatey installation
-RUN powershell -Command " \
-    if (Get-Command choco -ErrorAction SilentlyContinue) { \
-        Write-Host 'Chocolatey version:'; \
-        choco --version; \
-    } else { \
-        Write-Error 'Chocolatey installation verification failed.'; \
-        exit 1; \
-    }"
+# Set Working Directory
+WORKDIR C:\app
+
+# Default Command
+CMD ["cmd.exe"]
