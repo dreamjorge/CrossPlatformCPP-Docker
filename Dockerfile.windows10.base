@@ -13,30 +13,23 @@ ENV http_proxy="http://sia-proxy.geo.conti.de:3128" `
     https_proxy="http://sia-proxy.geo.conti.de:3128" `
     no_proxy="localhost,127.0.0.1,.conti.de"
 
-# Environment Variables
-ENV VS_YEAR=${VS_YEAR} `
-    VS_VERSION=${VS_VERSION} `
-    CMAKE_VERSION=${CMAKE_VERSION} `
-    CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel `
-    BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+# Install Chocolatey
+RUN powershell -NoProfile -Command `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-# Set the working directory
-WORKDIR C:/app
+# Configure Chocolatey Proxy
+RUN choco config set proxy http://sia-proxy.geo.conti.de:3128
 
-# Copy Installation Scripts
-COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
-COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
-COPY scripts/windows/get_vs_version.ps1 C:/app/scripts/windows/get_vs_version.ps1
+# Install Visual Studio Build Tools and CMake using Chocolatey
+RUN choco install visualstudio2019buildtools --version=${VS_VERSION}.0.0 --package-parameters "--quiet --norestart" -y; `
+    choco install cmake --version=${CMAKE_VERSION} -y
 
-# Debugging: Output the values of the environment variables
-RUN powershell -NoProfile -Command "Write-Host 'DEBUG: Expanded CHANNEL_URL=' + $env:CHANNEL_URL; Write-Host 'DEBUG: Expanded BUILD_TOOLS_URL=' + $env:BUILD_TOOLS_URL"
-
-# Install Visual Studio Build Tools
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\\scripts\\install_vs_buildtools.ps1' -ChannelUrl $env:CHANNEL_URL -BuildToolsUrl $env:BUILD_TOOLS_URL"
-
-# Verify CMake Installation
+# Verify Installations
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host 'INFO: Verifying Visual Studio Build Tools installation...'; `
+    & "C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer\\vswhere.exe" -all; `
     Write-Host 'INFO: Verifying CMake installation...'; `
     cmake --version
 
