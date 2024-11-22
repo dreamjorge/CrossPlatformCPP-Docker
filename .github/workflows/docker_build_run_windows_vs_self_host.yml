@@ -61,7 +61,7 @@ jobs:
             -t $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }} `
             -f Dockerfile.windows10.base .
           Write-Host "INFO: Built Docker image: $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-  
+
   run-tests:
     name: Run Build and Run Scripts in Docker
     runs-on: self-hosted  # Ensure this matches your self-hosted runner labels

@@ -40,9 +40,28 @@ if (!(Test-Path -Path $tempDir)) {
     New-Item -ItemType Directory -Path $tempDir | Out-Null
 }
 
-# Download the Visual Studio Build Tools installer
-Write-Host "INFO: Downloading Visual Studio Build Tools from $BuildToolsUrl"
-Invoke-WebRequest -Uri $BuildToolsUrl -OutFile $installerPath -UseBasicParsing
+# Download the Visual Studio Build Tools installer with retry logic
+$maxRetries = 3
+$retryCount = 0
+$downloadSuccess = $false
+
+while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
+    try {
+        Write-Host "INFO: Downloading Visual Studio Build Tools from $BuildToolsUrl (Attempt $($retryCount + 1))"
+        Invoke-WebRequest -Uri $BuildToolsUrl -OutFile $installerPath -UseBasicParsing
+        $downloadSuccess = $true
+    }
+    catch {
+        $retryCount++
+        Write-Host "WARNING: Download failed. Retry attempt $retryCount of $maxRetries."
+        Start-Sleep -Seconds 5
+    }
+}
+
+if (-not $downloadSuccess) {
+    Write-Error "ERROR: Failed to download Visual Studio Build Tools after $maxRetries attempts."
+    exit 1
+}
 
 # Verify installer download
 if (!(Test-Path -Path $installerPath)) {
@@ -72,6 +91,11 @@ Start-Process -FilePath $installerPath `
 # Verify installation
 if ($LASTEXITCODE -ne 0) {
     Write-Error "ERROR: Visual Studio Build Tools installation failed. Check logs at $logPath"
+    if (Test-Path $logPath) {
+        Write-Host "----- BEGIN vs_installation.log -----"
+        Get-Content $logPath | Write-Host
+        Write-Host "----- END vs_installation.log -----"
+    }
     exit $LASTEXITCODE
 }
 
