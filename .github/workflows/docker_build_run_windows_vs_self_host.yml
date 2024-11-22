@@ -1,4 +1,4 @@
-name: Docker Build and Run on Windows
+name: Docker Build and Run on Windows Self Host
 
 # Trigger the workflow on push and pull request events to the main branch
 on:
