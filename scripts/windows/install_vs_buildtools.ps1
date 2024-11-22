@@ -51,17 +51,13 @@ if (!(Test-Path -Path $installerPath)) {
 
 Write-Host "INFO: Installer downloaded successfully to $installerPath"
 
+# Prepare argument list as a single string
+$arguments = "--quiet --norestart --wait --add `\"Microsoft.VisualStudio.Workload.VCTools;includeRecommended`\" --channelUri `"$ChannelUrl`" --installPath `"`"C:\BuildTools`"`" --log `"$logPath`""
+
 # Execute the installer
-Write-Host "INFO: Installing Visual Studio Build Tools..."
+Write-Host "INFO: Installing Visual Studio Build Tools with arguments: $arguments"
 Start-Process -FilePath $installerPath `
-    -ArgumentList `
-    "--quiet", `
-    "--norestart", `
-    "--wait", `
-    "--add Microsoft.VisualStudio.Workload.VCTools;includeRecommended" `
-    "--channelUri $ChannelUrl" `
-    "--installPath C:\BuildTools" `
-    "--log $logPath" `
+    -ArgumentList $arguments `
     -NoNewWindow -Wait
 
 # Verify installation
