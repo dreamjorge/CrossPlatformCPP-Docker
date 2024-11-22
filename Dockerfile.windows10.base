@@ -9,8 +9,8 @@ ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
 # Set environment variables for proxy and no_proxy
-ENV http_proxy="http://sia-proxy.geo.conti.de:3128" \
-    https_proxy="http://sia-proxy.geo.conti.de:3128" \
+ENV http_proxy="http://sia-proxy.geo.conti.de:3128" `
+    https_proxy="http://sia-proxy.geo.conti.de:3128" `
     no_proxy="localhost,127.0.0.1,.conti.de"
 
 # Environment Variables
