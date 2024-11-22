@@ -1,6 +1,5 @@
 name: Docker Build and Run on Windows Self Host
 
-# Trigger the workflow on push and pull request events to the main branch
 on:
   push:
     branches:
@@ -9,21 +8,17 @@ on:
     branches:
       - main
 
-# Define jobs within the workflow
 jobs:
   build-docker-images:
     name: Build Docker Images
     runs-on: self-hosted  # Ensure this matches your self-hosted runner labels
 
-    # Define environment variables for consistency and maintainability
     env:
-      CMAKE_VERSION: 3.21.3
       DOCKER_NAME_BASE: crossplatformapp-windows
 
-    # Use a matrix strategy to build images for different VS versions
     strategy:
       matrix:
-        vs_year: [2019]
+        vs_year: [2019]  # Add more years if needed, e.g., [2017, 2019, 2022]
 
     steps:
       # Step 1: Checkout the repository code
@@ -42,71 +37,43 @@ jobs:
             exit 1
           }
 
-      # Step 3: Check PowerShell Version
-      - name: Check PowerShell Version
-        shell: powershell
-        run: |
-          Write-Host "PowerShell Version:"
-          $PSVersionTable.PSVersion
-
-      # Step 4: Retrieve the Visual Studio version based on the VS year
+      # Step 3: Get VS_VERSION from VS_YEAR
       - name: Get VS_VERSION from VS_YEAR
         id: get-vs-version
         shell: powershell
         run: |
-          # Execute the PowerShell script to get the VS_VERSION
           $vs_version = .\scripts\windows\get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
-          Write-Host "INFO: Retrieved VS_VERSION=$vs_version for VS_YEAR=${{ matrix.vs_year }}"
-          
-          # Set the output variable for use in subsequent steps
           echo "vs_version=$vs_version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
 
-      # Step 5: Set the VS_VERSION as an environment variable for the current step
+      # Step 4: Set the VS_VERSION as an environment variable
       - name: Set VS_VERSION in Environment
         shell: powershell
         run: |
-          # Assign the output from the previous step to the VS_VERSION environment variable
           echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
-      # Step 6: Build the base Docker image (only for the first matrix iteration)
-      - name: Build Base Docker Image
-        if: ${{ matrix.vs_year == 2019 }}  # Build base image only once
+      # Step 5: Build Docker Image
+      - name: Build Docker Image
         shell: powershell
         run: |
-          # Build the base Docker image without using the cache for a fresh build
-          docker build -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows10.base .
-          Write-Host "INFO: Built base Docker image: $env:DOCKER_NAME_BASE-base"
-
- 
-      #Step 7: Build Visual Studio-specific Docker images
-      - name: Build Visual Studio Docker Image
-        shell: powershell
-        run: |
-          # Construct the Docker image tag using the base name and VS year
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          
-          # Build the Docker image with the necessary build arguments
           docker build --no-cache `
             --build-arg VS_YEAR=${{ matrix.vs_year }} `
             --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t $imageTag `
-            -f Dockerfile.windows.vs .
-    
-          Write-Host "INFO: Built Docker image: $imageTag"
+            --build-arg CHANNEL_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/channel `
+            --build-arg BUILD_TOOLS_URL=https://aka.ms/vs/${{ env.VS_VERSION }}/release/vs_buildtools.exe `
+            -t $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }} `
+            -f Dockerfile.windows10.base .
+          Write-Host "INFO: Built Docker image: $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
 
   run-tests:
     name: Run Build and Run Scripts in Docker
     runs-on: self-hosted  # Ensure this matches your self-hosted runner labels
     needs: build-docker-images  # This job depends on the build-docker-images job
 
-    # Define a matrix to run the job with different configurations and VS versions
     strategy:
       matrix:
         config: [Debug, Release]
-        vs_year: [2019]
+        vs_year: [2019]  # Add more years if needed, e.g., [2017, 2019, 2022]
 
-    # Define environment variables for consistency and maintainability
     env:
       DOCKER_NAME_BASE: crossplatformapp-windows
 
@@ -127,67 +94,36 @@ jobs:
             exit 1
           }
 
-      # Step 3: Check PowerShell Version
-      - name: Check PowerShell Version
+      # Step 3: Get VS_VERSION from VS_YEAR
+      - name: Get VS_VERSION from VS_YEAR
+        id: get-vs-version
         shell: powershell
         run: |
-          Write-Host "PowerShell Version:"
-          $PSVersionTable.PSVersion
-
-      # Step 4: Set the VS_VERSION as an environment variable based on the VS year
-      - name: Set VS_VERSION in Environment
-        shell: powershell
-        run: |
-          # Retrieve VS_VERSION using the PowerShell script
           $vs_version = .\scripts\windows\get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
-          Write-Host "INFO: Retrieved VS_VERSION=$vs_version for VS_YEAR=${{ matrix.vs_year }}"
-          
-          # Export VS_VERSION to the environment for subsequent steps
-          echo "VS_VERSION=$vs_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "vs_version=$vs_version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
 
-      # Step 5: Verify Docker Image Availability
-      - name: Verify Docker Image
-        shell: powershell
-        run: |
-          # Define the Docker image tag based on vs_year
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          
-          # Check if the Docker image exists locally
-          $imageExists = docker images -q $imageTag
-          if (-not $imageExists) {
-              Write-Error "Docker image $imageTag not found. Ensure it is built in the build-docker-images job."
-              exit 1
-          }
-          Write-Host "INFO: Docker image $imageTag is available."
-
-      # Step 6: Run the build script inside the Docker container
+      # Step 4: Run the build script inside the Docker container
       - name: Run Build Script Inside Docker
         shell: powershell
         run: |
-          # Define the Docker image tag
           $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          
-          # Execute the build script inside the Docker container
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e VS_YEAR=${{ matrix.vs_year }} `
-            -e VS_VERSION=${{ env.VS_VERSION }} `
+            -e VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1 -Config $env:CONFIG -BuildDir C:/app/build
 
-      # Step 7: Run the application inside the Docker container
+      # Step 5: Run the application inside the Docker container
       - name: Run Application Inside Docker
         shell: powershell
         run: |
-          # Define the Docker image tag
           $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          
-          # Execute the run script inside the Docker container
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e VS_YEAR=${{ matrix.vs_year }} `
-            -e VS_VERSION=${{ env.VS_VERSION }} `
+            -e VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }} `
             -v "${{ github.workspace }}:C:/app" `
             $imageTag `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1 -Config $env:CONFIG -BuildDir C:/app/build

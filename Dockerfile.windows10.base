@@ -9,26 +9,28 @@ ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
 # Derived URLs
-ARG CHANNEL_URL=https://aka.ms/vs/$VS_VERSION/release/channel
-ARG BUILD_TOOLS_URL=https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe
+ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
+ARG BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 
 # Environment Variables
 ENV VS_YEAR=${VS_YEAR}
 ENV VS_VERSION=${VS_VERSION}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV CHANNEL_URL=${CHANNEL_URL}
+ENV BUILD_TOOLS_URL=${BUILD_TOOLS_URL}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
-# Debugging: Echo the resolved ARG values to confirm proper expansion
-RUN echo "DEBUG: Expanded CHANNEL_URL=$CHANNEL_URL" && echo "DEBUG: Expanded BUILD_TOOLS_URL=$BUILD_TOOLS_URL"
+# Debugging: Output the values of the arguments using PowerShell variable syntax
+RUN powershell -NoProfile -Command "Write-Host 'DEBUG: Expanded CHANNEL_URL=' + $env:CHANNEL_URL; Write-Host 'DEBUG: Expanded BUILD_TOOLS_URL=' + $env:BUILD_TOOLS_URL"
 
-# Pass resolved ARG values directly to the PowerShell script
+# Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
-    -ChannelUrl $CHANNEL_URL `
-    -BuildToolsUrl $BUILD_TOOLS_URL
+    -ChannelUrl $env:CHANNEL_URL `
+    -BuildToolsUrl $env:BUILD_TOOLS_URL
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `

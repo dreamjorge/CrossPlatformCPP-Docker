@@ -1,27 +1,26 @@
+param (
+    [Parameter(Mandatory = $true)]
+    [string]$Config,
+    [Parameter(Mandatory = $true)]
+    [string]$BuildDir
+)
+
 # Exit immediately if an error occurs
 $ErrorActionPreference = "Stop"
 
-Write-Host "INFO: Running application"
+Write-Host "INFO: Starting application with configuration: $Config"
 
-# Set default configuration if not provided
-if (-not $env:CONFIG) {
-    $env:CONFIG = "Release"
-}
+# Construct the path to the executable
+$exePath = Join-Path -Path $BuildDir -ChildPath "bin\$Config\CrossPlatformApp.exe"
 
-Write-Host "INFO: CONFIG=$env:CONFIG"
-
-# Specify the path to the executable
-$execPath = "C:\app\build\$env:CONFIG\CrossPlatformApp.exe"
-
-# Check if the executable exists
-if (-not (Test-Path $execPath)) {
-    Write-Error "ERROR: Executable not found at $execPath."
+# Verify executable exists
+if (-not (Test-Path $exePath)) {
+    Write-Error "ERROR: Executable not found at $exePath"
     exit 1
 }
 
-Write-Host "INFO: Executing: $execPath"
-
 # Run the executable
-& $execPath
+Write-Host "INFO: Running executable at $exePath"
+& $exePath
 
-Write-Host "INFO: Application executed successfully."
+Write-Host "INFO: Application execution completed successfully."
