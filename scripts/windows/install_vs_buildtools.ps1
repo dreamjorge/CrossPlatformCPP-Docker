@@ -1,117 +1,38 @@
 param (
-    [Parameter(Mandatory = $true)]
-    [string]$ChannelUrl,  # URL to the Visual Studio Channel
-
-    [Parameter(Mandatory = $true)]
-    [string]$BuildToolsUrl  # URL to the Visual Studio Build Tools installer
+    [string]$VsVersion = "16" # Default to Visual Studio 2019 (VS Version 16)
 )
 
-# Exit immediately if an error occurs
-$ErrorActionPreference = "Stop"
+# Enable TLS 1.2 for secure downloads
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-Write-Host "INFO: Starting Visual Studio Build Tools installation..."
-Write-Host "DEBUG: Received ChannelUrl=$ChannelUrl"
-Write-Host "DEBUG: Received BuildToolsUrl=$BuildToolsUrl"
-
-# Validate URLs
-if (-not $BuildToolsUrl -or -not $ChannelUrl) {
-    Write-Error "ERROR: BuildToolsUrl or ChannelUrl is empty. Ensure the values are passed correctly."
-    exit 1
+# Map Visual Studio version to corresponding installer URLs
+$vsInstallers = @{
+    "15" = "https://download.visualstudio.microsoft.com/download/pr/11810035/f742a4d4-75b6-4704-8171-97bb89b15be6/vs_buildtools.exe" # Visual Studio 2017
+    "16" = "https://aka.ms/vs/16/release/vs_buildtools.exe" # Visual Studio 2019
+    "17" = "https://aka.ms/vs/17/release/vs_buildtools.exe" # Visual Studio 2022
 }
 
-if (-not ($BuildToolsUrl -match "^https?:\/\/")) {
-    Write-Error "ERROR: Invalid BuildToolsUrl format: $BuildToolsUrl"
-    exit 1
+if (-not $vsInstallers.ContainsKey($VsVersion)) {
+    Write-Error "Unsupported Visual Studio version: $VsVersion. Supported versions: 15 (2017), 16 (2019), 17 (2022)." -ErrorAction Stop
 }
 
-if (-not ($ChannelUrl -match "^https?:\/\/")) {
-    Write-Error "ERROR: Invalid ChannelUrl format: $ChannelUrl"
-    exit 1
+$buildToolsUrl = $vsInstallers[$VsVersion]
+$buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
+
+# Download the Visual Studio Build Tools installer
+try {
+    Invoke-WebRequest -Uri $buildToolsUrl -OutFile $buildToolsPath -UseBasicParsing -ErrorAction Stop
+} catch {
+    Write-Error "Failed to download Visual Studio Build Tools: $_" -ErrorAction Stop
 }
 
-# Temporary paths
-$tempDir = "C:\temp"
-$installerPath = "$tempDir\vs_buildtools.exe"
-$logPath = "$tempDir\vs_installation.log"
-
-# Create temporary directory
-if (!(Test-Path -Path $tempDir)) {
-    Write-Host "INFO: Creating temporary directory at $tempDir"
-    New-Item -ItemType Directory -Path $tempDir | Out-Null
+# Install Visual Studio Build Tools in silent mode
+$installArgs = "--quiet --norestart --wait --add Microsoft.VisualStudio.Workload.VCTools;includeRecommended"
+try {
+    Start-Process -FilePath $buildToolsPath -ArgumentList $installArgs -NoNewWindow -Wait -ErrorAction Stop
+} catch {
+    Write-Error "Failed to install Visual Studio Build Tools: $_" -ErrorAction Stop
 }
 
-# Download the Visual Studio Build Tools installer with retry logic
-$maxRetries = 3
-$retryCount = 0
-$downloadSuccess = $false
-
-while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
-    try {
-        Write-Host "INFO: Downloading Visual Studio Build Tools from $BuildToolsUrl (Attempt $($retryCount + 1))"
-        Invoke-WebRequest -Uri $BuildToolsUrl -OutFile $installerPath -UseBasicParsing
-        $downloadSuccess = $true
-    }
-    catch {
-        $retryCount++
-        Write-Host "WARNING: Download failed. Retry attempt $retryCount of $maxRetries."
-        Start-Sleep -Seconds 5
-    }
-}
-
-if (-not $downloadSuccess) {
-    Write-Error "ERROR: Failed to download Visual Studio Build Tools after $maxRetries attempts."
-    exit 1
-}
-
-# Verify installer download
-if (!(Test-Path -Path $installerPath)) {
-    Write-Error "ERROR: Failed to download Visual Studio Build Tools installer."
-    exit 1
-}
-
-Write-Host "INFO: Installer downloaded successfully to $installerPath"
-
-# Prepare argument list as an array
-$arguments = @(
-    "--quiet",
-    "--norestart",
-    "--wait",
-    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended",
-    "--channelUri", $ChannelUrl,
-    "--installPath", "C:\BuildTools",
-    "--log", $logPath
-)
-
-# Execute the installer
-Write-Host "INFO: Installing Visual Studio Build Tools with arguments: $arguments"
-Start-Process -FilePath $installerPath `
-    -ArgumentList $arguments `
-    -NoNewWindow -Wait
-
-# Always output the log
-if (Test-Path $logPath) {
-    Write-Host "----- BEGIN vs_installation.log -----"
-    Get-Content $logPath | Write-Host
-    Write-Host "----- END vs_installation.log -----"
-}
-else {
-    Write-Host "WARNING: Log file not found at $logPath"
-}
-
-# Additional Diagnostic: List contents of C:\BuildTools
-Write-Host "INFO: Listing contents of C:\BuildTools to verify installation..."
-Get-ChildItem -Path "C:\BuildTools" -Recurse | Select-Object FullName | Write-Host
-
-# Verify installation
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "ERROR: Visual Studio Build Tools installation failed. Check logs at $logPath"
-    exit $LASTEXITCODE
-}
-
-Write-Host "INFO: Visual Studio Build Tools installed successfully!"
-
-# Cleanup temporary files
-Write-Host "INFO: Cleaning up temporary files..."
-Remove-Item -Path $tempDir -Recurse -Force
-
-Write-Host "INFO: Visual Studio Build Tools installation completed successfully."
+# Clean up installer file
+Remove-Item -Force $buildToolsPath -ErrorAction SilentlyContinue
