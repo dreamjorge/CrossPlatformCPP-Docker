@@ -77,22 +77,24 @@ jobs:
           docker build -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows10.base .
           Write-Host "INFO: Built base Docker image: $env:DOCKER_NAME_BASE-base"
 
-      # Step 7: Build Visual Studio-specific Docker images
+ 
+      #Step 7: Build Visual Studio-specific Docker images
       - name: Build Visual Studio Docker Image
         shell: powershell
-        run: |
+  run: |
           # Define the Docker image tag using the base name and VS year
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          
-          # Build the Visual Studio-specific Docker image
-          docker build `
-            --build-arg VS_YEAR=${{ matrix.vs_year }} `
-            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t $imageTag `
-            -f Dockerfile.windows.vs .
-          
-          Write-Host "INFO: Built Docker image: $imageTag"
+        $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+    
+    # Build the Visual Studio-specific Docker image with no cache
+        docker build `
+         --no-cache `
+        --build-arg VS_YEAR=${{ matrix.vs_year }} `
+        --build-arg VS_VERSION=${{ env.VS_VERSION }} `
+        --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
+        -t $imageTag `
+        -f Dockerfile.windows.vs .
+    
+      Write-Host "INFO: Built Docker image: $imageTag"
 
   run-tests:
     name: Run Build and Run Scripts in Docker
