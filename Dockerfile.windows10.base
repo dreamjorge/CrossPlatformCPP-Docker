@@ -16,21 +16,19 @@ ARG BUILD_TOOLS_URL=https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe
 ENV VS_YEAR=${VS_YEAR}
 ENV VS_VERSION=${VS_VERSION}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
-ENV CHANNEL_URL=${CHANNEL_URL}
-ENV BUILD_TOOLS_URL=${BUILD_TOOLS_URL}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
-# Debugging: Output the environment variables
-RUN echo "DEBUG: CHANNEL_URL=$CHANNEL_URL" && echo "DEBUG: BUILD_TOOLS_URL=$BUILD_TOOLS_URL"
+# Debugging: Output the values of the arguments
+RUN echo "DEBUG: ARG CHANNEL_URL=$CHANNEL_URL" && echo "DEBUG: ARG BUILD_TOOLS_URL=$BUILD_TOOLS_URL"
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
-    -ChannelUrl $CHANNEL_URL `
-    -BuildToolsUrl $BUILD_TOOLS_URL
+    -ChannelUrl "${CHANNEL_URL}" `
+    -BuildToolsUrl "${BUILD_TOOLS_URL}"
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
