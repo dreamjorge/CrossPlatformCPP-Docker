@@ -24,10 +24,13 @@ COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
+# Debugging: Output the environment variables
+RUN echo "DEBUG: CHANNEL_URL=$CHANNEL_URL" && echo "DEBUG: BUILD_TOOLS_URL=$BUILD_TOOLS_URL"
+
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
-    -ChannelUrl $env:CHANNEL_URL `
-    -BuildToolsUrl $env:BUILD_TOOLS_URL
+    -ChannelUrl $CHANNEL_URL `
+    -BuildToolsUrl $BUILD_TOOLS_URL
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
