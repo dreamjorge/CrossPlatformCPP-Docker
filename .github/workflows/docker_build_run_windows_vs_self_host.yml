@@ -1,4 +1,4 @@
-name: Docker Build and Run on Windows Señf Host
+name: Docker Build and Run on Windows Self Hosted
 
 on:
   push:

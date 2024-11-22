@@ -1,6 +1,6 @@
 # escape=`
 
-# Use Base Image
+# Stage 1: Base Image Setup
 FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS base
 
 # Build Arguments
@@ -9,11 +9,11 @@ ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
-ENV VS_YEAR=${VS_YEAR}
-ENV VS_VERSION=${VS_VERSION}
-ENV CMAKE_VERSION=${CMAKE_VERSION}
-ENV CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ENV BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
+    CMAKE_VERSION=${CMAKE_VERSION} `
+    CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel `
+    BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
@@ -28,7 +28,7 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\\scripts\\inst
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    Write-Host "Verifying CMake installation..."; `
+    Write-Host "INFO: Verifying CMake installation..."; `
     cmake --version
 
 # Set Working Directory
