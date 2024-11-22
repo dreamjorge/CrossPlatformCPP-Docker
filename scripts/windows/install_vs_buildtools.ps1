@@ -1,6 +1,7 @@
 param (
     [Parameter(Mandatory = $true)]
     [string]$ChannelUrl,  # URL to the Visual Studio Channel
+
     [Parameter(Mandatory = $true)]
     [string]$BuildToolsUrl  # URL to the Visual Studio Build Tools installer
 )
@@ -51,8 +52,16 @@ if (!(Test-Path -Path $installerPath)) {
 
 Write-Host "INFO: Installer downloaded successfully to $installerPath"
 
-# Prepare argument list as a single string
-$arguments = "--quiet --norestart --wait --add `\"Microsoft.VisualStudio.Workload.VCTools;includeRecommended`\" --channelUri `"$ChannelUrl`" --installPath `"`"C:\BuildTools`"`" --log `"$logPath`""
+# Prepare argument list as an array
+$arguments = @(
+    "--quiet",
+    "--norestart",
+    "--wait",
+    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended",
+    "--channelUri", $ChannelUrl,
+    "--installPath", "C:\BuildTools",
+    "--log", $logPath
+)
 
 # Execute the installer
 Write-Host "INFO: Installing Visual Studio Build Tools with arguments: $arguments"
