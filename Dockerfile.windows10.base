@@ -6,14 +6,18 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS base
 # Build Arguments
 ARG VS_YEAR=2019
 ARG VS_VERSION=16
-ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
+
+# Derived URLs
+ARG CHANNEL_URL=https://aka.ms/vs/$VS_VERSION/release/channel
+ARG BUILD_TOOLS_URL=https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe
 
 # Environment Variables
 ENV VS_YEAR=${VS_YEAR}
 ENV VS_VERSION=${VS_VERSION}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV CHANNEL_URL=${CHANNEL_URL}
+ENV BUILD_TOOLS_URL=${BUILD_TOOLS_URL}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
@@ -22,8 +26,8 @@ COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
-    -ChannelUrl "https://aka.ms/vs/${VS_VERSION}/release/channel" `
-    -BuildToolsUrl "https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe"
+    -ChannelUrl $env:CHANNEL_URL `
+    -BuildToolsUrl $env:BUILD_TOOLS_URL
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
