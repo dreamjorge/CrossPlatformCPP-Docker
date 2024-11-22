@@ -81,7 +81,7 @@ jobs:
       #Step 7: Build Visual Studio-specific Docker images
       - name: Build Visual Studio Docker Image
         shell: powershell
-  run: |
+        run: |
           # Define the Docker image tag using the base name and VS year
         $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
     
