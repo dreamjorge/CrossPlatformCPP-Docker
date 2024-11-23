@@ -55,7 +55,7 @@ function Install-BuildTools {
     }
 
     try {
-        Log-Info "Installing Visual Studio Build Tools..."
+        Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
         Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait `
             -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
         Log-Info "Visual Studio Build Tools installation completed successfully."
@@ -71,7 +71,23 @@ function Validate-Installation {
         try {
             $ToolPath = Get-Command $Tool -ErrorAction SilentlyContinue
             if (-not $ToolPath) {
-                Log-Error "$Tool not found in PATH. Installation validation failed."
+                # If not found in PATH, look in the default Visual Studio installation directories
+                $possiblePaths = @(
+                    "C:\Program Files (x86)\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
+                    "C:\Program Files\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64"
+                )
+                $found = $false
+                foreach ($path in $possiblePaths) {
+                    $resolvedPath = Get-ChildItem -Path $path -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($resolvedPath) {
+                        $found = $true
+                        Log-Info "$Tool found at $($resolvedPath.FullName)"
+                        break
+                    }
+                }
+                if (-not $found) {
+                    Log-Error "$Tool not found in PATH or default directories. Installation validation failed."
+                }
             } else {
                 Log-Info "$Tool found at $ToolPath."
             }
@@ -101,7 +117,8 @@ $installArgs = @(
     "--quiet",
     "--norestart",
     "--wait",
-    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended"
+    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended",
+    "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project"
 ) -join " "
 
 # Install Visual Studio Build Tools
