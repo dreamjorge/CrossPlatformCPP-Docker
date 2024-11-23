@@ -17,7 +17,7 @@ function Log-Error {
     Write-Error "ERROR: $Message" -ErrorAction Stop
 }
 
-# Universal URL for Visual Studio Build Tools
+# Universal URL for Visual Studio Build Tools and Channel Manifest
 $vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
 $channelManifestUrl = "https://aka.ms/vs/15/release/channel"
 
@@ -76,13 +76,14 @@ function Validate-Installation {
     param ([string[]]$Tools)
     # Refresh the environment to ensure new PATH entries are loaded
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
-    
+
     foreach ($Tool in $Tools) {
         try {
             $ToolPath = Get-Command $Tool -ErrorAction SilentlyContinue
             if (-not $ToolPath) {
                 # If not found in PATH, look in the default Visual Studio installation directories
                 $possiblePaths = @(
+                    "C:\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
                     "C:\Program Files (x86)\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
                     "C:\Program Files\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64"
                 )
@@ -91,7 +92,9 @@ function Validate-Installation {
                     $resolvedPath = Get-ChildItem -Path $path -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
                     if ($resolvedPath) {
                         $found = $true
-                        Log-Info "$Tool found at $($resolvedPath.FullName)"
+                        $resolvedDir = Split-Path $resolvedPath.FullName
+                        Log-Info "$Tool found at $($resolvedPath.FullName). Adding $resolvedDir to PATH."
+                        [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";" + $resolvedDir, [System.EnvironmentVariableTarget]::Machine)
                         break
                     }
                 }
@@ -132,6 +135,8 @@ $installArgs = @(
     "--channelUri", $channelManifestPath,
     "--installChannelUri", $channelManifestPath,
     "--add", "Microsoft.VisualStudio.Workload.VCTools",
+    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
     "--includeRecommended",
     "--installPath", "C:\BuildTools"
 ) -join " "
