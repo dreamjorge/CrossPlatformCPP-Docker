@@ -6,16 +6,12 @@ FROM crossplatformapp-windows-base AS vs_build
 # Build Arguments
 ARG VS_YEAR=2017
 ARG VS_VERSION=15
-ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
 ENV VS_YEAR=${VS_YEAR} `
     VS_VERSION=${VS_VERSION} `
-    CMAKE_VERSION=${CMAKE_VERSION} `
-    CHANNEL_URL=${CHANNEL_URL} `
-    VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
+    CMAKE_VERSION=${CMAKE_VERSION}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
@@ -24,10 +20,10 @@ COPY scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
 COPY scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
 
 # Debugging: Verify Environment Variables
-RUN echo "CHANNEL_URL=$Env:CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$Env:VS_BUILD_TOOLS_URL"
+RUN echo "VS_VERSION=$Env:VS_VERSION"
 
 # Install Visual Studio Build Tools
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_buildtools.ps1" -VsVersion $Env:VS_VERSION
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_buildtools.ps1" -VsVersion ${VS_VERSION}
 
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmake_bypass.ps1"
