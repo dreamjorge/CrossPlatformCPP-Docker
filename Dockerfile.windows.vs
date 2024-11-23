@@ -4,8 +4,8 @@
 FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
-ARG VS_YEAR=2017
-ARG VS_VERSION=15
+ARG VS_YEAR=2019
+ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
@@ -28,8 +28,8 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_b
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmake_bypass.ps1"
 
-# Update PATH to include CMake
-ENV PATH="C:\\cmake\\bin;${PATH}"
+# Update PATH to include CMake and standard Windows paths
+ENV PATH="C:\\cmake\\bin;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\;C:\\Windows\\;C:\\Windows\\System32\\Wbem"
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
