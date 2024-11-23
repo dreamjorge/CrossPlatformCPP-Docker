@@ -111,16 +111,39 @@ function Validate-Installation {
         Log-Info "Found Visual Studio installation at $installationPath"
 
         foreach ($tool in $RequiredTools) {
-            $toolPath = Get-Command $tool -ErrorAction SilentlyContinue
+            switch ($tool.ToLower()) {
+                "cl.exe" {
+                    # Dynamically search for cl.exe using vswhere
+                    $toolPath = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                }
+                "msbuild.exe" {
+                    $toolPath = Get-ChildItem -Path "$installationPath\MSBuild\Current\Bin" -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                }
+                default {
+                    $toolPath = ""
+                }
+            }
+
             if (-not $toolPath) {
                 Log-Error "$tool not found in Visual Studio installation at $installationPath."
             } else {
-                Log-Info "$tool found at $toolPath"
+                Log-Info "$tool found at $($toolPath.FullName)"
             }
         }
     }
 
     Log-Info "All required tools validated successfully."
+}
+
+# Function: Clean Up Temporary Files
+function Clean-Up {
+    param ([string]$FilePath)
+    try {
+        Remove-Item -Force $FilePath -ErrorAction SilentlyContinue
+        Log-Info "Temporary file removed: $FilePath."
+    } catch {
+        Write-Warning "WARNING: Failed to remove $FilePath. You may need to delete it manually."
+    }
 }
 
 # Download the installer and channel manifest
@@ -149,6 +172,9 @@ Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelM
 # Validate the installation using vswhere
 Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up temporary files
-Remove-Item -Force $buildToolsPath, $channelManifestPath, $vswherePath -ErrorAction SilentlyContinue
-Log-Info "Temporary files cleaned up."
+# Clean up the installer, channel manifest, and vswhere files
+Clean-Up -FilePath $buildToolsPath
+Clean-Up -FilePath $channelManifestPath
+Clean-Up -FilePath $vswherePath
+
+Log-Info "Visual Studio Build Tools setup completed successfully."
