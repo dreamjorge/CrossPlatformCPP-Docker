@@ -31,13 +31,13 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Write-Host "Installing Visual Studio Build Tools..."; `
     powershell -File "C:\\scripts\\install_vs_buildtools.ps1" -VsVersion $Env:VS_VERSION
 
-
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
 
 # Verify Installation (msbuild and cl)
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Write-Host "Validating Visual Studio Build Tools installation..."; `
+    $env:PATH="$env:PATH;C:\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x64"; `
     Get-Command msbuild; `
     Get-Command cl; `
     Write-Host "Validation complete."
