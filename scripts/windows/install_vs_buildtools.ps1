@@ -1,7 +1,12 @@
 param (
-    [string]$VsVersion = "15" # Default to Visual Studio 2017 (VS Version 15)
+    [string]$VsVersion = $env:VS_VERSION
 )
 
+if ([string]::IsNullOrWhiteSpace($VsVersion)) {
+    $VsVersion = "15" # Default to Visual Studio 2017 (VS Version 15)
+}
+
+# Rest of your script remains the same...
 # Enable TLS 1.2 for secure downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
