@@ -9,9 +9,9 @@ ARG VS_VERSION=15
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
-ENV VS_YEAR=${VS_YEAR}
-ENV VS_VERSION=${VS_VERSION}
-ENV CMAKE_VERSION=${CMAKE_VERSION}
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
+    CMAKE_VERSION=${CMAKE_VERSION}
 
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
@@ -27,6 +27,9 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_b
 
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmake_bypass.ps1"
+
+# Update PATH to include CMake
+ENV PATH="C:\\cmake\\bin;${PATH}"
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
