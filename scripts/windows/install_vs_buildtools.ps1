@@ -20,10 +20,12 @@ function Log-Error {
 # Universal URL for Visual Studio Build Tools and Channel Manifest
 $vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
 $channelManifestUrl = "https://aka.ms/vs/15/release/channel"
+$vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
 
 # Define download paths
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
 $channelManifestPath = "C:\temp\VisualStudio.chman"
+$vswherePath = "C:\temp\vswhere.exe"
 
 # Ensure the C:\temp directory exists
 if (-not (Test-Path -Path "C:\temp")) {
@@ -71,43 +73,37 @@ function Install-BuildTools {
     }
 }
 
-# Function: Validate Installation
+# Function: Validate Installation Using vswhere
 function Validate-Installation {
-    param ([string[]]$Tools)
-    # Refresh the environment to ensure new PATH entries are loaded
-    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+    param ([string[]]$RequiredTools)
 
-    foreach ($Tool in $Tools) {
-        try {
-            $ToolPath = Get-Command $Tool -ErrorAction SilentlyContinue
-            if (-not $ToolPath) {
-                # If not found in PATH, look in the default Visual Studio installation directories
-                $possiblePaths = @(
-                    "C:\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
-                    "C:\Program Files (x86)\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64",
-                    "C:\Program Files\Microsoft Visual Studio\*\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64"
-                )
-                $found = $false
-                foreach ($path in $possiblePaths) {
-                    $resolvedPath = Get-ChildItem -Path $path -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-                    if ($resolvedPath) {
-                        $found = $true
-                        $resolvedDir = Split-Path $resolvedPath.FullName
-                        Log-Info "$Tool found at $($resolvedPath.FullName). Adding $resolvedDir to PATH."
-                        [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";" + $resolvedDir, [System.EnvironmentVariableTarget]::Machine)
-                        break
-                    }
-                }
-                if (-not $found) {
-                    Log-Error "$Tool not found in PATH or default directories. Installation validation failed."
-                }
+    # Download vswhere
+    Download-File -Url $vswhereUrl -Destination $vswherePath
+
+    # Locate Visual Studio installations
+    $vsInstallations = & $vswherePath -all -products '*' -requires Microsoft.VisualStudio.Workload.VCTools -format json | ConvertFrom-Json
+
+    if (-not $vsInstallations) {
+        Log-Error "No valid Visual Studio Build Tools installation found."
+    }
+
+    # Check if required tools exist in the detected installation
+    foreach ($installation in $vsInstallations) {
+        $installationPath = $installation.installationPath
+        Log-Info "Found Visual Studio installation at $installationPath"
+
+        foreach ($tool in $RequiredTools) {
+            $toolPath = Join-Path -Path $installationPath -ChildPath "VC\Tools\MSVC\*\bin\Hostx64\x64\$tool"
+            $resolvedPath = Get-ChildItem -Path $toolPath -ErrorAction SilentlyContinue | Select-Object -First 1
+
+            if (-not $resolvedPath) {
+                Log-Error "$tool not found in Visual Studio installation at $installationPath."
             } else {
-                Log-Info "$Tool found at $ToolPath."
+                Log-Info "$tool found at $($resolvedPath.FullName)"
             }
-        } catch {
-            Log-Error ("Failed to validate {0}: {1}" -f $Tool, $_)
         }
     }
+
     Log-Info "All required tools validated successfully."
 }
 
@@ -122,7 +118,7 @@ function Clean-Up {
     }
 }
 
-# Download the installer and channel manifest
+# Download the installer, channel manifest, and vswhere
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
@@ -144,9 +140,10 @@ $installArgs = @(
 # Install Visual Studio Build Tools
 Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelManifestPath -InstallArgs $installArgs
 
-# Validate the installation
-Validate-Installation -Tools @("msbuild", "cl")
+# Validate the installation using vswhere
+Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up the installer and channel manifest files
+# Clean up the installer, channel manifest, and vswhere files
 Clean-Up -FilePath $buildToolsPath
 Clean-Up -FilePath $channelManifestPath
+Clean-Up -FilePath $vswherePath
