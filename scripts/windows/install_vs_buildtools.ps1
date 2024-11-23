@@ -55,10 +55,14 @@ function Install-BuildTools {
     }
 
     try {
+        $errorFile = "C:\temp\vs_buildtools_error.log"
         Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
         Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait `
-            -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
+            -RedirectStandardOutput "NUL" -RedirectStandardError $errorFile
         Log-Info "Visual Studio Build Tools installation completed successfully."
+        if (Test-Path $errorFile) {
+            Remove-Item -Force $errorFile
+        }
     } catch {
         Log-Error ("Failed to install Visual Studio Build Tools: {0}" -f $_)
     }
@@ -67,6 +71,9 @@ function Install-BuildTools {
 # Function: Validate Installation
 function Validate-Installation {
     param ([string[]]$Tools)
+    # Refresh the environment to ensure new PATH entries are loaded
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine)
+    
     foreach ($Tool in $Tools) {
         try {
             $ToolPath = Get-Command $Tool -ErrorAction SilentlyContinue
