@@ -25,7 +25,7 @@ RUN powershell -Command "Write-Host 'VS_VERSION is' $env:VS_VERSION"
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_buildtools.ps1"
 
-# Install CMake using the PowerShell script
+# Install CMake using the updated PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmake_bypass.ps1"
 
 # Update PATH to include CMake and standard Windows paths
