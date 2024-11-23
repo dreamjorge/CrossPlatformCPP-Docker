@@ -29,7 +29,8 @@ RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Write-Host "Installing Visual Studio Build Tools..."; `
-    powershell -File "C:\\scripts\\install_vs_buildtools.ps1" -VsVersion ${VS_VERSION}
+    powershell -File "C:\\scripts\\install_vs_buildtools.ps1" -VsVersion $Env:VS_VERSION
+
 
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
