@@ -25,16 +25,18 @@ COPY scripts/windows/install_vs_buildtools.ps1 /scripts/install_vs_buildtools.ps
 # Install Visual Studio Build Tools in silent mode
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File /scripts/install_vs_buildtools.ps1 -VsVersion 16
 
-# Refresh PATH to include Visual Studio tools if needed (optional)
+# Refresh PATH to include Visual Studio tools if needed
 RUN powershell -NoProfile -Command `
     [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\\Program Files (x86)\\Microsoft Visual Studio\\Installer", [System.EnvironmentVariableTarget]::Machine)
 
-# Install CMake using Chocolatey
+# Install Chocolatey
 RUN powershell -NoProfile -Command `
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     Invoke-WebRequest -Uri 'https://chocolatey.org/install.ps1' -OutFile /scripts/install_choco.ps1 -UseBasicParsing; `
-    powershell -NoProfile -ExecutionPolicy Bypass -File /scripts/install_choco.ps1; `
-    choco install cmake --version=${CMAKE_VERSION} -y
+    powershell -NoProfile -ExecutionPolicy Bypass -File /scripts/install_choco.ps1
+
+# Install CMake using Chocolatey
+RUN choco install cmake --version=${CMAKE_VERSION} -y
 
 # Verify Installations
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
