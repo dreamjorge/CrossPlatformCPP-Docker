@@ -17,7 +17,7 @@ function Log-Error {
     Write-Error "ERROR: $Message" -ErrorAction Stop
 }
 
-# Universal URL for Visual Studio Build Tools and Channel Manifest
+# Universal URLs for Visual Studio Build Tools, Channel Manifest, and vswhere
 $vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
 $channelManifestUrl = "https://aka.ms/vs/15/release/channel"
 $vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
@@ -77,8 +77,10 @@ function Install-BuildTools {
 function Validate-Installation {
     param ([string[]]$RequiredTools)
 
-    # Download vswhere
-    Download-File -Url $vswhereUrl -Destination $vswherePath
+    # Download vswhere if not already downloaded
+    if (-not (Test-Path $vswherePath)) {
+        Download-File -Url $vswhereUrl -Destination $vswherePath
+    }
 
     # Locate Visual Studio installations
     $vsInstallations = & $vswherePath -all -products '*' -requires Microsoft.VisualStudio.Workload.VCTools -format json | ConvertFrom-Json
@@ -93,7 +95,20 @@ function Validate-Installation {
         Log-Info "Found Visual Studio installation at $installationPath"
 
         foreach ($tool in $RequiredTools) {
-            $toolPath = Join-Path -Path $installationPath -ChildPath "VC\Tools\MSVC\*\bin\Hostx64\x64\$tool"
+            switch ($tool.ToLower()) {
+                "cl.exe" {
+                    # Check in VC\Tools\MSVC\*\bin\Hostx64\x64\
+                    $toolPath = Join-Path -Path $installationPath -ChildPath "VC\Tools\MSVC\*\bin\Hostx64\x64\$tool"
+                }
+                "msbuild.exe" {
+                    # Check in MSBuild\Current\Bin\
+                    $toolPath = Join-Path -Path $installationPath -ChildPath "MSBuild\Current\Bin\$tool"
+                }
+                default {
+                    $toolPath = ""
+                }
+            }
+
             $resolvedPath = Get-ChildItem -Path $toolPath -ErrorAction SilentlyContinue | Select-Object -First 1
 
             if (-not $resolvedPath) {
@@ -133,6 +148,7 @@ $installArgs = @(
     "--add", "Microsoft.VisualStudio.Workload.VCTools",
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
+    "--add", "Microsoft.VisualStudio.Component.MSBuild", # Added MSBuild component
     "--includeRecommended",
     "--installPath", "C:\BuildTools"
 ) -join " "
