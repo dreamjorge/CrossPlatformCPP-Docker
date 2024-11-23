@@ -9,10 +9,33 @@ if ([string]::IsNullOrWhiteSpace($VsVersion)) {
 # Enable TLS 1.2 for secure downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# Functions: Log-Info and Log-Error (same as before)
+# Function: Log Information
+function Log-Info {
+    param ([string]$Message)
+    Write-Host "INFO: $Message"
+}
+
+# Function: Log Error
+function Log-Error {
+    param ([string]$Message)
+    Write-Error "ERROR: $Message" -ErrorAction Stop
+}
 
 # Map Visual Studio version to corresponding Build Tools and channel manifest URLs
-# (Same as before)
+$vsInstallers = @{
+    "15" = @{
+        BuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe" # VS2017
+        ChannelManifestUrl = "https://aka.ms/vs/15/release/channel"
+    }
+    "16" = @{
+        BuildToolsUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe" # VS2019
+        ChannelManifestUrl = "https://aka.ms/vs/16/release/channel"
+    }
+    "17" = @{
+        BuildToolsUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe" # VS2022
+        ChannelManifestUrl = "https://aka.ms/vs/17/release/channel"
+    }
+}
 
 # Check if the provided VsVersion is supported
 if (-not $vsInstallers.ContainsKey($VsVersion)) {
@@ -20,73 +43,7 @@ if (-not $vsInstallers.ContainsKey($VsVersion)) {
 }
 
 # Get the installer and channel manifest URLs based on VsVersion
-# (Same as before)
+$vsBuildToolsUrl = $vsInstallers[$VsVersion].BuildToolsUrl
+$channelManifestUrl = $vsInstallers[$VsVersion].ChannelManifestUrl
 
-# Ensure the C:\temp directory exists
-# (Same as before)
-
-# Functions: Download-File, Install-BuildTools, Validate-Installation, Clean-Up
-# (Same as before, but modify Validate-Installation as follows)
-
-function Validate-Installation {
-    param ([string[]]$RequiredTools)
-
-    # Download vswhere if not already downloaded
-    if (-not (Test-Path $vswherePath)) {
-        $vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
-        Download-File -Url $vswhereUrl -Destination $vswherePath
-    }
-
-    # Use vswhere to locate installations
-    Log-Info "Executing vswhere to locate Visual Studio installations..."
-    $vswhereCommand = "& `$vswherePath -all -products '*' -format json"
-    Log-Info "vswhere command: $vswhereCommand"
-    $vswhereOutput = & $vswherePath -all -products '*' -format json
-
-    if ([string]::IsNullOrWhiteSpace($vswhereOutput)) {
-        Log-Error "vswhere did not return any installations."
-    } else {
-        Log-Info "vswhere output: $vswhereOutput"
-        $vsInstallations = $vswhereOutput | ConvertFrom-Json
-
-        # Proceed with checking for required tools
-        foreach ($installation in $vsInstallations) {
-            $installationPath = $installation.installationPath
-            Log-Info "Found Visual Studio installation at $installationPath"
-
-            foreach ($tool in $RequiredTools) {
-                # Tool checking logic (same as before)
-            }
-        }
-    }
-
-    Log-Info "All required tools validated successfully."
-}
-
-# Download the installer and channel manifest
-# (Same as before)
-
-# Set installation arguments (update component IDs and remove custom installPath)
-$installArgs = @(
-    "--quiet",
-    "--wait",
-    "--norestart",
-    "--nocache",
-    "--channelUri", $channelManifestPath,
-    "--installChannelUri", $channelManifestPath,
-    "--add", "Microsoft.VisualStudio.Workload.VCTools",
-    "--add", "Microsoft.VisualStudio.Workload.MSBuildTools",
-    "--includeRecommended",
-    "--log", "C:\temp\vs_buildtools_install.log"
-) -join " "
-
-# Install Visual Studio Build Tools
-# (Same as before)
-
-# Validate the installation using vswhere
-Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
-
-# Clean up the installer, channel manifest, and vswhere files
-# (Same as before, but remember to uncomment Clean-Up if you had commented it out)
-
-Log-Info "Visual Studio Build Tools setup completed successfully."
+# Rest of your script continues here...
