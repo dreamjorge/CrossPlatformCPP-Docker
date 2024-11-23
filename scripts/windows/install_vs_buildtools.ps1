@@ -83,7 +83,7 @@ function Install-BuildTools {
         $logPath = "C:\temp\vs_buildtools_install.log"
         Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
         # Install with logging
-        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait
+        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait -PassThru | Out-Null
         Log-Info "Visual Studio Build Tools installation completed successfully. Log at $logPath"
     } catch {
         Log-Error ("Failed to install Visual Studio Build Tools: {0}" -f $_)
@@ -170,7 +170,7 @@ function Clean-Up {
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
-# Set installation arguments with logging
+# Set installation arguments with logging and CoreBuildTools
 $installArgs = @(
     "--quiet",
     "--wait",
@@ -183,6 +183,7 @@ $installArgs = @(
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
     "--add", "Microsoft.VisualStudio.Component.MSBuild",
     "--add", "Microsoft.VisualStudio.Component.CoreBuildTools", # Add CoreBuildTools
+    "--add", "Microsoft.VisualStudio.Component.NuGet.BuildTools", # Add NuGet.BuildTools
     "--includeRecommended",
     "--installPath", "C:\BuildTools",
     "--log", "C:\temp\vs_buildtools_install.log" # Add logging
