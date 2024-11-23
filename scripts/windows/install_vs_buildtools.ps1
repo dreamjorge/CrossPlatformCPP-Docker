@@ -48,15 +48,15 @@ function Download-File {
 function Install-BuildTools {
     param (
         [string]$InstallerPath,
-        [string]$Args
+        [string]$InstallArgs
     )
-    if ([string]::IsNullOrWhiteSpace($Args)) {
+    if ([string]::IsNullOrWhiteSpace($InstallArgs)) {
         Log-Error "Installation arguments cannot be null or empty."
     }
 
     try {
-        Log-Info "Installing Visual Studio Build Tools..."
-        Start-Process -FilePath $InstallerPath -ArgumentList $Args -NoNewWindow -Wait -ErrorAction Stop
+        Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
+        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait -ErrorAction Stop
         Log-Info "Visual Studio Build Tools installation completed successfully."
     } catch {
         Log-Error ("Failed to install Visual Studio Build Tools: {0}" -f $_)
@@ -95,9 +95,16 @@ function Clean-Up {
 # Download the installer
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 
+# Set installation arguments
+$installArgs = @(
+    "--quiet",
+    "--norestart",
+    "--wait",
+    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended"
+) -join " "
+
 # Install Visual Studio Build Tools
-$installArgs = "--quiet --norestart --wait --add Microsoft.VisualStudio.Workload.VCTools;includeRecommended"
-Install-BuildTools -InstallerPath $buildToolsPath -Args $installArgs
+Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
 
 # Validate the installation
 Validate-Installation -Tools @("msbuild", "cl")
