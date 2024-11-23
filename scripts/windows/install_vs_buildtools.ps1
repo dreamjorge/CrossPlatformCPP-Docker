@@ -1,5 +1,5 @@
 param (
-    [string]$VsVersion = "16" # Default to Visual Studio 2019 (VS Version 16)
+    [string]$VsVersion = "15" # Default to Visual Studio 2017 (VS Version 15)
 )
 
 # Enable TLS 1.2 for secure downloads
@@ -170,7 +170,7 @@ function Clean-Up {
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
-# Set installation arguments with logging and CoreBuildTools
+# Set installation arguments with logging and additional components
 $installArgs = @(
     "--quiet",
     "--wait",
