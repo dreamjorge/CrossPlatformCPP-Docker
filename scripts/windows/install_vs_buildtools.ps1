@@ -17,12 +17,16 @@ function Log-Error {
     Write-Error "ERROR: $Message" -ErrorAction Stop
 }
 
-# Function: Validate Visual Studio Version
-function Validate-VsVersion {
-    param ([string]$Version, [hashtable]$Installers)
-    if (-not $Installers.ContainsKey($Version)) {
-        Log-Error "Unsupported Visual Studio version: $Version. Supported versions: 15 (2017), 16 (2019), 17 (2022)."
-    }
+# Universal URL for Visual Studio Build Tools
+$vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
+
+# Define the installer download path
+$buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
+
+# Ensure the C:\temp directory exists
+if (-not (Test-Path -Path "C:\temp")) {
+    New-Item -ItemType Directory -Path "C:\temp" | Out-Null
+    Log-Info "Created C:\temp directory."
 }
 
 # Function: Download File
@@ -32,9 +36,9 @@ function Download-File {
         [string]$Destination
     )
     try {
-        Log-Info "Downloading file from $Url..."
+        Log-Info "Downloading Visual Studio Build Tools from $Url..."
         Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -ErrorAction Stop
-        Log-Info "Downloaded file to $Destination."
+        Log-Info "Downloaded Visual Studio Build Tools to $Destination."
     } catch {
         Log-Error ("Failed to download file: {0}" -f $_)
     }
@@ -84,28 +88,8 @@ function Clean-Up {
     }
 }
 
-# Map Visual Studio version to corresponding installer URLs
-$vsInstallers = @{
-    "15" = "https://download.visualstudio.microsoft.com/download/pr/11810035/f742a4d4-75b6-4704-8171-97bb89b15be6/vs_buildtools.exe" # Visual Studio 2017
-    "16" = "https://aka.ms/vs/16/release/vs_buildtools.exe" # Visual Studio 2019
-    "17" = "https://aka.ms/vs/17/release/vs_buildtools.exe" # Visual Studio 2022
-}
-
-# Validate Visual Studio version
-Validate-VsVersion -Version $VsVersion -Installers $vsInstallers
-
-# Define installer URL and download path
-$buildToolsUrl = $vsInstallers[$VsVersion]
-$buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
-
-# Ensure the C:\temp directory exists
-if (-not (Test-Path -Path "C:\temp")) {
-    New-Item -ItemType Directory -Path "C:\temp" | Out-Null
-    Log-Info "Created C:\temp directory."
-}
-
 # Download the installer
-Download-File -Url $buildToolsUrl -Destination $buildToolsPath
+Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 
 # Install Visual Studio Build Tools
 $installArgs = "--quiet --norestart --wait --add Microsoft.VisualStudio.Workload.VCTools;includeRecommended"
