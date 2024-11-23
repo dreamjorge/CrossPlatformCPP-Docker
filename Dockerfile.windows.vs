@@ -4,8 +4,8 @@
 FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
-ARG VS_YEAR=2017
-ARG VS_VERSION=15
+ARG VS_YEAR=2019
+ARG VS_VERSION=16
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
@@ -34,9 +34,10 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
 
-# Verify Installation (msbuild and cl)
+# Validate Installation (msbuild and cl)
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     Write-Host "Validating Visual Studio Build Tools installation..."; `
+    # Ensure vswhere.exe is available
     $vswherePath = "C:\temp\vswhere.exe"; `
     if (-not (Test-Path $vswherePath)) { `
         Write-Host "vswhere.exe not found. Downloading..."; `
@@ -48,15 +49,15 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
     $clPath = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find VC\Tools\MSVC\**\bin\Hostx64\x64\cl.exe; `
     if ($msbuildPath) { `
         Write-Host "msbuild.exe found at $msbuildPath"; `
-        $msbuildDir = Split-Path $msbuildPath
-        $env:PATH += ";$msbuildDir"; 
+        $msbuildDir = Split-Path $msbuildPath; `
+        $env:PATH += ";$msbuildDir"; `
     } else { `
         Write-Error "msbuild.exe not found."; 
     }; `
     if ($clPath) { `
         Write-Host "cl.exe found at $clPath"; `
-        $clDir = Split-Path $clPath
-        $env:PATH += ";$clDir"; 
+        $clDir = Split-Path $clPath; `
+        $env:PATH += ";$clDir"; `
     } else { `
         Write-Error "cl.exe not found."; 
     }; `
