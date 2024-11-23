@@ -122,8 +122,13 @@ function Validate-Installation {
                     $toolPath = Join-Path -Path $installationPath -ChildPath "VC\Tools\MSVC\*\bin\Hostx64\x64\$tool"
                 }
                 "msbuild.exe" {
-                    # Check in MSBuild\Current\Bin\
-                    $toolPath = Join-Path -Path $installationPath -ChildPath "MSBuild\Current\Bin\$tool"
+                    if ($VsVersion -eq "15") {
+                        # For VS2017, check in MSBuild\15.0\Bin\
+                        $toolPath = Join-Path -Path $installationPath -ChildPath "MSBuild\15.0\Bin\$tool"
+                    } else {
+                        # For VS2019 and later, check in MSBuild\Current\Bin\
+                        $toolPath = Join-Path -Path $installationPath -ChildPath "MSBuild\Current\Bin\$tool"
+                    }
                 }
                 default {
                     $toolPath = ""
@@ -169,7 +174,7 @@ $installArgs = @(
     "--add", "Microsoft.VisualStudio.Workload.VCTools",
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
-    "--add", "Microsoft.VisualStudio.Component.MSBuild", # Added MSBuild component
+    "--add", "Microsoft.VisualStudio.Component.MSBuild", # Ensure MSBuild is installed
     "--includeRecommended",
     "--installPath", "C:\BuildTools"
 ) -join " "
@@ -180,7 +185,7 @@ Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelM
 # Validate the installation using vswhere
 Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up the installer and channel manifest files
+# Clean up the installer, channel manifest, and vswhere files
 Clean-Up -FilePath $buildToolsPath
 Clean-Up -FilePath $channelManifestPath
 Clean-Up -FilePath $vswherePath
