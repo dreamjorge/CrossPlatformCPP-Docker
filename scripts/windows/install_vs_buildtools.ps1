@@ -50,6 +50,10 @@ function Install-BuildTools {
         [string]$InstallerPath,
         [string]$Args
     )
+    if ([string]::IsNullOrWhiteSpace($Args)) {
+        Log-Error "Installation arguments cannot be null or empty."
+    }
+
     try {
         Log-Info "Installing Visual Studio Build Tools..."
         Start-Process -FilePath $InstallerPath -ArgumentList $Args -NoNewWindow -Wait -ErrorAction Stop
