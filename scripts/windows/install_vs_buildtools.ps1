@@ -80,9 +80,11 @@ function Install-BuildTools {
     }
 
     try {
+        $logPath = "C:\temp\vs_buildtools_install.log"
         Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
+        # Install with logging
         Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait
-        Log-Info "Visual Studio Build Tools installation completed successfully."
+        Log-Info "Visual Studio Build Tools installation completed successfully. Log at $logPath"
     } catch {
         Log-Error ("Failed to install Visual Studio Build Tools: {0}" -f $_)
     }
@@ -117,7 +119,25 @@ function Validate-Installation {
                     $toolPath = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
                 }
                 "msbuild.exe" {
-                    $toolPath = Get-ChildItem -Path "$installationPath\MSBuild\Current\Bin" -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                    if ($VsVersion -eq "15") {
+                        # For VS2017, msbuild.exe is in MSBuild\15.0\Bin\msbuild.exe
+                        $expectedPath = Join-Path -Path $installationPath -ChildPath "MSBuild\15.0\Bin\msbuild.exe"
+                        if (Test-Path $expectedPath) {
+                            $toolPath = $expectedPath
+                        } else {
+                            # Fallback to searching
+                            $toolPath = Get-ChildItem -Path "$installationPath\MSBuild" -Recurse -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                        }
+                    } else {
+                        # For VS2019 and later, msbuild.exe is in MSBuild\Current\Bin\msbuild.exe
+                        $expectedPath = Join-Path -Path $installationPath -ChildPath "MSBuild\Current\Bin\msbuild.exe"
+                        if (Test-Path $expectedPath) {
+                            $toolPath = $expectedPath
+                        } else {
+                            # Fallback to searching
+                            $toolPath = Get-ChildItem -Path "$installationPath\MSBuild" -Recurse -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                        }
+                    }
                 }
                 default {
                     $toolPath = ""
@@ -150,7 +170,7 @@ function Clean-Up {
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
-# Set installation arguments
+# Set installation arguments with logging
 $installArgs = @(
     "--quiet",
     "--wait",
@@ -162,8 +182,10 @@ $installArgs = @(
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
     "--add", "Microsoft.VisualStudio.Component.MSBuild",
+    "--add", "Microsoft.VisualStudio.Component.CoreBuildTools", # Add CoreBuildTools
     "--includeRecommended",
-    "--installPath", "C:\BuildTools"
+    "--installPath", "C:\BuildTools",
+    "--log", "C:\temp\vs_buildtools_install.log" # Add logging
 ) -join " "
 
 # Install Visual Studio Build Tools
@@ -172,7 +194,7 @@ Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelM
 # Validate the installation using vswhere
 Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up the installer, channel manifest, and vswhere files
+# Clean up temporary files
 Clean-Up -FilePath $buildToolsPath
 Clean-Up -FilePath $channelManifestPath
 Clean-Up -FilePath $vswherePath
