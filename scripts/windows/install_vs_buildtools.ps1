@@ -36,7 +36,7 @@ function Download-File {
         Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -ErrorAction Stop
         Log-Info "Downloaded file to $Destination."
     } catch {
-        Log-Error "Failed to download file: $_"
+        Log-Error "Failed to download file: $($_)"
     }
 }
 
@@ -51,7 +51,7 @@ function Install-BuildTools {
         Start-Process -FilePath $InstallerPath -ArgumentList $Args -NoNewWindow -Wait -ErrorAction Stop
         Log-Info "Visual Studio Build Tools installation completed successfully."
     } catch {
-        Log-Error "Failed to install Visual Studio Build Tools: $_"
+        Log-Error "Failed to install Visual Studio Build Tools: $($_)"
     }
 }
 
@@ -67,7 +67,7 @@ function Validate-Installation {
                 Log-Info "$Tool found at $ToolPath."
             }
         } catch {
-            Log-Error "Failed to validate $Tool: $_"
+            Log-Error "Failed to validate $Tool: $($_)"
         }
     }
     Log-Info "All required tools validated successfully."
