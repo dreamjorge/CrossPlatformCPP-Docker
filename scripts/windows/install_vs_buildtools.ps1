@@ -55,8 +55,9 @@ function Install-BuildTools {
     }
 
     try {
-        Log-Info "Installing Visual Studio Build Tools with arguments: $InstallArgs"
-        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait -ErrorAction Stop
+        Log-Info "Installing Visual Studio Build Tools..."
+        Start-Process -FilePath $InstallerPath -ArgumentList $InstallArgs -NoNewWindow -Wait `
+            -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
         Log-Info "Visual Studio Build Tools installation completed successfully."
     } catch {
         Log-Error ("Failed to install Visual Studio Build Tools: {0}" -f $_)
