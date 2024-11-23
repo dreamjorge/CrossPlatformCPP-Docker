@@ -17,10 +17,30 @@ function Log-Error {
     Write-Error "ERROR: $Message" -ErrorAction Stop
 }
 
-# Universal URLs for Visual Studio Build Tools, Channel Manifest, and vswhere
-$vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
-$channelManifestUrl = "https://aka.ms/vs/15/release/channel"
-$vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
+# Map Visual Studio version to corresponding Build Tools and channel manifest URLs
+$vsInstallers = @{
+    "15" = @{
+        BuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe" # VS2017
+        ChannelManifestUrl = "https://aka.ms/vs/15/release/channel"
+    }
+    "16" = @{
+        BuildToolsUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe" # VS2019
+        ChannelManifestUrl = "https://aka.ms/vs/16/release/channel"
+    }
+    "17" = @{
+        BuildToolsUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe" # VS2022
+        ChannelManifestUrl = "https://aka.ms/vs/17/release/channel"
+    }
+}
+
+# Check if the provided VS_VERSION is supported
+if (-not $vsInstallers.ContainsKey($VsVersion)) {
+    Log-Error "Unsupported Visual Studio version: $VsVersion. Supported versions: 15 (2017), 16 (2019), 17 (2022)."
+}
+
+# Get the installer and channel manifest URLs based on VS_VERSION
+$vsBuildToolsUrl = $vsInstallers[$VsVersion].BuildToolsUrl
+$channelManifestUrl = $vsInstallers[$VsVersion].ChannelManifestUrl
 
 # Define download paths
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
@@ -79,10 +99,11 @@ function Validate-Installation {
 
     # Download vswhere if not already downloaded
     if (-not (Test-Path $vswherePath)) {
+        $vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
         Download-File -Url $vswhereUrl -Destination $vswherePath
     }
 
-    # Locate Visual Studio installations
+    # Locate Visual Studio installations with VCTools
     $vsInstallations = & $vswherePath -all -products '*' -requires Microsoft.VisualStudio.Workload.VCTools -format json | ConvertFrom-Json
 
     if (-not $vsInstallations) {
@@ -133,7 +154,7 @@ function Clean-Up {
     }
 }
 
-# Download the installer, channel manifest, and vswhere
+# Download the installer and channel manifest
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
@@ -159,7 +180,7 @@ Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelM
 # Validate the installation using vswhere
 Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up the installer, channel manifest, and vswhere files
+# Clean up the installer and channel manifest files
 Clean-Up -FilePath $buildToolsPath
 Clean-Up -FilePath $channelManifestPath
 Clean-Up -FilePath $vswherePath
