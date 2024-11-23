@@ -20,7 +20,6 @@ ENV VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}
 # Copy Installation Scripts
 COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 COPY scripts/windows/install_cmake_bypass.ps1 C:\scripts\install_cmake_bypass.ps1
-# Copy PowerShell scripts
 COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
 COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
@@ -28,10 +27,19 @@ COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 RUN echo "CHANNEL_URL=$CHANNEL_URL" && echo "VS_BUILD_TOOLS_URL=$VS_BUILD_TOOLS_URL"
 
 # Install Visual Studio Build Tools
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Installing Visual Studio Build Tools..."; `
+    powershell -File "C:\\scripts\\install_vs_buildtools.ps1" -VsVersion ${VS_VERSION}
 
 # Install CMake using the PowerShell script
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
+
+# Verify Installation (msbuild and cl)
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Validating Visual Studio Build Tools installation..."; `
+    Get-Command msbuild; `
+    Get-Command cl; `
+    Write-Host "Validation complete."
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
