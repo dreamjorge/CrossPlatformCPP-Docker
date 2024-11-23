@@ -19,9 +19,11 @@ function Log-Error {
 
 # Universal URL for Visual Studio Build Tools
 $vsBuildToolsUrl = "https://aka.ms/vs/15/release/vs_buildtools.exe"
+$channelManifestUrl = "https://aka.ms/vs/15/release/channel"
 
-# Define the installer download path
+# Define download paths
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
+$channelManifestPath = "C:\temp\VisualStudio.chman"
 
 # Ensure the C:\temp directory exists
 if (-not (Test-Path -Path "C:\temp")) {
@@ -36,9 +38,9 @@ function Download-File {
         [string]$Destination
     )
     try {
-        Log-Info "Downloading Visual Studio Build Tools from $Url..."
+        Log-Info "Downloading file from $Url..."
         Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -ErrorAction Stop
-        Log-Info "Downloaded Visual Studio Build Tools to $Destination."
+        Log-Info "Downloaded file to $Destination."
     } catch {
         Log-Error ("Failed to download file: {0}" -f $_)
     }
@@ -48,6 +50,7 @@ function Download-File {
 function Install-BuildTools {
     param (
         [string]$InstallerPath,
+        [string]$ChannelManifestPath,
         [string]$InstallArgs
     )
     if ([string]::IsNullOrWhiteSpace($InstallArgs)) {
@@ -116,23 +119,29 @@ function Clean-Up {
     }
 }
 
-# Download the installer
+# Download the installer and channel manifest
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
+Download-File -Url $channelManifestUrl -Destination $channelManifestPath
 
 # Set installation arguments
 $installArgs = @(
     "--quiet",
-    "--norestart",
     "--wait",
-    "--add", "Microsoft.VisualStudio.Workload.VCTools;includeRecommended",
-    "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project"
+    "--norestart",
+    "--nocache",
+    "--channelUri", $channelManifestPath,
+    "--installChannelUri", $channelManifestPath,
+    "--add", "Microsoft.VisualStudio.Workload.VCTools",
+    "--includeRecommended",
+    "--installPath", "C:\BuildTools"
 ) -join " "
 
 # Install Visual Studio Build Tools
-Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
+Install-BuildTools -InstallerPath $buildToolsPath -ChannelManifestPath $channelManifestPath -InstallArgs $installArgs
 
 # Validate the installation
 Validate-Installation -Tools @("msbuild", "cl")
 
-# Clean up the installer file
+# Clean up the installer and channel manifest files
 Clean-Up -FilePath $buildToolsPath
+Clean-Up -FilePath $channelManifestPath
