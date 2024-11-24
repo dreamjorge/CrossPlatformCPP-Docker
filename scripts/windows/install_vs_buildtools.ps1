@@ -1,6 +1,6 @@
 param(
     [string]$VS_VERSION = $env:VS_VERSION,
-    [string]$Workloads = "Microsoft.VisualStudio.Workload.AzureBuildTools;Microsoft.VisualStudio.Workload.VCTools",
+    [string[]]$Workloads = @("Microsoft.VisualStudio.Workload.VCTools"),
     [string]$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools.exe")
 )
 
@@ -18,7 +18,7 @@ Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
 function Install-VSBuildTools {
     param(
         [string]$InstallerPath,
-        [string]$Workloads
+        [string[]]$Workloads
     )
 
     # Download the installer
@@ -32,9 +32,6 @@ function Install-VSBuildTools {
         Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
     }
 
-    # Split the workloads into an array
-    $WorkloadArray = $Workloads -split ';'
-
     # Build the argument list
     $arguments = @(
         "--quiet",
@@ -45,20 +42,20 @@ function Install-VSBuildTools {
     )
 
     # Add each workload with its own --add parameter
-    foreach ($workload in $WorkloadArray) {
+    foreach ($workload in $Workloads) {
         $arguments += "--add"
         $arguments += $workload
     }
 
     $arguments += @(
         "--includeRecommended",
-        "--includeOptional",
         "--lang en-US",
         "--log `"$env:TEMP\vs_buildtools_install.log`""
     )
 
     # Start the installation
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Starting Visual Studio Build Tools installation..."
+    Write-Host "Installer arguments: $($arguments -join ' ')"
     try {
         $startTime = Get-Date
         $process = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -NoNewWindow -Wait -PassThru
