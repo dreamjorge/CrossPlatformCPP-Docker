@@ -3,7 +3,7 @@ param (
 )
 
 if ([string]::IsNullOrWhiteSpace($VsVersion)) {
-    $VsVersion = "15" # Default to Visual Studio 2017 (VS Version 15)
+    $VsVersion = "16" # Default to Visual Studio 2019 (VS Version 16)
 }
 
 # Enable TLS 1.2 for secure downloads
@@ -124,14 +124,14 @@ function Validate-Installation {
             foreach ($tool in $RequiredTools) {
                 switch ($tool.ToLower()) {
                     "cl.exe" {
-                        # Dynamically search for cl.exe using vswhere
+                        # Dynamically search for cl.exe
                         $toolPath = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
                     }
                     "msbuild.exe" {
                         $toolPath = Get-ChildItem -Path "$installationPath\MSBuild" -Recurse -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
                     }
                     default {
-                        $toolPath = ""
+                        $toolPath = $null
                     }
                 }
 
