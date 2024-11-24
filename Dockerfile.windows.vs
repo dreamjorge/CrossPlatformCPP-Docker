@@ -38,18 +38,16 @@ RUN powershell -ExecutionPolicy Bypass -File C:/scripts/install_cmake_bypass.ps1
 COPY . C:/app
 
 # Configure the build with CMake
-RUN powershell -Command `
-    mkdir C:\build; `
-    cd C:\build; `
+RUN powershell -Command \
+    mkdir C:\build; \
     & "$env:CMAKE_PATH" -G "Visual Studio $env:VS_VERSION Win64" `
         -DCMAKE_BUILD_TYPE=Release `
         -S C:\app `
         -B C:\build
 
 # Build the project
-RUN powershell -Command `
-    cd C:\build; `
-    & "$env:CMAKE_PATH" --build . --config Release
+RUN powershell -Command \
+    & "$env:CMAKE_PATH" --build C:\build --config Release
 
 # Set the default command to execute the built application
 CMD ["powershell", "C:/app/scripts/windows/run.ps1"]
