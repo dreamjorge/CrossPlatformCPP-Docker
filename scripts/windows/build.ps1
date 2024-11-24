@@ -1,27 +1,39 @@
 param (
-    [Parameter(Mandatory = $true)]
-    [string]$Config,
-    [Parameter(Mandatory = $true)]
-    [string]$BuildDir
+    [string]$Config = "Release",
+    [string]$BuildDir = "C:\app\build\Release"
 )
 
-# Exit immediately if an error occurs
-$ErrorActionPreference = "Stop"
+function Log-Info {
+    param ([string]$Message)
+    Write-Host "INFO: $Message"
+}
 
-Write-Host "INFO: Starting build process with configuration: $Config"
+function Log-Error {
+    param ([string]$Message)
+    Write-Error "ERROR: $Message" -ErrorAction Stop
+}
 
-# Create the build directory if it doesn't exist
-if (-not (Test-Path $BuildDir)) {
+# Set the generator name based on VS_VERSION
+$vsVersion = $env:VS_VERSION
+switch ($vsVersion) {
+    "15" { $generator = "Visual Studio 15 2017" }
+    "16" { $generator = "Visual Studio 16 2019" }
+    "17" { $generator = "Visual Studio 17 2022" }
+    default { Log-Error "Unsupported VS_VERSION: $vsVersion" }
+}
+
+# Ensure the build directory exists
+if (-not (Test-Path -Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
-    Write-Host "INFO: Created build directory at $BuildDir"
+    Log-Info "Created build directory at $BuildDir"
 }
 
 # Run CMake to generate build files
-Write-Host "INFO: Running CMake to generate build files..."
-cmake -S . -B $BuildDir -G "Visual Studio $env:VS_VERSION" -A x64 -DCMAKE_BUILD_TYPE=$Config
+Log-Info "Running CMake to generate build files..."
+cmake -S "C:\app" -B $BuildDir -G "$generator" -A x64
 
 # Build the project
-Write-Host "INFO: Building the project..."
+Log-Info "Building the project..."
 cmake --build $BuildDir --config $Config
 
-Write-Host "INFO: Build process completed successfully."
+Log-Info "Build process completed successfully."
