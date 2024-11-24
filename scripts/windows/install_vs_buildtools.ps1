@@ -3,7 +3,7 @@ param (
 )
 
 if ([string]::IsNullOrWhiteSpace($VsVersion)) {
-    $VsVersion = "16" # Default to Visual Studio 2019 (VS Version 16)
+    $VsVersion = "17" # Default to Visual Studio 2022 (VS Version 17)
 }
 
 # Enable TLS 1.2 for secure downloads
@@ -104,41 +104,33 @@ function Validate-Installation {
         Download-File -Url $vswhereUrl -Destination $vswherePath
     }
 
-    # Use vswhere to locate installations
-    Log-Info "Executing vswhere to locate Visual Studio installations..."
-    $vswhereCommand = "& `$vswherePath -all -products '*' -format json"
-    Log-Info "vswhere command: $vswhereCommand"
-    $vswhereOutput = & $vswherePath -all -products '*' -format json
+    # Use vswhere to locate installations with the required component
+    $vswhereOutput = & $vswherePath -all -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
 
     if ([string]::IsNullOrWhiteSpace($vswhereOutput)) {
-        Log-Error "vswhere did not return any installations."
+        Log-Error "vswhere did not return any installations with the required components."
     } else {
         Log-Info "vswhere output: $vswhereOutput"
         $vsInstallations = $vswhereOutput | ConvertFrom-Json
 
         # Proceed with checking for required tools
         foreach ($installation in $vsInstallations) {
+            # Exclude Test Agent installations
+            if ($installation.productId -eq 'Microsoft.VisualStudio.Product.TestAgent') {
+                continue
+            }
+
             $installationPath = $installation.installationPath
             Log-Info "Found Visual Studio installation at $installationPath"
 
             foreach ($tool in $RequiredTools) {
-                switch ($tool.ToLower()) {
-                    "cl.exe" {
-                        # Dynamically search for cl.exe
-                        $toolPath = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter "cl.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-                    }
-                    "msbuild.exe" {
-                        $toolPath = Get-ChildItem -Path "$installationPath\MSBuild" -Recurse -Filter "msbuild.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-                    }
-                    default {
-                        $toolPath = $null
-                    }
-                }
-
-                if (-not $toolPath) {
+                $toolPaths = Get-ChildItem -Path "$installationPath" -Recurse -Filter $tool -ErrorAction SilentlyContinue
+                if (-not $toolPaths) {
                     Log-Error "$tool not found in Visual Studio installation at $installationPath."
                 } else {
-                    Log-Info "$tool found at $($toolPath.FullName)"
+                    foreach ($toolPath in $toolPaths) {
+                        Log-Info "$tool found at $($toolPath.FullName)"
+                    }
                 }
             }
         }
@@ -170,11 +162,10 @@ $installArgs = @(
     "--nocache",
     "--channelUri", $channelManifestPath,
     "--installChannelUri", $channelManifestPath,
-    "--add", "Microsoft.VisualStudio.Workload.VCTools",
-    "--add", "Microsoft.VisualStudio.Workload.MSBuildTools",
-    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
+    "--add", "Microsoft.VisualStudio.Workload.VCTools",  # C++ Build Tools workload
     "--includeRecommended",
+    "--includeOptional",
+    "--installPath", "C:\BuildTools",
     "--log", "C:\temp\vs_buildtools_install.log"
 ) -join " "
 
