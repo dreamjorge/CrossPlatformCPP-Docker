@@ -4,8 +4,8 @@
 FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
-ARG VS_YEAR=2019
-ARG VS_VERSION=16
+ARG VS_YEAR=2022
+ARG VS_VERSION=17
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
@@ -34,7 +34,7 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmak
 # Detect MSVC Version and Set Environment Variable
 RUN powershell -Command `
     try { `
-        $msvcPath = Join-Path -Path "$env:ProgramFiles(x86)" -ChildPath "Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools\MSVC"; `
+        $msvcPath = "C:\Program Files (x86)\Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools\MSVC"; `
         $msvcDirs = Get-ChildItem -Directory $msvcPath -ErrorAction Stop; `
         if ($msvcDirs.Count -gt 0) { `
             $msvcVersion = $msvcDirs[0].Name; `
