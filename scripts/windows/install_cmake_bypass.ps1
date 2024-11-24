@@ -9,6 +9,11 @@ Write-Host "Installing CMake version: $($env:CMAKE_VERSION)"
 $cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$($env:CMAKE_VERSION)/cmake-$($env:CMAKE_VERSION)-windows-x86_64.msi"
 $installerPath = "C:\temp\cmake_installer.msi"
 
+# Ensure the target directory exists
+if (!(Test-Path -Path "C:\temp")) {
+    New-Item -ItemType Directory -Path "C:\temp"
+}
+
 # Download the installer
 Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
 
