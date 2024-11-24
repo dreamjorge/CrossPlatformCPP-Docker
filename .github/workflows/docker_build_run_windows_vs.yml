@@ -1,4 +1,4 @@
-name: Docker Build and Run on Windows
+name: Build and Run Windows Docker Image
 
 on:
   push:
@@ -9,62 +9,27 @@ on:
       - main
 
 jobs:
-  build-and-run-windows-docker:
-    name: Build and Run Docker (Windows)
+  build:
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        config: [Debug, Release]
-        vs_year: [2017, 2019, 2022]
     env:
+      VS_YEAR: 2017
+      VS_VERSION: 15
       CMAKE_VERSION: 3.21.3
-      DOCKER_NAME_BASE: crossplatformapp-windows
 
     steps:
-      # Step 1: Checkout the repository code
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      # Step 2: Retrieve the Visual Studio version based on the year
-      - name: Get VS_VERSION from VS_YEAR
-        id: get-vs-version
-        shell: pwsh
+      - name: Build Docker image
         run: |
-          $vs_version = ./scripts/windows/get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
-          Write-Host "INFO: Retrieved VS_VERSION=$vs_version"
-          echo "vs_version=$vs_version" >> $env:GITHUB_OUTPUT
-
-      # Step 3: Set VS_VERSION in Environment
-      - name: Set VS_VERSION in Environment
-        shell: pwsh
-        run: |
-          echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $env:GITHUB_ENV
-
-      # Step 4: Build Base Docker Image
-      - name: Build Base Docker Image
-        shell: pwsh
-        run: |
-          docker build --no-cache -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows.base .
-
-      # Step 5: Build Visual Studio-Specific Docker Image
-      - name: Build Visual Studio Docker Image
-        shell: pwsh
-        run: |
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          docker build --no-cache `
-            --build-arg VS_YEAR=${{ matrix.vs_year }} `
-            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
-            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t $imageTag `
+          docker build --no-cache \
+            --build-arg VS_YEAR=${{ env.VS_YEAR }} \
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} \
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
+            -t crossplatformapp-windows-vs2017 \
             -f Dockerfile.windows.vs .
 
-      # Step 6: Upload Installation Log on Failure
-      - name: Upload Installation Log
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: vs_buildtools_install_log
-          path: C:/temp/vs_buildtools_install.log
+      - name: Run Docker container
+        run: |
+          docker run --rm crossplatformapp-windows-vs2017
