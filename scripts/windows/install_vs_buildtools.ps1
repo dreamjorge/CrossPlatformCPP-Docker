@@ -15,6 +15,12 @@ function Log-Info {
     Write-Host "INFO: $Message"
 }
 
+# Function: Log Warning
+function Log-Warning {
+    param ([string]$Message)
+    Write-Warning "WARNING: $Message"
+}
+
 # Function: Log Error
 function Log-Error {
     param ([string]$Message)
@@ -105,28 +111,32 @@ function Validate-Installation {
     }
 
     # Use vswhere to locate installations with the required component
-    $vswhereOutput = & $vswherePath -all -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
+    $vswhereOutput = & $vswherePath -all -products '*' -format json
 
     if ([string]::IsNullOrWhiteSpace($vswhereOutput)) {
-        Log-Error "vswhere did not return any installations with the required components."
+        Log-Error "vswhere did not return any installations."
     } else {
         Log-Info "vswhere output: $vswhereOutput"
         $vsInstallations = $vswhereOutput | ConvertFrom-Json
 
-        # Proceed with checking for required tools
-        foreach ($installation in $vsInstallations) {
-            # Exclude Test Agent installations
-            if ($installation.productId -eq 'Microsoft.VisualStudio.Product.TestAgent') {
-                continue
-            }
+        # Exclude Test Agent installations
+        $vsInstallations = $vsInstallations | Where-Object { $_.productId -ne 'Microsoft.VisualStudio.Product.TestAgent' }
 
+        if ($vsInstallations.Count -eq 0) {
+            Log-Error "No valid Visual Studio installations found."
+        }
+
+        # Proceed with checking for required tools
+        $allToolsFound = $true
+        foreach ($installation in $vsInstallations) {
             $installationPath = $installation.installationPath
             Log-Info "Found Visual Studio installation at $installationPath"
 
             foreach ($tool in $RequiredTools) {
                 $toolPaths = Get-ChildItem -Path "$installationPath" -Recurse -Filter $tool -ErrorAction SilentlyContinue
                 if (-not $toolPaths) {
-                    Log-Error "$tool not found in Visual Studio installation at $installationPath."
+                    Log-Warning "$tool not found in Visual Studio installation at $installationPath."
+                    $allToolsFound = $false
                 } else {
                     foreach ($toolPath in $toolPaths) {
                         Log-Info "$tool found at $($toolPath.FullName)"
@@ -134,9 +144,13 @@ function Validate-Installation {
                 }
             }
         }
-    }
 
-    Log-Info "All required tools validated successfully."
+        if (-not $allToolsFound) {
+            Log-Error "Not all required tools were found in the Visual Studio installations."
+        } else {
+            Log-Info "All required tools validated successfully."
+        }
+    }
 }
 
 # Function: Clean Up Temporary Files
@@ -162,7 +176,8 @@ $installArgs = @(
     "--nocache",
     "--channelUri", $channelManifestPath,
     "--installChannelUri", $channelManifestPath,
-    "--add", "Microsoft.VisualStudio.Workload.VCTools",  # C++ Build Tools workload
+    "--add", "Microsoft.VisualStudio.Workload.VCTools",
+    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--includeRecommended",
     "--includeOptional",
     "--installPath", "C:\BuildTools",
