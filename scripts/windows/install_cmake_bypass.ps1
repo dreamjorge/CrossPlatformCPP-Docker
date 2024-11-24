@@ -1,24 +1,44 @@
-# Install CMake using bypass method
 param(
-    [string]$env:CMAKE_VERSION
+    [string]$CMAKE_VERSION
 )
 
-Write-Host "Installing CMake version: $($env:CMAKE_VERSION)"
+Write-Host "Installing CMake version: $CMAKE_VERSION"
 
 # Define the installer URL
-$cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$($env:CMAKE_VERSION)/cmake-$($env:CMAKE_VERSION)-windows-x86_64.msi"
+$cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
 $installerPath = "C:\temp\cmake_installer.msi"
 
-# Ensure the target directory exists
+# Ensure the directory exists
 if (!(Test-Path -Path "C:\temp")) {
     New-Item -ItemType Directory -Path "C:\temp"
 }
 
 # Download the installer
-Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
+$retryCount = 3
+for ($i = 1; $i -le $retryCount; $i++) {
+    try {
+        Write-Host "Downloading CMake... Attempt $i"
+        Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
+        if (Test-Path $installerPath) {
+            Write-Host "Download successful!"
+            break
+        }
+    } catch {
+        Write-Host "Download failed. Retrying..."
+        if ($i -eq $retryCount) {
+            throw "Failed to download CMake after $retryCount attempts."
+        }
+    }
+}
 
 # Install CMake
-Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet /norestart" -NoNewWindow -Wait
+if (Test-Path $installerPath) {
+    Write-Host "Installing CMake..."
+    Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet /norestart" -NoNewWindow -Wait
+} else {
+    throw "Installer file not found at $installerPath."
+}
 
 # Add CMake to the PATH
+Write-Host "Adding CMake to system PATH"
 [Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Program Files\CMake\bin", [EnvironmentVariableTarget]::Machine)
