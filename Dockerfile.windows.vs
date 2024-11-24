@@ -20,7 +20,7 @@ COPY scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
 COPY scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
 
 # Debugging: Verify Environment Variables
-RUN powershell -Command "Write-Host 'VS_VERSION is' $env:VS_VERSION"
+RUN powershell -Command "Write-Host 'VS_VERSION is' $env:VS_VERSION; Write-Host 'VS_YEAR is' $env:VS_YEAR"
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_vs_buildtools.ps1"
@@ -40,7 +40,7 @@ RUN powershell -Command `
     }
 
 # Update PATH to include CMake, MSBuild, and the C++ compiler
-ENV PATH="C:\\cmake\\bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\$env:VS_YEAR\\BuildTools\\MSBuild\\Current\\Bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\$env:VS_YEAR\\BuildTools\\VC\\Tools\\MSVC\\%MSVC_VERSION%\\bin\\Hostx64\\x64;${PATH}"
+ENV PATH="C:\\cmake\\bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\${VS_YEAR}\\BuildTools\\MSBuild\\Current\\Bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\${VS_YEAR}\\BuildTools\\VC\\Tools\\MSVC\\%MSVC_VERSION%\\bin\\Hostx64\\x64;${PATH}"
 
 # Verify CMake Installation
 RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
