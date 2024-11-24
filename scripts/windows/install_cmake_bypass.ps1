@@ -5,9 +5,15 @@ param(
 
 Write-Host "Installing CMake version: $($env:CMAKE_VERSION)"
 
-# Example installation logic
-$cmakeInstallerUrl = "https://cmake.org/files/v$($env:CMAKE_VERSION.Substring(0, 4))/cmake-$($env:CMAKE_VERSION)-win64-x64.msi"
+# Define the installer URL
+$cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$($env:CMAKE_VERSION)/cmake-$($env:CMAKE_VERSION)-windows-x86_64.msi"
 $installerPath = "C:\temp\cmake_installer.msi"
 
+# Download the installer
 Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
-Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet" -NoNewWindow -Wait
+
+# Install CMake
+Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet /norestart" -NoNewWindow -Wait
+
+# Add CMake to the PATH
+[Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Program Files\CMake\bin", [EnvironmentVariableTarget]::Machine)
