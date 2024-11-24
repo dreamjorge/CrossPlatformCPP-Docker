@@ -1,7 +1,7 @@
 # Use the correct base image for Windows Server 2022
 FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS base
 
-# Install required Windows features
+# Install required Windows features using PowerShell
 RUN powershell -Command `
     Install-WindowsFeature -Name NET-Framework-45-ASPNET; `
     Install-WindowsFeature -Name Web-Asp-Net45
@@ -12,10 +12,10 @@ ARG VS_VERSION=15
 ARG CMAKE_VERSION=3.21.3
 
 # Set environment variables
-ENV VS_YEAR=${VS_YEAR} \
-    VS_VERSION=${VS_VERSION} \
-    CMAKE_VERSION=${CMAKE_VERSION} \
-    TEMP_DIR=C:/temp \
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
+    CMAKE_VERSION=${CMAKE_VERSION} `
+    TEMP_DIR=C:/temp `
     CMAKE_PATH="C:/Program Files/CMake/bin/cmake.exe"
 
 # Create a temporary directory for downloads
