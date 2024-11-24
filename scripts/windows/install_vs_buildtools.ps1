@@ -16,11 +16,6 @@ Function Log-Info {
     Write-Host "[INFO] $Message"
 }
 
-Function Log-Error {
-    param([string]$Message)
-    Write-Host "[ERROR] $Message" -ForegroundColor Red
-}
-
 Function Download-File {
     param(
         [string]$Url,
@@ -34,26 +29,13 @@ Function Install-BuildTools {
         [string]$InstallerPath,
         [string]$InstallArgs
     )
-    & $InstallerPath $InstallArgs
+    Log-Info "Starting Build Tools installation..."
+    $installLogPath = "C:\temp\vs_buildtools_install.log"
+    & $InstallerPath $InstallArgs > $installLogPath 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to install Build Tools."
+        throw "Failed to install Build Tools. Check the log: $installLogPath"
     }
-}
-
-Function Validate-Installation {
-    param([string[]]$RequiredTools)
-    foreach ($tool in $RequiredTools) {
-        if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
-            throw "$tool not found in PATH."
-        }
-    }
-}
-
-Function Clean-Up {
-    param([string]$FilePath)
-    if (Test-Path $FilePath) {
-        Remove-Item -Path $FilePath -Force
-    }
+    Log-Info "Build Tools installed successfully."
 }
 
 # Map Visual Studio versions to their respective URLs
@@ -73,30 +55,14 @@ Log-Info "VsVersion is $VsVersion"
 
 $vsBuildToolsUrl = Get-VsInstallerUrl -VsVersion $VsVersion
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
-$vswherePath = "C:\temp\vswhere.exe"
 
 # Download and install Visual Studio Build Tools
 Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
-Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs "--quiet --norestart"
-
-# Download and use `vswhere` to locate the installation
-if (-not (Test-Path $vswherePath)) {
-    $vswhereUrl = "https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe"
-    Download-File -Url $vswhereUrl -Destination $vswherePath
-}
-
-$vswhereOutput = & $vswherePath -products '*' -version "[15.0,16.0)" -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-if ($vswhereOutput) {
-    Log-Info "Found Visual Studio Build Tools installation at $vswhereOutput"
-} else {
-    throw "Visual Studio Build Tools installation not found."
-}
-
-# Validate installation
-Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
-
-# Clean up temporary files
-Clean-Up -FilePath $buildToolsPath
-Clean-Up -FilePath $vswherePath
+$installArgs = "--quiet --wait --norestart `
+    --add Microsoft.VisualStudio.Workload.VCTools `
+    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+    --add Microsoft.VisualStudio.Component.Windows10SDK.17763 `
+    --add Microsoft.VisualStudio.Component.NuGet.BuildTools"
+Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
 
 Log-Info "Visual Studio Build Tools setup completed successfully."
