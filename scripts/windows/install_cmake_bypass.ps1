@@ -1,45 +1,31 @@
 param(
-    [string]$CMAKE_VERSION
+    [string]$CMAKE_VERSION = $env:CMAKE_VERSION
 )
 
-Write-Host "Installing CMake version: $CMAKE_VERSION"
-
-# Define download URL and path
-$cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
-$installerPath = "C:\temp\cmake_installer.msi"
-
-Write-Host "CMake download URL: $cmakeInstallerUrl"
-
-# Download the installer with retries
-$retryCount = 3
-for ($i = 1; $i -le $retryCount; $i++) {
-    try {
-        Write-Host "Downloading CMake... Attempt $i"
-        Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath -UseBasicParsing
-        if ((Test-Path $installerPath) -and ((Get-Item $installerPath).Length -gt 0)) {
-            Write-Host "Download successful!"
-            break
-        } else {
-            throw "File appears to be empty or invalid."
-        }
-    } catch {
-        Write-Host "Download failed. Retrying..."
-        if ($i -eq $retryCount) {
-            throw "Failed to download CMake after $retryCount attempts."
-        }
-    }
+# Validate required parameter
+if (-not $CMAKE_VERSION) {
+    throw "CMake version is not specified. Please provide -CMAKE_VERSION parameter or set the CMAKE_VERSION environment variable."
 }
 
-# Install CMake
-if (Test-Path $installerPath) {
-    Write-Host "Installing CMake..."
-    Start-Process msiexec.exe -ArgumentList `
-        "/i $installerPath /quiet /norestart" `
-        -NoNewWindow -Wait
-} else {
-    throw "Installer file not found at $installerPath."
-}
+Write-Host "Installing CMake version $CMAKE_VERSION"
+
+# Download URL for CMake
+$CMakeUrl = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
+Write-Host "CMake Download URL: $CMakeUrl"
+
+# Download and install CMake
+$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "cmake.msi")
+Invoke-WebRequest -Uri $CMakeUrl -OutFile $InstallerPath -UseBasicParsing
+
+# Install CMake silently
+Write-Host "Installing CMake..."
+Start-Process msiexec.exe -ArgumentList "/i `"$InstallerPath`" /quiet /qn /norestart" -Wait
 
 # Add CMake to PATH
-Write-Host "Adding CMake to PATH"
-[Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Program Files\CMake\bin", [EnvironmentVariableTarget]::Machine)
+$cmakePath = "C:\Program Files\CMake\bin"
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$cmakePath", [EnvironmentVariableTarget]::Machine)
+
+# Clean up installer
+Remove-Item -Path $InstallerPath -Force
+
+Write-Host "CMake installation completed successfully."
