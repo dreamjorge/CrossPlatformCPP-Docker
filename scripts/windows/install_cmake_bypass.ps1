@@ -4,16 +4,18 @@ param(
 
 Write-Host "Installing CMake version: $CMAKE_VERSION"
 
-# Define the download URL and path
+# Define download URL and path
 $cmakeInstallerUrl = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
 $installerPath = "C:\temp\cmake_installer.msi"
 
-# Download the installer
+Write-Host "CMake download URL: $cmakeInstallerUrl"
+
+# Download the installer with retries
 $retryCount = 3
 for ($i = 1; $i -le $retryCount; $i++) {
     try {
         Write-Host "Downloading CMake... Attempt $i"
-        Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
+        Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath -UseBasicParsing
         if ((Test-Path $installerPath) -and ((Get-Item $installerPath).Length -gt 0)) {
             Write-Host "Download successful!"
             break
@@ -38,6 +40,6 @@ if (Test-Path $installerPath) {
     throw "Installer file not found at $installerPath."
 }
 
-# Add CMake to the PATH
-Write-Host "Adding CMake to system PATH"
+# Add CMake to PATH
+Write-Host "Adding CMake to PATH"
 [Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Program Files\CMake\bin", [EnvironmentVariableTarget]::Machine)
