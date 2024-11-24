@@ -1,33 +1,13 @@
-
-param (
-    [string]$CMakeVersion = $env:CMAKE_VERSION
+# Install CMake using bypass method
+param(
+    [string]$env:CMAKE_VERSION
 )
 
-if ([string]::IsNullOrWhiteSpace($CMakeVersion)) {
-    $CMakeVersion = "3.21.3"
-}
+Write-Host "Installing CMake version: $($env:CMAKE_VERSION)"
 
-$cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/cmake-$CMakeVersion-windows-x86_64.zip"
-$cmakeZipPath = "C:\temp\cmake.zip"
-$cmakeInstallPath = "C:\cmake"
+# Example installation logic
+$cmakeInstallerUrl = "https://cmake.org/files/v$($env:CMAKE_VERSION.Substring(0, 4))/cmake-$($env:CMAKE_VERSION)-win64-x64.msi"
+$installerPath = "C:\temp\cmake_installer.msi"
 
-# Download CMake zip
-Write-Host "Downloading CMake from $cmakeUrl..."
-Invoke-WebRequest -Uri $cmakeUrl -OutFile $cmakeZipPath
-
-# Extract CMake
-Write-Host "Extracting CMake to $cmakeInstallPath..."
-Expand-Archive -Path $cmakeZipPath -DestinationPath $cmakeInstallPath
-
-# Move extracted files to the install path
-$extractedDir = Join-Path $cmakeInstallPath "cmake-$CMakeVersion-windows-x86_64"
-if (Test-Path $extractedDir) {
-    Write-Host "Moving files from $extractedDir to $cmakeInstallPath..."
-    Get-ChildItem -Path $extractedDir | Move-Item -Destination $cmakeInstallPath -Force
-    Remove-Item -Recurse -Force $extractedDir
-}
-
-# Clean up
-Remove-Item -Force $cmakeZipPath
-
-Write-Host "CMake installed successfully to $cmakeInstallPath."
+Invoke-WebRequest -Uri $cmakeInstallerUrl -OutFile $installerPath
+Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet" -NoNewWindow -Wait
