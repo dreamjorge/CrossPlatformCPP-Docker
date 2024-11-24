@@ -49,6 +49,13 @@ jobs:
         run: |
           docker build --no-cache -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows.base .
 
+      - name: Test Build Tools URL Accessibility
+        shell: pwsh
+        run: |
+          $url = "https://aka.ms/vs/15/release/vs_buildtools.exe"
+          Invoke-WebRequest -Uri $url -Method HEAD
+
+
       # Step 5: Build the Visual Studio-specific Docker image
       - name: Build Visual Studio Docker Image
         shell: pwsh
