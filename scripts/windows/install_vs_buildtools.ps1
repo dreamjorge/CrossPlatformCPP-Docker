@@ -1,17 +1,9 @@
 param(
-    [string]$VS_YEAR = "2022",
-    [string]$VS_VERSION = "17",
-    [string]$Workloads = "Microsoft.VisualStudio.Workload.AzureBuildTools",
+    [string]$VS_YEAR = $env:VS_YEAR,
+    [string]$VS_VERSION = $env:VS_VERSION,
+    [string]$Workloads = "Microsoft.VisualStudio.Workload.AzureBuildTools;Microsoft.VisualStudio.Workload.VCTools",
     [string]$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools.exe")
 )
-
-# Resolve environment variables if arguments are not provided
-if (-not $VS_YEAR) {
-    $VS_YEAR = $env:VS_YEAR
-}
-if (-not $VS_VERSION) {
-    $VS_VERSION = $env:VS_VERSION
-}
 
 # Validate required parameters
 if (-not $VS_YEAR) {
@@ -21,6 +13,8 @@ if (-not $VS_YEAR) {
 if (-not $VS_VERSION) {
     throw "Visual Studio version is not specified. Please provide -VS_VERSION parameter or set the VS_VERSION environment variable."
 }
+
+# Rest of your script...
 
 Write-Host "Starting Visual Studio Build Tools installation for Year: $VS_YEAR, Version: $VS_VERSION"
 
