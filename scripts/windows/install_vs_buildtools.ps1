@@ -111,10 +111,10 @@ function Validate-Installation {
     }
 
     # Use vswhere to locate installations with the required component
-    $vswhereOutput = & $vswherePath -all -products '*' -format json
+    $vswhereOutput = & $vswherePath -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
 
     if ([string]::IsNullOrWhiteSpace($vswhereOutput)) {
-        Log-Error "vswhere did not return any installations."
+        Log-Error "vswhere did not return any installations with the required components."
     } else {
         Log-Info "vswhere output: $vswhereOutput"
         $vsInstallations = $vswhereOutput | ConvertFrom-Json
@@ -123,7 +123,7 @@ function Validate-Installation {
         $vsInstallations = $vsInstallations | Where-Object { $_.productId -ne 'Microsoft.VisualStudio.Product.TestAgent' }
 
         if ($vsInstallations.Count -eq 0) {
-            Log-Error "No valid Visual Studio installations found."
+            Log-Error "No valid Visual Studio installations with required components found."
         }
 
         # Proceed with checking for required tools
@@ -133,7 +133,13 @@ function Validate-Installation {
             Log-Info "Found Visual Studio installation at $installationPath"
 
             foreach ($tool in $RequiredTools) {
-                $toolPaths = Get-ChildItem -Path "$installationPath" -Recurse -Filter $tool -ErrorAction SilentlyContinue
+                # Define specific search paths for cl.exe
+                if ($tool -eq "cl.exe") {
+                    $toolPaths = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter $tool -ErrorAction SilentlyContinue
+                } else {
+                    $toolPaths = Get-ChildItem -Path "$installationPath" -Recurse -Filter $tool -ErrorAction SilentlyContinue
+                }
+
                 if (-not $toolPaths) {
                     Log-Warning "$tool not found in Visual Studio installation at $installationPath."
                     $allToolsFound = $false
@@ -176,11 +182,13 @@ $installArgs = @(
     "--nocache",
     "--channelUri", $channelManifestPath,
     "--installChannelUri", $channelManifestPath,
-    "--add", "Microsoft.VisualStudio.Workload.VCTools",
-    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    "--add", "Microsoft.VisualStudio.Workload.VCTools",                    # C++ Build Tools workload
+    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",          # C++ x86/x64 compilers
+    "--add", "Microsoft.VisualStudio.Component.VC.CoreBuildTools",         # Visual C++ core build tools
+    "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",       # Latest C++ Redistributable
+    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",        # Windows 10 SDK (version 19041)
     "--includeRecommended",
     "--includeOptional",
-    "--installPath", "C:\BuildTools",
     "--log", "C:\temp\vs_buildtools_install.log"
 ) -join " "
 
