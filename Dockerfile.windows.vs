@@ -1,7 +1,7 @@
 # Use the correct base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS crossplatformapp-windows-base
 
-# Install dependencies
+# Install required features
 RUN powershell -Command \
     Install-WindowsFeature -Name NET-Framework-45-ASPNET; \
     Install-WindowsFeature -Name Web-Asp-Net45
@@ -27,14 +27,14 @@ RUN powershell -ExecutionPolicy Bypass -File C:/scripts/install_cmake_bypass.ps1
 COPY . C:/app
 
 # Configure the build with CMake
-RUN powershell -Command `
-    mkdir C:\build; `
-    cd C:\build; `
+RUN powershell -Command \
+    mkdir C:\build; \
+    cd C:\build; \
     cmake -G "Visual Studio $($env:VS_VERSION) Win64" -DCMAKE_BUILD_TYPE=Release C:/app
 
 # Compile the project
-RUN powershell -Command `
-    cd C:\build; `
+RUN powershell -Command \
+    cd C:\build; \
     cmake --build . --config Release
 
 # Set the default command to run the application
