@@ -35,28 +35,21 @@ jobs:
         run: |
           $vs_version = ./scripts/windows/get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
           Write-Host "INFO: Retrieved VS_VERSION=$vs_version"
-          echo "vs_version=$vs_version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
+          echo "vs_version=$vs_version" >> $env:GITHUB_OUTPUT
 
-      # Step 3: Set the VS_VERSION as an environment variable
+      # Step 3: Set VS_VERSION in Environment
       - name: Set VS_VERSION in Environment
         shell: pwsh
         run: |
-          echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+          echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" >> $env:GITHUB_ENV
 
-      # Step 4: Build the base Docker image
+      # Step 4: Build Base Docker Image
       - name: Build Base Docker Image
         shell: pwsh
         run: |
           docker build --no-cache -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows.base .
 
-      - name: Test Build Tools URL Accessibility
-        shell: pwsh
-        run: |
-          $url = "https://aka.ms/vs/15/release/vs_buildtools.exe"
-          Invoke-WebRequest -Uri $url -Method HEAD
-
-
-      # Step 5: Build the Visual Studio-specific Docker image
+      # Step 5: Build Visual Studio-Specific Docker Image
       - name: Build Visual Studio Docker Image
         shell: pwsh
         run: |
@@ -68,28 +61,10 @@ jobs:
             -t $imageTag `
             -f Dockerfile.windows.vs .
 
-      # Step 6: Run Build Script Inside Docker
-      - name: Run Build Script Inside Docker
-        shell: pwsh
-        run: |
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          $buildDir = "C:/app/build/${{ matrix.config }}"
-          docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
-            -e VS_YEAR=${{ matrix.vs_year }} `
-            -e VS_VERSION=${{ env.VS_VERSION }} `
-            -e BuildDir=$buildDir `
-            -v "${{ github.workspace }}:C:/app" `
-            $imageTag `
-            powershell -NoProfile -ExecutionPolicy Bypass `
-              -File C:/app/scripts/windows/build.ps1 `
-              -Config ${{ matrix.config }} `
-              -BuildDir $buildDir
-
-      # Step 7: Run Application Inside Docker
-      - name: Run Application Inside Docker
-        shell: pwsh
-        run: |
-          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
-          $buildDir = "C:/app/build/${{ matrix.config }}"
-          docker run
+      # Step 6: Upload Installation Log on Failure
+      - name: Upload Installation Log
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: vs_buildtools_install_log
+          path: C:/temp/vs_buildtools_install.log
