@@ -5,24 +5,25 @@ param(
 
 Write-Host "Installing Visual Studio Build Tools for Year: $VS_YEAR, Version: $VS_VERSION"
 
-# Define the installer URL
-$vsInstallerUrl = "https://aka.ms/vs/$VS_YEAR/release/vs_buildtools.exe"
+# Define download URL and path
+$CHANNEL_URL = "https://aka.ms/vs/$VS_YEAR/release/channel"
+$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_YEAR/release/vs_buildtools.exe"
 $vsInstallerPath = "C:\temp\vs_buildtools.exe"
 
-# Ensure the directory exists
-if (!(Test-Path -Path "C:\temp")) {
-    New-Item -ItemType Directory -Path "C:\temp"
-}
+Write-Host "Channel URL: $CHANNEL_URL"
+Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
 
 # Download the installer
 $retryCount = 3
 for ($i = 1; $i -le $retryCount; $i++) {
     try {
         Write-Host "Downloading Visual Studio Build Tools... Attempt $i"
-        Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
-        if (Test-Path $vsInstallerPath) {
+        Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $vsInstallerPath
+        if ((Test-Path $vsInstallerPath) -and ((Get-Item $vsInstallerPath).Length -gt 0)) {
             Write-Host "Download successful!"
             break
+        } else {
+            throw "File appears to be empty or invalid."
         }
     } catch {
         Write-Host "Download failed. Retrying..."
@@ -32,10 +33,12 @@ for ($i = 1; $i -le $retryCount; $i++) {
     }
 }
 
-# Run the installer
+# Install the tools
 if (Test-Path $vsInstallerPath) {
     Write-Host "Starting Visual Studio Build Tools installation..."
-    Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools" -NoNewWindow -Wait
+    Start-Process -FilePath $vsInstallerPath -ArgumentList `
+        "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools" `
+        -NoNewWindow -Wait
 } else {
     throw "Installer file not found at $vsInstallerPath."
 }
