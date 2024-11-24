@@ -1,13 +1,19 @@
-# Build the project using Visual Studio
+# Build the project using CMake and Visual Studio
 param(
     [string]$env:VS_YEAR,
     [string]$env:VS_VERSION
 )
 
-Write-Host "Building project with Visual Studio $($env:VS_YEAR), Version $($env:VS_VERSION)"
+Write-Host "Configuring and Building project with Visual Studio $($env:VS_YEAR), Version $($env:VS_VERSION)"
 
-# Example build logic (adjust based on actual script logic)
-$msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$($env:VS_YEAR)\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-$solutionPath = "C:\app\solution.sln"
+# Create a build directory
+$buildDir = "C:\build"
+if (!(Test-Path -Path $buildDir)) {
+    New-Item -ItemType Directory -Path $buildDir
+}
 
-& $msbuildPath $solutionPath /p:Configuration=Release /p:Platform=x64
+# Run CMake configuration
+cmake -G "Visual Studio $($env:VS_VERSION) Win64" -DCMAKE_BUILD_TYPE=Release -S "C:\app" -B $buildDir
+
+# Build the project
+cmake --build $buildDir --config Release
