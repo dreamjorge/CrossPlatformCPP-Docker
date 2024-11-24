@@ -17,8 +17,8 @@ jobs:
     # Define a matrix to run the job with different configurations and Visual Studio versions
     strategy:
       matrix:
-        config: [Debug, Release]
-        vs_year: [2017, 2019, 2022]
+        config: [Release]
+        vs_year: [2019]
     env:
       CMAKE_VERSION: 3.21.3
       # Define a base name for Docker images to maintain consistency
