@@ -12,10 +12,10 @@ ARG VS_VERSION=15
 ARG CMAKE_VERSION=3.21.3
 
 # Set environment variables
-ENV VS_YEAR=${VS_YEAR} `
-    VS_VERSION=${VS_VERSION} `
-    CMAKE_VERSION=${CMAKE_VERSION} `
-    TEMP_DIR=C:\\temp `
+ENV VS_YEAR=${VS_YEAR} \
+    VS_VERSION=${VS_VERSION} \
+    CMAKE_VERSION=${CMAKE_VERSION} \
+    TEMP_DIR=C:\\temp \
     CMAKE_PATH="C:\\Program Files\\CMake\\bin\\cmake.exe"
 
 # Create a temporary directory for downloads
