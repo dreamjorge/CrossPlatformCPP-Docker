@@ -4,8 +4,8 @@
 FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
-ARG VS_YEAR=2017
-ARG VS_VERSION=15
+ARG VS_YEAR=2019
+ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
 # Environment Variables
@@ -40,6 +40,8 @@ RUN powershell -Command `
             Write-Host "Detected MSVC Version: $msvcVersion"; `
             [System.Environment]::SetEnvironmentVariable('MSVC_VERSION', $msvcVersion, 'Machine'); `
         } else { `
+            Write-Host "Available directories:"; `
+            Get-ChildItem -Directory "C:\Program Files (x86)\Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools"; `
             throw "MSVC directory not found."; `
         } `
     } catch { `
