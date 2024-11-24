@@ -50,7 +50,6 @@ $vsBuildToolsUrl = $vsInstallers[$VsVersion].BuildToolsUrl
 
 # Define download paths
 $buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
-$vswherePath = "C:\temp\vswhere.exe"
 
 # Ensure the C:\temp directory exists
 if (-not (Test-Path -Path "C:\temp")) {
@@ -99,7 +98,7 @@ function Validate-Installation {
     param ([string[]]$RequiredTools)
 
     # Define the default installation path
-    $installationPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+    $installationPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VsVersion\BuildTools"
 
     if (-not (Test-Path -Path $installationPath)) {
         Log-Error "Visual Studio Build Tools installation not found at $installationPath."
@@ -109,19 +108,26 @@ function Validate-Installation {
         # Proceed with checking for required tools
         $allToolsFound = $true
         foreach ($tool in $RequiredTools) {
-            # Define specific search paths for cl.exe
             if ($tool -eq "cl.exe") {
-                $toolPaths = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC" -Recurse -Filter $tool -ErrorAction SilentlyContinue
+                # Use wildcard for MSVC version directory
+                $clPaths = Get-ChildItem -Path "$installationPath\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe" -ErrorAction SilentlyContinue
+                if (-not $clPaths) {
+                    Log-Warning "$tool not found in Visual Studio Build Tools installation at $installationPath."
+                    $allToolsFound = $false
+                } else {
+                    foreach ($clPath in $clPaths) {
+                        Log-Info "$tool found at $($clPath.FullName)"
+                    }
+                }
             } else {
                 $toolPaths = Get-ChildItem -Path "$installationPath" -Recurse -Filter $tool -ErrorAction SilentlyContinue
-            }
-
-            if (-not $toolPaths) {
-                Log-Warning "$tool not found in Visual Studio Build Tools installation at $installationPath."
-                $allToolsFound = $false
-            } else {
-                foreach ($toolPath in $toolPaths) {
-                    Log-Info "$tool found at $($toolPath.FullName)"
+                if (-not $toolPaths) {
+                    Log-Warning "$tool not found in Visual Studio Build Tools installation at $installationPath."
+                    $allToolsFound = $false
+                } else {
+                    foreach ($toolPath in $toolPaths) {
+                        Log-Info "$tool found at $($toolPath.FullName)"
+                    }
                 }
             }
         }
@@ -155,10 +161,6 @@ $installArgs = @(
     "--norestart",
     "--nocache",
     "--add", "Microsoft.VisualStudio.Workload.VCTools",                    # C++ Build Tools workload
-    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",          # C++ x86/x64 compilers
-    "--add", "Microsoft.VisualStudio.Component.VC.CoreBuildTools",         # Visual C++ core build tools
-    "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",       # Latest C++ Redistributable
-    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",        # Windows 10 SDK (version 19041)
     "--includeRecommended",
     "--includeOptional",
     "--log", "C:\temp\vs_buildtools_install.log"
@@ -170,8 +172,7 @@ Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
 # Validate the installation
 Validate-Installation -RequiredTools @("cl.exe", "msbuild.exe")
 
-# Clean up the installer and vswhere files
+# Clean up the installer
 Clean-Up -FilePath $buildToolsPath
-Clean-Up -FilePath $vswherePath
 
 Log-Info "Visual Studio Build Tools setup completed successfully."
