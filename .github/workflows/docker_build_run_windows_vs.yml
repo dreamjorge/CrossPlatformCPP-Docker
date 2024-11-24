@@ -23,11 +23,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build --no-cache \
-            --build-arg VS_YEAR=${{ env.VS_YEAR }} \
-            --build-arg VS_VERSION=${{ env.VS_VERSION }} \
-            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} \
-            -t crossplatformapp-windows-vs2017 \
+          docker build --no-cache `
+            --build-arg VS_YEAR=${{ env.VS_YEAR }} `
+            --build-arg VS_VERSION=${{ env.VS_VERSION }} `
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
+            -t crossplatformapp-windows-vs2017 `
             -f Dockerfile.windows.vs .
 
       - name: Run Docker container
