@@ -4,7 +4,9 @@ param (
 )
 
 # Default values if environment variables are not set
-if (-not $VsVersion) { $VsVersion = "15" }
+if (-not $VsVersion -or $VsVersion -eq "-") {
+    throw "Invalid VS_VERSION: $VsVersion"
+}
 if (-not $VsYear) { $VsYear = "2017" }
 
 # Enable TLS 1.2 for secure downloads
@@ -60,4 +62,16 @@ Function Get-VsInstallerUrl {
 Log-Info "VsYear is $VsYear"
 Log-Info "VsVersion is $VsVersion"
 
-$vsBuildToolsUrl = Get-VsInstallerUrl -
+$vsBuildToolsUrl = Get-VsInstallerUrl -VsVersion $VsVersion
+$buildToolsPath = "C:\temp\vs_buildtools_$VsVersion.exe"
+
+# Download and install Visual Studio Build Tools
+Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
+$installArgs = "--quiet --wait --norestart `
+    --add Microsoft.VisualStudio.Workload.VCTools `
+    --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+    --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
+    --add Microsoft.VisualStudio.Component.NuGet.BuildTools"
+Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
+
+Log-Info "Visual Studio Build Tools setup completed successfully."
