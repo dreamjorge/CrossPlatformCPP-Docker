@@ -6,16 +6,17 @@ param(
 )
 
 # Validate required parameters
-if (-not $VS_YEAR) {
-    throw "Visual Studio year is not specified. Please provide -VS_YEAR parameter or set the VS_YEAR environment variable."
-}
-
 if (-not $VS_VERSION) {
     throw "Visual Studio version is not specified. Please provide -VS_VERSION parameter or set the VS_VERSION environment variable."
 }
 
-# Rest of your script...
+Write-Host "Starting Visual Studio Build Tools installation for Version: $VS_VERSION"
 
+# Corrected URL using VS_VERSION instead of VS_YEAR
+$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
+Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
+
+# Rest of your script remains the same...
 Write-Host "Starting Visual Studio Build Tools installation for Year: $VS_YEAR, Version: $VS_VERSION"
 
 function Get-VSInstaller {
