@@ -2,8 +2,8 @@
 FROM crossplatformapp-windows-base AS vs_build
 
 # Arguments for Visual Studio and CMake versions
-ARG VS_YEAR=2019
-ARG VS_VERSION=16
+ARG VS_YEAR=2022
+ARG VS_VERSION=17
 ARG CMAKE_VERSION=3.21.3
 
 # Set environment variables
@@ -19,9 +19,9 @@ COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
 
 # Debugging environment variables
 RUN powershell -Command `
-    Write-Host "VS_VERSION is $env:VS_VERSION"; `
-    Write-Host "VS_YEAR is $env:VS_YEAR"; `
-    Write-Host "CMAKE_VERSION is $env:CMAKE_VERSION"
+    echo "VS_VERSION is $env:VS_VERSION"; `
+    echo "VS_YEAR is $env:VS_YEAR"; `
+    echo "CMAKE_VERSION is $env:CMAKE_VERSION"
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:/scripts/install_vs_buildtools.ps1"
@@ -36,15 +36,15 @@ RUN powershell -Command `
         $msvcDirs = Get-ChildItem -Directory -Path $msvcPath -ErrorAction Stop; `
         if ($msvcDirs.Count -gt 0) { `
             $msvcVersion = $msvcDirs[0].Name; `
-            Write-Host "Detected MSVC Version: $msvcVersion"; `
+            echo "Detected MSVC Version: $msvcVersion"; `
             [System.Environment]::SetEnvironmentVariable('MSVC_VERSION', $msvcVersion, 'Machine'); `
         } else { `
-            Write-Host "Available directories in MSVC path:"; `
+            echo "Available directories in MSVC path:"; `
             Get-ChildItem -Directory -Path $msvcPath; `
             throw "MSVC directory not found."; `
         } `
     } catch { `
-        Write-Host "Error detecting MSVC Version: $_"; `
+        echo "Error detecting MSVC Version: $_"; `
         throw; `
     }
 
