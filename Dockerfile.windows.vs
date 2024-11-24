@@ -13,7 +13,7 @@ ENV VS_YEAR=${VS_YEAR} `
     VS_VERSION=${VS_VERSION} `
     CMAKE_VERSION=${CMAKE_VERSION} `
     TEMP_DIR=C:/temp `
-    CMAKE_PATH=C:/Program Files/CMake/bin/cmake.exe
+    CMAKE_PATH="C:/Program Files/CMake/bin/cmake.exe"
 
 # Create Temp Directory
 RUN powershell -Command `
@@ -26,7 +26,7 @@ COPY scripts/windows/install_vs_buildtools.ps1 C:/scripts/install_vs_buildtools.
 COPY scripts/windows/install_cmake_bypass.ps1 C:/scripts/install_cmake_bypass.ps1
 
 # Debugging Environment Variables
-RUN echo "VS_YEAR=$VS_YEAR" && echo "VS_VERSION=$VS_VERSION"
+RUN echo "VS_YEAR=$VS_YEAR" && echo "VS_VERSION=$VS_VERSION" && echo "CMAKE_PATH=$CMAKE_PATH"
 
 # Install Visual Studio Build Tools
 RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" `
