@@ -1,26 +1,18 @@
-param (
-    [Parameter(Mandatory = $true)]
-    [string]$Config,
-    [Parameter(Mandatory = $true)]
-    [string]$BuildDir
+# Run the built application
+param(
+    [string]$env:VS_YEAR,
+    [string]$env:VS_VERSION
 )
 
-# Exit immediately if an error occurs
-$ErrorActionPreference = "Stop"
+Write-Host "Running application with Visual Studio $($env:VS_YEAR), Version $($env:VS_VERSION)"
 
-Write-Host "INFO: Starting application with configuration: $Config"
+# Example run logic
+$appPath = "C:\app\bin\Release\CrossPlatformApp.exe"
 
-# Construct the path to the executable
-$exePath = Join-Path -Path $BuildDir -ChildPath "bin\$Config\CrossPlatformApp.exe"
-
-# Verify executable exists
-if (-not (Test-Path $exePath)) {
-    Write-Error "ERROR: Executable not found at $exePath"
+if (Test-Path $appPath) {
+    Write-Host "Executing application..."
+    Start-Process $appPath -NoNewWindow -Wait
+} else {
+    Write-Host "Application not found at $appPath"
     exit 1
 }
-
-# Run the executable
-Write-Host "INFO: Running executable at $exePath"
-& $exePath
-
-Write-Host "INFO: Application execution completed successfully."
