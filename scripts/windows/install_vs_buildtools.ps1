@@ -11,7 +11,7 @@ if (-not $VS_VERSION) {
 
 Write-Host "Starting Visual Studio Build Tools installation for Version: $VS_VERSION"
 
-# Corrected URL using VS_VERSION
+# Construct the download URL using VS_VERSION
 $VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
 Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
 
@@ -32,27 +32,36 @@ function Install-VSBuildTools {
         Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
     }
 
+    # Split the workloads into an array
+    $WorkloadArray = $Workloads -split ';'
+
     # Build the argument list
     $arguments = @(
         "--quiet",
         "--wait",
         "--norestart",
         "--nocache",
-        "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`"",
-        "--add $Workloads",
+        "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`""
+    )
+
+    # Add each workload with its own --add parameter
+    foreach ($workload in $WorkloadArray) {
+        $arguments += "--add"
+        $arguments += $workload
+    }
+
+    $arguments += @(
         "--includeRecommended",
         "--includeOptional",
         "--lang en-US",
         "--log `"$env:TEMP\vs_buildtools_install.log`""
     )
 
-    $argumentString = $arguments -join ' '
-
     # Start the installation
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Starting Visual Studio Build Tools installation..."
     try {
         $startTime = Get-Date
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList $argumentString -NoNewWindow -Wait -PassThru
+        $process = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -NoNewWindow -Wait -PassThru
 
         # Handle exit codes
         if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
