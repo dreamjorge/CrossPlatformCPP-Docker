@@ -3,6 +3,14 @@ param(
     [string]$VS_VERSION
 )
 
+# Resolve environment variables if arguments are not provided
+if (-not $VS_YEAR) {
+    $VS_YEAR = $env:VS_YEAR
+}
+if (-not $VS_VERSION) {
+    $VS_VERSION = $env:VS_VERSION
+}
+
 Write-Host "Installing Visual Studio Build Tools for Year: $VS_YEAR, Version: $VS_VERSION"
 
 # Define URLs and paths
