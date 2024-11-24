@@ -1,5 +1,4 @@
 param(
-    [string]$VS_YEAR = $env:VS_YEAR,
     [string]$VS_VERSION = $env:VS_VERSION,
     [string]$Workloads = "Microsoft.VisualStudio.Workload.AzureBuildTools;Microsoft.VisualStudio.Workload.VCTools",
     [string]$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools.exe")
@@ -12,43 +11,9 @@ if (-not $VS_VERSION) {
 
 Write-Host "Starting Visual Studio Build Tools installation for Version: $VS_VERSION"
 
-# Corrected URL using VS_VERSION instead of VS_YEAR
+# Corrected URL using VS_VERSION
 $VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
 Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
-
-# Rest of your script remains the same...
-Write-Host "Starting Visual Studio Build Tools installation for Year: $VS_YEAR, Version: $VS_VERSION"
-
-function Get-VSInstaller {
-    param(
-        [string]$VS_YEAR,
-        [string]$InstallerPath,
-        [int]$RetryCount = 3
-    )
-
-    $VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_YEAR/release/vs_buildtools.exe"
-    Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
-
-    for ($i = 1; $i -le $RetryCount; $i++) {
-        try {
-            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Downloading Visual Studio Build Tools... Attempt $i"
-            Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $InstallerPath -UseBasicParsing
-            if ((Test-Path $InstallerPath) -and ((Get-Item $InstallerPath).Length -gt 0)) {
-                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
-                return
-            } else {
-                throw "File appears to be empty or invalid."
-            }
-        } catch {
-            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download failed: $_"
-            if ($i -eq $RetryCount) {
-                throw "[$(Get-Date -Format 'HH:mm:ss')] Failed to download Visual Studio Build Tools after $RetryCount attempts."
-            } else {
-                Start-Sleep -Seconds 5
-            }
-        }
-    }
-}
 
 function Install-VSBuildTools {
     param(
@@ -56,70 +21,56 @@ function Install-VSBuildTools {
         [string]$Workloads
     )
 
-    if (-not (Test-Path $InstallerPath)) {
-        throw "Installer file not found at $InstallerPath."
+    # Download the installer
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Downloading Visual Studio Build Tools... Attempt 1"
+    Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $InstallerPath -UseBasicParsing
+
+    # Verify the downloaded file size (should be larger than 1 MB)
+    if ((Get-Item $InstallerPath).Length -lt 1MB) {
+        throw "Downloaded file is too small to be the correct installer. Please check the download URL."
+    } else {
+        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
     }
 
+    # Build the argument list
+    $arguments = @(
+        "--quiet",
+        "--wait",
+        "--norestart",
+        "--nocache",
+        "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`"",
+        "--add $Workloads",
+        "--includeRecommended",
+        "--includeOptional",
+        "--lang en-US",
+        "--log `"$env:TEMP\vs_buildtools_install.log`""
+    )
+
+    $argumentString = $arguments -join ' '
+
+    # Start the installation
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Starting Visual Studio Build Tools installation..."
     try {
         $startTime = Get-Date
-        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Installation in progress. This may take some time..."
-
-        # Build argument list
-        $arguments = @(
-            "--quiet",
-            "--wait",
-            "--norestart",
-            "--nocache",
-            "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools`"",
-            "--add $Workloads",
-            "--remove Microsoft.VisualStudio.Component.Windows10SDK.10240",
-            "--remove Microsoft.VisualStudio.Component.Windows10SDK.10586",
-            "--remove Microsoft.VisualStudio.Component.Windows10SDK.14393",
-            "--remove Microsoft.VisualStudio.Component.Windows81SDK",
-            "--includeRecommended",
-            "--includeOptional",
-            "--lang en-US"
-        )
-
-        $argumentString = $arguments -join ' '
         $process = Start-Process -FilePath $InstallerPath -ArgumentList $argumentString -NoNewWindow -Wait -PassThru
 
+        # Handle exit codes
         if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
             $endTime = Get-Date
             $duration = $endTime - $startTime
             Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Installation completed in $([Math]::Round($duration.TotalMinutes, 2)) minutes."
         } else {
-            throw "Installer exited with code $($process.ExitCode)."
+            throw "Installer exited with code $($process.ExitCode). Check the log at $env:TEMP\vs_buildtools_install.log"
         }
     } catch {
         throw "Visual Studio Build Tools installation failed: $_"
     }
 }
 
-function Main {
-    param(
-        [string]$VS_YEAR,
-        [string]$VS_VERSION,
-        [string]$Workloads,
-        [string]$InstallerPath
-    )
+# Execute the installation function
+Install-VSBuildTools -InstallerPath $InstallerPath -Workloads $Workloads
 
-    # Ensure InstallerPath directory exists
-    $installerDir = Split-Path -Path $InstallerPath -Parent
-    if (-not (Test-Path -Path $installerDir)) {
-        Write-Host "Creating directory $installerDir..."
-        New-Item -ItemType Directory -Path $installerDir -Force | Out-Null
-    }
+# Clean up installer
+Remove-Item -Path $InstallerPath -Force
 
-    # Download the installer
-    Get-VSInstaller -VS_YEAR $VS_YEAR -InstallerPath $InstallerPath
-
-    # Install Build Tools
-    Install-VSBuildTools -InstallerPath $InstallerPath -Workloads $Workloads
-
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Visual Studio Build Tools installation completed successfully."
-}
-
-# Execute the main function
-Main -VS_YEAR $VS_YEAR -VS_VERSION $VS_VERSION -Workloads $Workloads -InstallerPath $InstallerPath
+Write-Host "Visual Studio Build Tools installation completed successfully."
