@@ -40,8 +40,8 @@ Function Install-BuildTools {
     $installLogPath = "C:\temp\vs_buildtools_install.log"
     & $InstallerPath $InstallArgs > $installLogPath 2>&1
     if ($LASTEXITCODE -ne 0) {
-        Log-Error "Build Tools installation failed. Installation Log Content:"
-        Get-Content $installLogPath -Tail 100
+        Log-Error "Build Tools installation failed. Full Installation Log:"
+        Get-Content $installLogPath | ForEach-Object { Write-Host $_ }
         throw "Failed to install Build Tools. Check the log: $installLogPath"
     }
     Log-Info "Build Tools installed successfully."
@@ -58,6 +58,19 @@ Function Get-VsInstallerUrl {
     }
 }
 
+# Pre-installation diagnostics
+Log-Info "Checking for existing Visual Studio installations..."
+$vswherePath = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswherePath) {
+    Log-Info "vswhere detected. Existing Visual Studio installations:"
+    & $vswherePath -all -products * | ForEach-Object { Write-Host $_ }
+} else {
+    Log-Info "vswhere not found. No existing Visual Studio installations detected."
+}
+
+Log-Info "Checking for required Windows updates..."
+(Get-HotFix).HotFixID | ForEach-Object { Write-Host "Installed HotFix: $_" }
+
 # Start the setup process
 Log-Info "VsYear is $VsYear"
 Log-Info "VsVersion is $VsVersion"
@@ -70,8 +83,7 @@ Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 $installArgs = "--quiet --wait --norestart `
     --add Microsoft.VisualStudio.Workload.VCTools `
     --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-    --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-    --add Microsoft.VisualStudio.Component.NuGet.BuildTools"
+    --add Microsoft.VisualStudio.Component.Windows10SDK.17763 "
 Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
 
 Log-Info "Visual Studio Build Tools setup completed successfully."
