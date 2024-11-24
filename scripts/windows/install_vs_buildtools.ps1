@@ -11,6 +11,12 @@ if ([string]::IsNullOrWhiteSpace($VsYear)) {
     $VsYear = "2022" # Default to Visual Studio 2022
 }
 
+# Log the VsYear and VsVersion
+Log-Info "VsYear is $VsYear"
+Log-Info "VsVersion is $VsVersion"
+
+# Rest of the script remains the same...
+
 # Enable TLS 1.2 for secure downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
