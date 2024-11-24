@@ -1,5 +1,6 @@
-name: Build and Run Windows Docker Image
+name: Docker Build and Run on Windows Runner
 
+# Trigger the workflow on push and pull request events to the main branch
 on:
   push:
     branches:
@@ -9,27 +10,109 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-run-windows-docker:
+    name: Build and Run Docker (Windows)
     runs-on: windows-latest
 
+    # Define a matrix to run the job with different configurations and Visual Studio versions
+    strategy:
+      matrix:
+        config: [Debug, Release]
+        vs_year: [2017, 2019, 2022]
     env:
-      VS_YEAR: 2017
-      VS_VERSION: 15
       CMAKE_VERSION: 3.21.3
+      # Define a base name for Docker images to maintain consistency
+      DOCKER_NAME_BASE: crossplatformapp-windows
 
     steps:
-      - name: Checkout code
+      # Step 1: Checkout the repository code
+      - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
 
-      - name: Build Docker image
+      # Step 2: Retrieve the Visual Studio version based on the year
+      - name: Get VS_VERSION from VS_YEAR
+        id: get-vs-version
+        shell: pwsh
         run: |
+          # Execute the PowerShell script to get the VS_VERSION
+          $vs_version = ./scripts/windows/get_vs_version.ps1 -VS_YEAR ${{ matrix.vs_year }}
+          Write-Host "INFO: Retrieved VS_VERSION=$vs_version"
+          
+          # Set the output variable for use in subsequent steps
+          echo "vs_version=$vs_version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
+      # Step 3: Set the VS_VERSION as an environment variable for the job
+      - name: Set VS_VERSION in Environment
+        shell: pwsh
+        run: |
+          # Assign the output from the previous step to the VS_VERSION environment variable
+          echo "VS_VERSION=${{ steps.get-vs-version.outputs.vs_version }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+      # Step 4: Build the base Docker image
+      - name: Build Base Docker Image
+        shell: pwsh
+        run: |
+          # Build the base Docker image without using the cache for a fresh build
+          docker build --no-cache -t $env:DOCKER_NAME_BASE-base -f Dockerfile.windows.base .
+      # Step 5: Build the Visual Studio-specific Docker image
+      - name: Build Visual Studio Docker Image
+        shell: pwsh
+        run: |
+          # Construct the Docker image tag using the base name and VS year
+          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          
+          # Build the Docker image with the necessary build arguments
           docker build --no-cache `
-            --build-arg VS_YEAR=${{ env.VS_YEAR }} `
+            --build-arg VS_YEAR=${{ matrix.vs_year }} `
             --build-arg VS_VERSION=${{ env.VS_VERSION }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t crossplatformapp-windows-vs2017 `
+            -t $imageTag `
             -f Dockerfile.windows.vs .
-
-      - name: Run Docker container
+      # Optional Step: List Docker Images for Verification (Useful for Debugging)
+      - name: List Docker Images
+        shell: pwsh
         run: |
-          docker run --rm crossplatformapp-windows-vs2017
+          docker images
+      # Step 6: Debug the environment inside the Docker container
+      - name: Debug Environment Inside Docker
+        shell: pwsh
+        run: |
+          # Define the Docker image tag
+          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          
+          # Run the container and display environment variables for debugging
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -e VS_YEAR=${{ matrix.vs_year }} `
+            -e VS_VERSION=${{ env.VS_VERSION }} `
+            -v "${{ github.workspace }}:C:\app" `
+            $imageTag `
+            cmd.exe /c set
+      # Step 7: Execute the build script inside the Docker container
+      - name: Run Build Script Inside Docker
+        shell: pwsh
+        run: |
+          # Define the Docker image tag
+          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          
+          # Run the build PowerShell script inside the container
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -e VS_YEAR=${{ matrix.vs_year }} `
+            -v "${{ github.workspace }}:C:/app" `
+            $imageTag `
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
+      # Step 8: Execute the run script inside the Docker container
+      - name: Run Application Inside Docker
+        shell: pwsh
+        run: |
+          # Define the Docker image tag
+          $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
+          
+          # Run the application PowerShell script inside the container
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -e VS_YEAR=${{ matrix.vs_year }} `
+            -v "${{ github.workspace }}:C:/app" `
+            $imageTag `
+            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
