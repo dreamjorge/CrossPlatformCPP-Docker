@@ -1,3 +1,12 @@
+# Define the base image
+FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS crossplatformapp-windows-base
+
+# Add any necessary tools to the base image
+RUN powershell -Command \
+    Install-WindowsFeature -Name NET-Framework-45-ASPNET; \
+    Install-WindowsFeature -Name Web-Asp-Net45
+
+# Start building the Visual Studio image
 FROM crossplatformapp-windows-base AS vs_build
 
 ARG VS_YEAR=2017
