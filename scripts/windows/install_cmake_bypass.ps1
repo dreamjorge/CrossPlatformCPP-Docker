@@ -2,11 +2,6 @@ param(
     [string]$CMAKE_VERSION
 )
 
-# Resolve environment variable if argument is not provided
-if (-not $CMAKE_VERSION) {
-    $CMAKE_VERSION = $env:CMAKE_VERSION
-}
-
 Write-Host "Installing CMake version: $CMAKE_VERSION"
 
 # Define download URL and path
@@ -44,3 +39,7 @@ if (Test-Path $installerPath) {
 } else {
     throw "Installer file not found at $installerPath."
 }
+
+# Add CMake to PATH
+Write-Host "Adding CMake to PATH"
+[Environment]::SetEnvironmentVariable("Path", $Env:Path + ";C:\Program Files\CMake\bin", [EnvironmentVariableTarget]::Machine)
