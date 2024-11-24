@@ -1,9 +1,14 @@
 param (
-    [string]$VsVersion = $env:VS_VERSION
+    [string]$VsVersion = $env:VS_VERSION,
+    [string]$VsYear = $env:VS_YEAR
 )
 
 if ([string]::IsNullOrWhiteSpace($VsVersion)) {
-    $VsVersion = "17" # Default to Visual Studio 2022 (VS Version 17)
+    $VsVersion = "17" # Default to Visual Studio version 17
+}
+
+if ([string]::IsNullOrWhiteSpace($VsYear)) {
+    $VsYear = "2022" # Default to Visual Studio 2022
 }
 
 # Enable TLS 1.2 for secure downloads
@@ -98,7 +103,7 @@ function Validate-Installation {
     param ([string[]]$RequiredTools)
 
     # Define the default installation path
-    $installationPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VsVersion\BuildTools"
+    $installationPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VsYear\BuildTools"
 
     if (-not (Test-Path -Path $installationPath)) {
         Log-Error "Visual Studio Build Tools installation not found at $installationPath."
