@@ -16,6 +16,11 @@ Function Log-Info {
     Write-Host "[INFO] $Message"
 }
 
+Function Log-Error {
+    param([string]$Message)
+    Write-Host "[ERROR] $Message" -ForegroundColor Red
+}
+
 Function Download-File {
     param(
         [string]$Url,
@@ -33,6 +38,8 @@ Function Install-BuildTools {
     $installLogPath = "C:\temp\vs_buildtools_install.log"
     & $InstallerPath $InstallArgs > $installLogPath 2>&1
     if ($LASTEXITCODE -ne 0) {
+        Write-Host "Installation Log:"
+        Get-Content $installLogPath
         throw "Failed to install Build Tools. Check the log: $installLogPath"
     }
     Log-Info "Build Tools installed successfully."
@@ -61,7 +68,7 @@ Download-File -Url $vsBuildToolsUrl -Destination $buildToolsPath
 $installArgs = "--quiet --wait --norestart `
     --add Microsoft.VisualStudio.Workload.VCTools `
     --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-    --add Microsoft.VisualStudio.Component.Windows10SDK.17763 `
+    --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
     --add Microsoft.VisualStudio.Component.NuGet.BuildTools"
 Install-BuildTools -InstallerPath $buildToolsPath -InstallArgs $installArgs
 
