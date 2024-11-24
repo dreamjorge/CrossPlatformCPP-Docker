@@ -1,6 +1,9 @@
+# Use backtick (`) for line continuation
+# Base Image
+# Specify the escape character for Windows Dockerfile
+# Note: Ensure no spaces after the backtick!
 escape=`
 
-# Base Image
 FROM crossplatformapp-windows-base AS vs_build
 
 # Build Arguments
