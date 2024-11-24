@@ -34,14 +34,15 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\scripts\install_cmak
 # Detect MSVC Version and Set Environment Variable
 RUN powershell -Command `
     try { `
-        $msvcDirs = Get-ChildItem -Directory "C:\Program Files (x86)\Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools\MSVC" -ErrorAction Stop; `
+        $msvcPath = Join-Path -Path "$env:ProgramFiles(x86)" -ChildPath "Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools\MSVC"; `
+        $msvcDirs = Get-ChildItem -Directory $msvcPath -ErrorAction Stop; `
         if ($msvcDirs.Count -gt 0) { `
             $msvcVersion = $msvcDirs[0].Name; `
             Write-Host "Detected MSVC Version: $msvcVersion"; `
             [System.Environment]::SetEnvironmentVariable('MSVC_VERSION', $msvcVersion, 'Machine'); `
         } else { `
-            Write-Host "Available directories:"; `
-            Get-ChildItem -Directory "C:\Program Files (x86)\Microsoft Visual Studio\$env:VS_YEAR\BuildTools\VC\Tools"; `
+            Write-Host "Available directories in MSVC path:"; `
+            Get-ChildItem -Directory $msvcPath; `
             throw "MSVC directory not found."; `
         } `
     } catch { `
