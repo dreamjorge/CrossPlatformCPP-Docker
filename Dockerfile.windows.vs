@@ -1,4 +1,3 @@
-# Use the correct base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS crossplatformapp-windows-base
 
 # Install required features
@@ -30,12 +29,12 @@ COPY . C:/app
 RUN powershell -Command \
     mkdir C:\build; \
     cd C:\build; \
-    cmake -G "Visual Studio $($env:VS_VERSION) Win64" -DCMAKE_BUILD_TYPE=Release C:/app
+    "C:\Program Files\CMake\bin\cmake.exe" -G "Visual Studio $($env:VS_VERSION) Win64" -DCMAKE_BUILD_TYPE=Release C:/app
 
 # Compile the project
 RUN powershell -Command \
     cd C:\build; \
-    cmake --build . --config Release
+    "C:\Program Files\CMake\bin\cmake.exe" --build . --config Release
 
 # Set the default command to run the application
 CMD ["powershell", "C:/app/scripts/windows/run.ps1"]
