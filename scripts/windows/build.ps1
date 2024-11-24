@@ -1,39 +1,13 @@
-param (
-    [string]$Config = "Release",
-    [string]$BuildDir = "C:\app\build\Release"
+# Build the project using Visual Studio
+param(
+    [string]$env:VS_YEAR,
+    [string]$env:VS_VERSION
 )
 
-function Log-Info {
-    param ([string]$Message)
-    Write-Host "INFO: $Message"
-}
+Write-Host "Building project with Visual Studio $($env:VS_YEAR), Version $($env:VS_VERSION)"
 
-function Log-Error {
-    param ([string]$Message)
-    Write-Error "ERROR: $Message" -ErrorAction Stop
-}
+# Example build logic (adjust based on actual script logic)
+$msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$($env:VS_YEAR)\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+$solutionPath = "C:\app\solution.sln"
 
-# Set the generator name based on VS_VERSION
-$vsVersion = $env:VS_VERSION
-switch ($vsVersion) {
-    "15" { $generator = "Visual Studio 15 2017" }
-    "16" { $generator = "Visual Studio 16 2019" }
-    "17" { $generator = "Visual Studio 17 2022" }
-    default { Log-Error "Unsupported VS_VERSION: $vsVersion" }
-}
-
-# Ensure the build directory exists
-if (-not (Test-Path -Path $BuildDir)) {
-    New-Item -ItemType Directory -Path $BuildDir | Out-Null
-    Log-Info "Created build directory at $BuildDir"
-}
-
-# Run CMake to generate build files
-Log-Info "Running CMake to generate build files..."
-cmake -S "C:\app" -B $BuildDir -G "$generator" -A x64
-
-# Build the project
-Log-Info "Building the project..."
-cmake --build $BuildDir --config $Config
-
-Log-Info "Build process completed successfully."
+& $msbuildPath $solutionPath /p:Configuration=Release /p:Platform=x64
