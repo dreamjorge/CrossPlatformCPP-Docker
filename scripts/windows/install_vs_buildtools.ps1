@@ -56,7 +56,7 @@ Write-Host "Starting Visual Studio Build Tools installation..."
 try {
     $startTime = Get-Date
     Start-Process -FilePath $vsInstallerPath -ArgumentList `
-        "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" `
+        " --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" `
         -NoNewWindow -Wait
 
     $endTime = Get-Date
