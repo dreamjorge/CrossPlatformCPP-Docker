@@ -47,7 +47,7 @@ jobs:
             --build-arg VS_VERSION=${{ env.VS_VERSION }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
             -t $env:DOCKER_IMAGE_NAME `
-            -f Dockerfile .
+            -f Dockerfile.windows.vs .
 
       # Optional Step: List Docker images for verification
       - name: List Docker Images
