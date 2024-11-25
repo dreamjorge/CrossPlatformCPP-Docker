@@ -9,13 +9,13 @@ FROM base AS vs19
 ARG VS_YEAR=2019
 ARG VS_VERSION=16
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_YEAR}/release/channel
-ARG CMAKE_VERSION=3.21.3
+ARG CMAKE_VERSION=3.26.4
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-ENV VS_YEAR=${VS_YEAR} `
-    VS_VERSION=${VS_VERSION} `
+ENV VS_YEAR=${VS_YEAR} ^
+    VS_VERSION=${VS_VERSION} ^
     CMAKE_VERSION=${CMAKE_VERSION}
 
 # ===================================================================
@@ -39,8 +39,8 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cm
 # ===================================================================
 # Verify CMake Installation
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    Write-Host "Verifying CMake installation..."; `
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    Write-Host "Verifying CMake installation..."; ^
     cmake --version
 
 # ===================================================================
