@@ -56,7 +56,7 @@ RUN Write-Host "VS_VERSION: $env:VS_VERSION"; `
 # ===================================================================
 RUN Write-Host "Downloading Visual Studio Build Tools from https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
     $vsBuildToolsUrl = "https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
-    $installerPath = "$env:TEMP_DIR\\vs_buildtools.exe"; `
+    $installerPath = [System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools.exe"); `
     try { `
         Invoke-WebRequest -Uri $vsBuildToolsUrl -OutFile $installerPath -UseBasicParsing -ErrorAction Stop `
     } catch { `
@@ -66,7 +66,7 @@ RUN Write-Host "Downloading Visual Studio Build Tools from https://aka.ms/vs/$en
 # ===================================================================
 # Verify Installer Download
 # ===================================================================
-RUN $installerSize = (Get-Item "$env:TEMP_DIR\\vs_buildtools.exe").Length; `
+RUN $installerSize = (Get-Item ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools.exe"))).Length; `
     if ($installerSize -lt 1MB) { `
         throw "Downloaded Visual Studio Build Tools installer is too small ($installerSize bytes). Download may have failed." `
     } else { `
@@ -86,9 +86,9 @@ RUN Write-Host "Installing Visual Studio Build Tools..."; `
         '--add', 'Microsoft.VisualStudio.Workload.VCTools', `
         '--includeRecommended', `
         '--lang', 'en-US', `
-        '--log', "$env:TEMP_DIR\\vs_buildtools_install.log"`
+        '--log', ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools_install.log"))`
     ); `
-    $process = Start-Process -FilePath "$env:TEMP_DIR\\vs_buildtools.exe" -ArgumentList $installArgs -NoNewWindow -Wait -PassThru; `
+    $process = Start-Process -FilePath ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools.exe")) -ArgumentList $installArgs -NoNewWindow -Wait -PassThru; `
     switch ($process.ExitCode) { `
         0 { Write-Host "Visual Studio Build Tools installed successfully." } `
         3010 { `
@@ -97,7 +97,7 @@ RUN Write-Host "Installing Visual Studio Build Tools..."; `
         default { `
             Write-Host "Visual Studio Build Tools installer failed with exit code $($process.ExitCode)."; `
             Write-Host "Installer log contents:"; `
-            Get-Content "$env:TEMP_DIR\\vs_buildtools_install.log" | Write-Host; `
+            Get-Content ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools_install.log")) | Write-Host; `
             throw "Visual Studio Build Tools installation failed. Check the log at $env:TEMP_DIR\\vs_buildtools_install.log" `
         } `
     }
@@ -105,15 +105,15 @@ RUN Write-Host "Installing Visual Studio Build Tools..."; `
 # ===================================================================
 # Clean Up Visual Studio Build Tools Installer and Log
 # ===================================================================
-RUN Remove-Item -Path "$env:TEMP_DIR\\vs_buildtools.exe" -Force; `
-    Remove-Item -Path "$env:TEMP_DIR\\vs_buildtools_install.log" -Force
+RUN Remove-Item -Path ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools.exe")) -Force; `
+    Remove-Item -Path ([System.IO.Path]::Combine($env:TEMP_DIR, "vs_buildtools_install.log")) -Force
 
 # ===================================================================
 # Download and Install CMake
 # ===================================================================
 RUN Write-Host "Downloading CMake version $env:CMAKE_VERSION..."; `
     $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi"; `
-    $cmakeInstaller = "$env:TEMP_DIR\\cmake.msi"; `
+    $cmakeInstaller = [System.IO.Path]::Combine($env:TEMP_DIR, "cmake.msi"); `
     try { `
         Invoke-WebRequest -Uri $cmakeUrl -OutFile $cmakeInstaller -UseBasicParsing -ErrorAction Stop `
     } catch { `
@@ -123,7 +123,7 @@ RUN Write-Host "Downloading CMake version $env:CMAKE_VERSION..."; `
 # ===================================================================
 # Verify CMake Installer Download
 # ===================================================================
-RUN $cmakeInstallerSize = (Get-Item "$env:TEMP_DIR\\cmake.msi").Length; `
+RUN $cmakeInstallerSize = (Get-Item $cmakeInstaller).Length; `
     if ($cmakeInstallerSize -lt 500KB) { `
         throw "Downloaded CMake installer is too small ($cmakeInstallerSize bytes). Download may have failed." `
     } else { `
@@ -143,13 +143,13 @@ RUN Write-Host "Installing CMake..."; `
     Write-Host "Verifying CMake installation..."; `
     cmake --version; `
     # Clean Up CMake Installer
-    Remove-Item -Path "$cmakeInstaller" -Force
+    Remove-Item -Path $cmakeInstaller -Force
 
 # ===================================================================
 # Verify Visual Studio Build Tools Installation
 # ===================================================================
 RUN Write-Host "Verifying Visual Studio Build Tools installation..."; `
-    $vswherePath = "$env:VS_BUILDTOOLS_PATH\\Common7\\Tools\\vswhere.exe"; `
+    $vswherePath = [System.IO.Path]::Combine($env:VS_BUILDTOOLS_PATH, "Common7", "Tools", "vswhere.exe"); `
     if (-Not (Test-Path $vswherePath)) { `
         throw "vswhere.exe not found at $vswherePath. Visual Studio Build Tools may not be installed correctly." `
     } else { `
