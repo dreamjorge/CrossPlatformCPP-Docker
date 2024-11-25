@@ -30,7 +30,7 @@ COPY ./scripts/windows/run.cmd /app/scripts/windows/run.cmd
 # ===================================================================
 # Install Visual Studio Build Tools
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_YEAR $env:VS_YEAR -VS_VERSION $env:VS_VERSION
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
 
 # Check if the log file exists and output it if the previous step failed
 RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
