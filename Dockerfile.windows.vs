@@ -1,83 +1,52 @@
-# escape=`
-
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
-
-# ===================================================================
-# Metadata
-# ===================================================================
-LABEL maintainer="jorge-kun@live.com" `
-      description="Docker image for building CrossPlatformApp with Visual Studio" `
-      version="1.0.0"
+FROM base AS vs19
 
 # ===================================================================
 # Build Arguments
 # ===================================================================
+ARG VS_YEAR=2019
 ARG VS_VERSION=16
-ARG CMAKE_VERSION=3.26.4
-ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
-ARG VS_CHANNEL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ARG CHANNEL_URL=https://aka.ms/vs/${VS_YEAR}/release/channel
+ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-ENV TEMP_DIR=C:\TEMP
-ENV CMAKE_INSTALL_PATH="C:\Program Files\CMake"
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV BUILD_DIR=C:\app
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
+    CMAKE_VERSION=${CMAKE_VERSION}
 
 # ===================================================================
-# Set Shell to cmd
+# Copy Installation Scripts
 # ===================================================================
-SHELL ["cmd", "/S", "/C"]
+COPY scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
+COPY scripts/windows/build.vs19.cmd C:\app\scripts\windows\build.vs19.cmd
+COPY scripts/windows/run.cmd C:\app\scripts\windows\run.cmd
 
 # ===================================================================
-# Debug Arguments and Validate Inputs
+# Install Visual Studio Build Tools
 # ===================================================================
-# Debug: Print ARG values
-RUN cmd /C "echo CMAKE_VERSION=%CMAKE_VERSION% && echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && echo VS_CHANNEL=%VS_CHANNEL% && echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%"
-
-# Validate ARG values to prevent empty inputs
-RUN cmd /C "if \"%CMAKE_DOWNLOAD_URL%\"==\"\" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && if \"%VS_CHANNEL%\"==\"\" (echo Error: VS_CHANNEL is not set && exit /b 1) && if \"%VS_BUILD_TOOLS_URL%\"==\"\" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)"
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_YEAR $env:VS_YEAR -VS_VERSION $env:VS_VERSION
 
 # ===================================================================
-# Download and Install Visual Studio Build Tools and CMake
+# Install CMake
 # ===================================================================
-RUN mkdir %TEMP_DIR% && \
-    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %VS_CHANNEL% -OutFile %TEMP_DIR%\VisualStudio.chman" && \
-    powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe" && \
-    %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri %TEMP_DIR%\VisualStudio.chman `
-    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath %BUILD_TOOLS_PATH% && \
-    powershell -NoProfile -Command "
-    Try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-        Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile %TEMP_DIR%\cmake.zip;
-    } Catch {
-        Write-Error 'Failed to download CMake. Check URL or network connectivity.';
-        Exit 1;
-    }" && \
-    powershell -NoProfile -Command "Expand-Archive -Path %TEMP_DIR%\cmake.zip -DestinationPath %TEMP_DIR%\cmake" && \
-    move %TEMP_DIR%\cmake\cmake-%CMAKE_VERSION%-windows-x86_64\* %CMAKE_INSTALL_PATH% && \
-    setx /M PATH "%PATH%;%CMAKE_INSTALL_PATH%\bin" && \
-    rmdir /S /Q %TEMP_DIR%
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" -CMAKE_VERSION $env:CMAKE_VERSION
+
+# ===================================================================
+# Verify CMake Installation
+# ===================================================================
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Verifying CMake installation..."; `
+    cmake --version
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-WORKDIR %BUILD_DIR%
-
-# ===================================================================
-# Copy Project Files
-# ===================================================================
-COPY . .
+WORKDIR C:\app
 
 # ===================================================================
 # Default Command
