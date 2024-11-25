@@ -40,7 +40,7 @@ ENV VS_YEAR=${VS_YEAR} `
 # and additional scripts for building and running applications.
 COPY scripts/windows/install_vs_buildtools.ps1 C:\\scripts\\install_vs_buildtools.ps1
 COPY scripts/windows/install_cmake_bypass.ps1 C:\\scripts\\install_cmake_bypass.ps1
-COPY scripts/windows/build.vs19.ps1 C:\\app\\scripts\\windows\\build.vs19.ps1
+COPY scripts/windows/build.ps1 C:\\app\\scripts\\windows\\build.ps1
 COPY scripts/windows/run.ps1 C:\\app\\scripts\\windows\\run.ps1
 
 # ===================================================================
