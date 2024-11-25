@@ -13,7 +13,7 @@ Write-Host "Starting Visual Studio Build Tools installation for Version: $VS_VER
 
 # Construct the download URL using VS_VERSION
 $VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
-Write-Host "Build Tools URL: $VS_BUILD_TOOLS_URL"
+Write-Host "Constructed Build Tools URL: $VS_BUILD_TOOLS_URL"
 
 function Install-VSBuildTools {
     param(
@@ -21,15 +21,25 @@ function Install-VSBuildTools {
         [string[]]$Workloads
     )
 
-    # Download the installer
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Downloading Visual Studio Build Tools... Attempt 1"
-    Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $InstallerPath -UseBasicParsing
-
-    # Verify the downloaded file size (should be larger than 1 MB)
-    if ((Get-Item $InstallerPath).Length -lt 1MB) {
-        throw "Downloaded file is too small to be the correct installer. Please check the download URL."
-    } else {
-        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
+    # Retry logic for downloading the installer
+    $maxAttempts = 3
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Downloading Visual Studio Build Tools... Attempt $attempt"
+        try {
+            Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $InstallerPath -UseBasicParsing
+            if ((Get-Item $InstallerPath).Length -ge 1MB) {
+                Write-Host "Download successful! File size: $([Math]::Round((Get-Item $InstallerPath).Length / 1MB, 2)) MB"
+                break
+            } else {
+                throw "Downloaded file is too small."
+            }
+        } catch {
+            Write-Host "Download failed: $_"
+            if ($attempt -eq $maxAttempts) {
+                throw "Exceeded maximum download attempts. Please check the URL and network connection."
+            }
+            Start-Sleep -Seconds 5
+        }
     }
 
     # Build the argument list
@@ -41,7 +51,6 @@ function Install-VSBuildTools {
         "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`""
     )
 
-    # Add each workload with its own --add parameter
     foreach ($workload in $Workloads) {
         $arguments += "--add"
         $arguments += $workload
@@ -59,8 +68,6 @@ function Install-VSBuildTools {
     try {
         $startTime = Get-Date
         $process = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -NoNewWindow -Wait -PassThru
-
-        # Handle exit codes
         if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
             $endTime = Get-Date
             $duration = $endTime - $startTime
