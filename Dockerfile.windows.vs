@@ -1,54 +1,82 @@
 # escape=`
 
+# ===================================================================
+# Base Image
+# ===================================================================
 # Use the official Microsoft Windows Server Core image as the base image
-FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS vs_build
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS base
 
+# ===================================================================
+# Stage: Visual Studio 2019 Build Environment
+# ===================================================================
+FROM base AS vs19
+
+# ===================================================================
 # Build Arguments
+# ===================================================================
+# These arguments specify Visual Studio and CMake versions,
+# as well as the URLs for downloading necessary tools.
+ARG VS_YEAR=2019
 ARG VS_VERSION=16
+ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
-# Set Environment Variables
-ENV VS_VERSION=${VS_VERSION} `
+# ===================================================================
+# Environment Variables
+# ===================================================================
+# Set environment variables for consistent setup.
+ENV VS_YEAR=${VS_YEAR} `
+    VS_VERSION=${VS_VERSION} `
     CMAKE_VERSION=${CMAKE_VERSION} `
-    VS_BUILDTOOLS_PATH="C:\BuildTools"
+    CHANNEL_URL=${CHANNEL_URL} `
+    VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL} `
+    VS_BUILDTOOLS_PATH="C:\\BuildTools"
 
-# Install Visual Studio Build Tools with C++ workload
-SHELL ["cmd", "/S", "/C"]
+# ===================================================================
+# Copy Installation Scripts
+# ===================================================================
+# Copy PowerShell scripts for installing Visual Studio Build Tools and CMake,
+# and additional scripts for building and running applications.
+COPY scripts/windows/install_vs_buildtools.ps1 C:\\scripts\\install_vs_buildtools.ps1
+COPY scripts/windows/install_cmake_bypass.ps1 C:\\scripts\\install_cmake_bypass.ps1
+COPY scripts/windows/build.vs19.ps1 C:\\app\\scripts\\windows\\build.vs19.ps1
+COPY scripts/windows/run.ps1 C:\\app\\scripts\\windows\\run.ps1
 
-# Download Visual Studio Build Tools and vswhere.exe
-ADD https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe C:\TEMP\vs_buildtools.exe
-ADD https://github.com/microsoft/vswhere/releases/latest/download/vswhere.exe C:\TEMP\vswhere.exe
+# ===================================================================
+# Debugging: Verify Environment Variables
+# ===================================================================
+# Output environment variables for debugging and validation.
+RUN echo "CHANNEL_URL=${CHANNEL_URL}" && echo "VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}" && echo "CMAKE_VERSION=${CMAKE_VERSION}"
 
+# ===================================================================
 # Install Visual Studio Build Tools
-RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
-    --installPath "%VS_BUILDTOOLS_PATH%" ^
-    --add Microsoft.VisualStudio.Workload.VCTools ^
-    --includeRecommended ^
-    --includeOptional ^
-    --lang en-US ^
- || IF "%ERRORLEVEL%"=="3010" EXIT 0
+# ===================================================================
+# Install Visual Studio 2019 Build Tools with the C++ workload.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
 
-# Verify Visual Studio Build Tools installation
-RUN C:\TEMP\vswhere.exe -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath || (echo "Visual Studio Build Tools installation failed" & exit 1)
+# ===================================================================
+# Install CMake
+# ===================================================================
+# Install CMake using the provided PowerShell script.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
 
-# Clean up the installer
-RUN del /Q /F C:\TEMP\vs_buildtools.exe
-RUN del /Q /F C:\TEMP\vswhere.exe
+# ===================================================================
+# Verify CMake Installation
+# ===================================================================
+# Run a quick check to ensure CMake is installed and available in the PATH.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    Write-Host "Verifying CMake installation..."; `
+    cmake --version
 
-# Change the shell back to PowerShell for the rest of the Dockerfile
-SHELL ["powershell", "-NoProfile", "-Command"]
-
-# Copy Scripts
-COPY scripts/windows/install_cmake_bypass.ps1 C:/scripts/install_cmake_bypass.ps1
-COPY scripts/windows/build.ps1 C:/app/scripts/windows/build.ps1
-COPY scripts/windows/run.ps1 C:/app/scripts/windows/run.ps1
-
-# Install CMake using the existing script
-RUN $ErrorActionPreference = 'Stop'; `
-    .\scripts\install_cmake_bypass.ps1
-
+# ===================================================================
 # Set Working Directory
-WORKDIR C:/app
+# ===================================================================
+# Set the working directory to where application code will be copied and executed.
+WORKDIR C:\\app
 
+# ===================================================================
 # Default Command
-CMD ["cmd.exe"]
+# ===================================================================
+# Start a PowerShell prompt when the container runs.
+CMD ["powershell.exe"]
