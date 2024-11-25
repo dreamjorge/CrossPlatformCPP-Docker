@@ -38,15 +38,10 @@ SHELL ["cmd", "/S", "/C"]
 # Debug Arguments and Validate Inputs
 # ===================================================================
 # Debug: Print ARG values
-RUN cmd /C "echo CMAKE_VERSION=${CMAKE_VERSION} && \
-            echo CMAKE_DOWNLOAD_URL=${CMAKE_DOWNLOAD_URL} && \
-            echo VS_CHANNEL=${VS_CHANNEL} && \
-            echo VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}"
+RUN cmd /C "echo CMAKE_VERSION=%CMAKE_VERSION% && echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && echo VS_CHANNEL=%VS_CHANNEL% && echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%"
 
 # Validate ARG values to prevent empty inputs
-RUN cmd /C "if \"%CMAKE_DOWNLOAD_URL%\"==\"\" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit 1) && \
-            if \"%VS_CHANNEL%\"==\"\" (echo Error: VS_CHANNEL is not set && exit 1) && \
-            if \"%VS_BUILD_TOOLS_URL%\"==\"\" (echo Error: VS_BUILD_TOOLS_URL is not set && exit 1)"
+RUN cmd /C "if \"%CMAKE_DOWNLOAD_URL%\"==\"\" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && if \"%VS_CHANNEL%\"==\"\" (echo Error: VS_CHANNEL is not set && exit /b 1) && if \"%VS_BUILD_TOOLS_URL%\"==\"\" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)"
 
 # ===================================================================
 # Download and Install Visual Studio Build Tools and CMake
@@ -64,14 +59,14 @@ RUN mkdir %TEMP_DIR% && \
     powershell -Command "
     Try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-        Write-Host 'Downloading CMake from ${CMAKE_DOWNLOAD_URL}';
-        Invoke-WebRequest -Uri ${CMAKE_DOWNLOAD_URL} -OutFile %TEMP_DIR%\cmake.zip;
+        Write-Host 'Downloading CMake from %CMAKE_DOWNLOAD_URL%';
+        Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile %TEMP_DIR%\cmake.zip;
     } Catch {
         Write-Error 'Failed to download CMake. Check URL or network connectivity.';
         Exit 1;
     }" && \
     powershell -Command "Expand-Archive -Path %TEMP_DIR%\cmake.zip -DestinationPath %TEMP_DIR%\cmake" && \
-    move %TEMP_DIR%\cmake\cmake-${CMAKE_VERSION}-windows-x86_64\* %CMAKE_INSTALL_PATH% && \
+    move %TEMP_DIR%\cmake\cmake-%CMAKE_VERSION%-windows-x86_64\* %CMAKE_INSTALL_PATH% && \
     setx /M PATH "%PATH%;%CMAKE_INSTALL_PATH%\bin" && \
     rmdir /S /Q %TEMP_DIR%
 
