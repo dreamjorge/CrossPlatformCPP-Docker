@@ -1,80 +1,90 @@
 # escape=`
 
-# Use the latest Windows Server Core 2022 image.
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+# ===================================================================
+# Base Image
+# ===================================================================
+ARG BASE_IMAGE=mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
+FROM ${BASE_IMAGE}
 
-# Restore the default Windows shell for batch processing
-SHELL ["cmd", "/S", "/C"]
+# ===================================================================
+# Metadata
+# ===================================================================
+ARG MAINTAINER="jorge-kun@live.com"
+ARG DESCRIPTION="Docker image for building and running CrossPlatformApp using Visual Studio"
+ARG VERSION="1.0.0"
+ARG REPOSITORY="https://github.com/dreamjorge/CrossPlatformCPP-Docker"
+ARG DOCUMENTATION="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme"
+ARG ISSUES="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues"
+ARG LICENSE="MIT"
+
+LABEL maintainer="${MAINTAINER}" `
+      description="${DESCRIPTION}" `
+      version="${VERSION}" `
+      repository="${REPOSITORY}" `
+      documentation="${DOCUMENTATION}" `
+      issues="${ISSUES}" `
+      license="${LICENSE}"
 
 # ===================================================================
 # Build Arguments
 # ===================================================================
 ARG VS_VERSION=16
-ARG CMAKE_VERSION=3.21.3
-ARG TEMP_DIR="C:\\TEMP"
+ARG VS_CHANNEL=https://aka.ms/vs/${VS_VERSION}/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.26.4
+ARG CMAKE_DOWNLOAD_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-ENV TEMP_DIR=${TEMP_DIR} `
-    VS_VERSION=${VS_VERSION} `
-    CMAKE_VERSION=${CMAKE_VERSION} `
-    VS_BUILDTOOLS_PATH="C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV BUILD_DIR=C:\\app\\
+ENV TEMP_DIR=C:\TEMP
+ENV CMAKE_INSTALL_PATH="C:\Program Files\CMake"
 
 # ===================================================================
-# Create TEMP Directory
+# Set Shell to cmd
 # ===================================================================
-RUN mkdir "%TEMP_DIR%"
+SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Install Visual Studio Build Tools
+# Install Visual Studio and CMake
 # ===================================================================
-RUN echo "Downloading Visual Studio Build Tools version %VS_VERSION%" && `
-    curl -SL --output "%TEMP_DIR%\\vs_buildtools.exe" `
-        "https://aka.ms/vs/%VS_VERSION%/release/vs_buildtools.exe" && `
-    echo "Installing Visual Studio Build Tools..." && `
-    start /wait "%TEMP_DIR%\\vs_buildtools.exe" `
-        --quiet --wait --norestart `
-        --nocache `
-        --installPath "%VS_BUILDTOOLS_PATH%" `
-        --add Microsoft.VisualStudio.Workload.VCTools `
-        --add Microsoft.VisualStudio.Component.VC.CMake.Project `
-        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-        --lang en-US `
-        --log "%TEMP_DIR%\\vs_buildtools_install.log" `
-        || IF "%ERRORLEVEL%"=="3010" EXIT 0 && `
-    del /q "%TEMP_DIR%\\vs_buildtools.exe"
+RUN mkdir %TEMP_DIR% && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %VS_CHANNEL% -OutFile %TEMP_DIR%\VisualStudio.chman" && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe" && `
+    %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
+    --channelUri %TEMP_DIR%\VisualStudio.chman `
+    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
+    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+    --installPath %BUILD_TOOLS_PATH% && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri ${CMAKE_DOWNLOAD_URL} -OutFile %TEMP_DIR%\cmake.zip" && `
+    powershell -Command "Expand-Archive -Path %TEMP_DIR%\cmake.zip -DestinationPath %TEMP_DIR%\cmake" && `
+    move %TEMP_DIR%\cmake\cmake-${CMAKE_VERSION}-windows-x86_64\* %CMAKE_INSTALL_PATH% && `
+    setx /M PATH "%PATH%;%CMAKE_INSTALL_PATH%\bin" && `
+    rmdir /S /Q %TEMP_DIR%
 
 # ===================================================================
-# Install CMake
+# Validate Installations
 # ===================================================================
-RUN echo "Downloading CMake version %CMAKE_VERSION%" && `
-    set "CMAKE_INSTALLER=%TEMP_DIR%\\cmake.msi" && `
-    curl -SL --output "%CMAKE_INSTALLER%" `
-        "https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/cmake-%CMAKE_VERSION%-windows-x86_64.msi" && `
-    echo "Installing CMake version %CMAKE_VERSION%" && `
-    start /wait msiexec /i "%CMAKE_INSTALLER%" /quiet /qn /norestart && `
-    del /q "%CMAKE_INSTALLER%"
-
-# ===================================================================
-# Verify Installations
-# ===================================================================
-# Verify Visual Studio installation
-RUN if exist "%VS_BUILDTOOLS_PATH%\\Common7\\Tools\\VsDevCmd.bat" ( `
-        echo "Visual Studio Build Tools installed successfully." `
-    ) else ( `
-        echo "Error: Visual Studio Build Tools not found at %VS_BUILDTOOLS_PATH%\\Common7\\Tools\\VsDevCmd.bat" && exit /b 1 `
-    )
-
-# Verify CMake installation
-RUN cmake --version
+RUN cmake --version && `
+    %BUILD_TOOLS_PATH%\Common7\Tools\VsDevCmd.bat -help
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-WORKDIR "C:\\app"
+WORKDIR C:\\app\\
 
 # ===================================================================
-# Define Entry Point
+# Copy Scripts Directory
 # ===================================================================
-ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
+ARG SCRIPTS_DIR=scripts/windows
+COPY ${SCRIPTS_DIR} C:\scripts\windows
+
+# ===================================================================
+# Default Command
+# ===================================================================
+CMD ["cmd.exe"]
