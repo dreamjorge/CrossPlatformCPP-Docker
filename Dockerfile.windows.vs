@@ -1,7 +1,7 @@
 # escape=`
 
-# Use the latest Windows Server Core 2019 image
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
+# Use the latest Windows Server Core 2022 image for compatibility with the host
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # Restore the default Windows shell for batch processing
 SHELL ["cmd", "/S", "/C"]
@@ -9,7 +9,6 @@ SHELL ["cmd", "/S", "/C"]
 # ===================================================================
 # Build Arguments
 # ===================================================================
-# Allow parameterized installation of Visual Studio and CMake
 ARG VS_VERSION=16
 ARG VS_WORKLOAD=Microsoft.VisualStudio.Workload.VCTools
 ARG VS_INSTALL_PATH="C:\\BuildTools"
@@ -18,7 +17,6 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 # Environment Variables
 # ===================================================================
-# Define environment variables for consistency
 ENV TEMP_DIR="C:\\TEMP" `
     VS_VERSION=${VS_VERSION} `
     VS_WORKLOAD=${VS_WORKLOAD} `
@@ -58,24 +56,15 @@ RUN echo "Downloading CMake version %CMAKE_VERSION%" && `
 # ===================================================================
 # Verify Installation
 # ===================================================================
-# Verify that Visual Studio Build Tools and CMake are installed correctly
 RUN "%VS_INSTALL_PATH%\\Common7\\Tools\\VsDevCmd.bat" && `
     cmake --version
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-# Define the working directory for the application
 WORKDIR "C:\\app"
-
-# ===================================================================
-# Copy Application Files
-# ===================================================================
-# (Optional) Copy application files if required
-COPY . .
 
 # ===================================================================
 # Define Entry Point
 # ===================================================================
-# Start Developer Command Prompt with PowerShell
 ENTRYPOINT ["C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
