@@ -3,7 +3,6 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-# Use the official Microsoft Windows Server Core image as the base image
 FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS base
 
 # ===================================================================
@@ -53,13 +52,13 @@ RUN echo "CHANNEL_URL=${CHANNEL_URL}" && echo "VS_BUILD_TOOLS_URL=${VS_BUILD_TOO
 # Install Visual Studio Build Tools
 # ===================================================================
 # Install Visual Studio 2019 Build Tools with the C++ workload.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1"
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_VERSION $env:VS_VERSION -VS_BUILD_TOOLS_URL $env:VS_BUILD_TOOLS_URL -VS_BUILDTOOLS_PATH $env:VS_BUILDTOOLS_PATH
 
 # ===================================================================
 # Install CMake
 # ===================================================================
 # Install CMake using the provided PowerShell script.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1"
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1" -CMAKE_VERSION $env:CMAKE_VERSION
 
 # ===================================================================
 # Verify CMake Installation
