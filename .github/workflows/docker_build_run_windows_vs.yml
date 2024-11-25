@@ -86,6 +86,14 @@ jobs:
             powershell -NoProfile -ExecutionPolicy Bypass -Command `
               "Set-Location C:/app; ./run.ps1 -CONFIG $config"
 
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: vs-buildtools-log
+          path: TEMP/vs_buildtools_install.log
+      
+
       # Optional Step: Cleanup (Stop and Remove Containers)
       - name: Cleanup Docker Resources
         if: always()

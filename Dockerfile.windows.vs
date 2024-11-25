@@ -16,7 +16,8 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 ENV VS_YEAR=${VS_YEAR} \
     VS_VERSION=${VS_VERSION} \
-    CMAKE_VERSION=${CMAKE_VERSION}
+    CMAKE_VERSION=${CMAKE_VERSION} \
+    LOG_PATH=C:\\TEMP\\vs_buildtools_install.log
 
 # ===================================================================
 # Copy Installation Scripts
@@ -26,11 +27,11 @@ COPY ./scripts/windows/install_cmake.ps1 /scripts/install_cmake.ps1
 COPY ./scripts/windows/build.vs19.cmd /app/scripts/windows/build.vs19.cmd
 COPY ./scripts/windows/run.cmd /app/scripts/windows/run.cmd
 
-
 # ===================================================================
 # Install Visual Studio Build Tools
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_YEAR $env:VS_YEAR -VS_VERSION $env:VS_VERSION
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_YEAR $env:VS_YEAR -VS_VERSION $env:VS_VERSION || `
+    (type $env:LOG_PATH && exit 1)
 
 # ===================================================================
 # Install CMake

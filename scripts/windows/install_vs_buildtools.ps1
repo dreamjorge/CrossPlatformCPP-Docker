@@ -1,7 +1,8 @@
 param(
     [string]$VS_VERSION = $env:VS_VERSION,
     [string[]]$Workloads = @("Microsoft.VisualStudio.Workload.VCTools"),
-    [string]$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools.exe")
+    [string]$InstallerPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools.exe"),
+    [string]$LogPath = (Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vs_buildtools_install.log")
 )
 
 # Validate required parameters
@@ -22,7 +23,8 @@ Write-Host "Constructed Build Tools URL: $VS_BUILD_TOOLS_URL"
 function Install-VSBuildTools {
     param(
         [string]$InstallerPath,
-        [string[]]$Workloads
+        [string[]]$Workloads,
+        [string]$LogPath
     )
 
     # Retry logic for downloading the installer
@@ -52,7 +54,7 @@ function Install-VSBuildTools {
         "--wait",
         "--norestart",
         "--nocache",
-        "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`""
+        "--installPath C:\\BuildTools"
     )
 
     foreach ($workload in $Workloads) {
@@ -63,7 +65,7 @@ function Install-VSBuildTools {
     $arguments += @(
         "--includeRecommended",
         "--lang en-US",
-        "--log `"$env:TEMP\vs_buildtools_install.log`""
+        "--log `"$LogPath`""
     )
 
     # Start the installation
@@ -77,7 +79,7 @@ function Install-VSBuildTools {
             $duration = $endTime - $startTime
             Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Installation completed in $([Math]::Round($duration.TotalMinutes, 2)) minutes."
         } else {
-            throw "Installer exited with code $($process.ExitCode). Check the log at $env:TEMP\vs_buildtools_install.log"
+            throw "Installer exited with code $($process.ExitCode). Check the log at $LogPath"
         }
     } catch {
         throw "Visual Studio Build Tools installation failed: $_"
@@ -85,7 +87,7 @@ function Install-VSBuildTools {
 }
 
 # Execute the installation function
-Install-VSBuildTools -InstallerPath $InstallerPath -Workloads $Workloads
+Install-VSBuildTools -InstallerPath $InstallerPath -Workloads $Workloads -LogPath $LogPath
 
 # Clean up installer
 Remove-Item -Path $InstallerPath -Force
