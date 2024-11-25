@@ -54,13 +54,13 @@ RUN Write-Host "VS_VERSION: $env:VS_VERSION"; `
 # ===================================================================
 # Download Visual Studio Build Tools Installer
 # ===================================================================
-RUN Write-Host `"Downloading Visual Studio Build Tools from https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe`"; `
-    $vsBuildToolsUrl = `"https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe`"; `
+RUN Write-Host "Downloading Visual Studio Build Tools from https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
+    $vsBuildToolsUrl = "https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
     $installerPath = [System.IO.Path]::Combine($env:TEMP_DIR, 'vs_buildtools.exe'); `
     try { `
         Invoke-WebRequest -Uri $vsBuildToolsUrl -OutFile $installerPath -UseBasicParsing -ErrorAction Stop; `
     } catch { `
-        throw "Failed to download Visual Studio Build Tools installer: $_" `
+        throw 'Failed to download Visual Studio Build Tools installer: $_' `
     }
 
 # ===================================================================
