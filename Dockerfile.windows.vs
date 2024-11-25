@@ -27,17 +27,20 @@ RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
     --lang en-US `
  || IF "%ERRORLEVEL%"=="3010" EXIT 0
 
+# Clean up the installer
+RUN del /Q /F C:\TEMP\vs_buildtools.exe
+
 # Install CMake
 SHELL ["powershell", "-NoProfile", "-Command"]
 
 RUN $ErrorActionPreference = 'Stop'; `
     Write-Host "Installing CMake version $env:CMAKE_VERSION"; `
-    $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi"; `
-    $installerPath = "C:\TEMP\cmake.msi"; `
+    $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$($env:CMAKE_VERSION)/cmake-$($env:CMAKE_VERSION)-windows-x86_64.msi"; `
+    $installerPath = "C:\\TEMP\\cmake.msi"; `
     Invoke-WebRequest -Uri $cmakeUrl -OutFile $installerPath; `
-    Start-Process msiexec.exe -ArgumentList '/i', $installerPath, '/quiet', '/qn', '/norestart' -Wait; `
+    Start-Process msiexec.exe -ArgumentList '/i', "`"$installerPath`"", '/quiet', '/qn', '/norestart' -Wait; `
     Remove-Item -Path $installerPath -Force; `
-    [Environment]::SetEnvironmentVariable('Path', $env:Path + ';C:\Program Files\CMake\bin', [EnvironmentVariableTarget]::Machine); `
+    [Environment]::SetEnvironmentVariable('Path', $env:Path + ';C:\\Program Files\\CMake\\bin', [EnvironmentVariableTarget]::Machine); `
     Write-Host "CMake installation completed successfully."
 
 # Copy Scripts
