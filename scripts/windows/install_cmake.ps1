@@ -36,4 +36,14 @@ if (Test-Path $installerPath) {
     Write-Host "Installing CMake..."
     Start-Process msiexec.exe -ArgumentList "/i $installerPath /quiet /norestart" -NoNewWindow -Wait
 } else {
-    throw "In
+    throw "Installer not found after download. Installation aborted."
+}
+
+# Verify Installation
+Write-Host "Verifying CMake installation..."
+$cmakePath = "C:\Program Files\CMake\bin\cmake.exe"
+if (Test-Path $cmakePath) {
+    Write-Host "CMake installed successfully at $cmakePath"
+} else {
+    throw "CMake installation failed. Executable not found at $cmakePath."
+}
