@@ -37,14 +37,11 @@ SHELL ["cmd", "/S", "/C"]
 # ===================================================================
 # Debug Arguments and Validate Inputs
 # ===================================================================
-RUN echo CMAKE_VERSION=%CMAKE_VERSION% && \
-    echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && \
-    echo VS_CHANNEL=%VS_CHANNEL% && \
-    echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%
+# Debug: Print ARG values
+RUN cmd /C "echo CMAKE_VERSION=%CMAKE_VERSION% && echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && echo VS_CHANNEL=%VS_CHANNEL% && echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%"
 
-RUN if "%CMAKE_DOWNLOAD_URL%"=="" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && \
-    if "%VS_CHANNEL%"=="" (echo Error: VS_CHANNEL is not set && exit /b 1) && \
-    if "%VS_BUILD_TOOLS_URL%"=="" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)
+# Validate ARG values to prevent empty inputs
+RUN cmd /C "if \"%CMAKE_DOWNLOAD_URL%\"==\"\" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && if \"%VS_CHANNEL%\"==\"\" (echo Error: VS_CHANNEL is not set && exit /b 1) && if \"%VS_BUILD_TOOLS_URL%\"==\"\" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)"
 
 # ===================================================================
 # Download and Install Visual Studio Build Tools and CMake
