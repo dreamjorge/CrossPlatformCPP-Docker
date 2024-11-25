@@ -13,69 +13,146 @@ FROM base AS vs19
 # ===================================================================
 # Build Arguments
 # ===================================================================
-# These arguments specify Visual Studio and CMake versions,
-# as well as the URLs for downloading necessary tools.
 ARG VS_YEAR=2019
 ARG VS_VERSION=16
-ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-# Set environment variables for consistent setup.
 ENV VS_YEAR=${VS_YEAR} `
     VS_VERSION=${VS_VERSION} `
     CMAKE_VERSION=${CMAKE_VERSION} `
-    CHANNEL_URL=${CHANNEL_URL} `
-    VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL} `
-    VS_BUILDTOOLS_PATH="C:\\BuildTools"
+    VS_BUILDTOOLS_PATH="C:\\BuildTools" `
+    TEMP_DIR="C:\\TEMP"
 
 # ===================================================================
-# Copy Installation Scripts
+# Switch to PowerShell for subsequent RUN commands
 # ===================================================================
-# Copy PowerShell scripts for installing Visual Studio Build Tools and CMake,
-# and additional scripts for building and running applications.
-COPY scripts/windows/install_vs_buildtools.ps1 C:\\scripts\\install_vs_buildtools.ps1
-COPY scripts/windows/install_cmake_bypass.ps1 C:\\scripts\\install_cmake_bypass.ps1
-COPY scripts/windows/build.ps1 C:\\app\\scripts\\windows\\build.ps1
-COPY scripts/windows/run.ps1 C:\\app\\scripts\\windows\\run.ps1
+SHELL ["powershell", "-NoProfile", "-Command"]
 
 # ===================================================================
-# Debugging: Verify Environment Variables
+# Create TEMP directory
 # ===================================================================
-# Output environment variables for debugging and validation.
-RUN echo "CHANNEL_URL=${CHANNEL_URL}" && echo "VS_BUILD_TOOLS_URL=${VS_BUILD_TOOLS_URL}" && echo "CMAKE_VERSION=${CMAKE_VERSION}"
+RUN if (-not (Test-Path -Path $env:TEMP_DIR)) { `
+        New-Item -ItemType Directory -Path $env:TEMP_DIR | Out-Null `
+    }
 
 # ===================================================================
-# Install Visual Studio Build Tools
+# Download Visual Studio Build Tools Installer
 # ===================================================================
-# Install Visual Studio 2019 Build Tools with the C++ workload.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" -VS_VERSION $env:VS_VERSION -VS_BUILD_TOOLS_URL $env:VS_BUILD_TOOLS_URL -VS_BUILDTOOLS_PATH $env:VS_BUILDTOOLS_PATH
+RUN Write-Host "Downloading Visual Studio Build Tools from https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
+    $vsBuildToolsUrl = "https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe"; `
+    $installerPath = "$env:TEMP_DIR\\vs_buildtools.exe"; `
+    try { `
+        Invoke-WebRequest -Uri $vsBuildToolsUrl -OutFile $installerPath -UseBasicParsing -ErrorAction Stop `
+    } catch { `
+        throw "Failed to download Visual Studio Build Tools installer: $_" `
+    }
 
 # ===================================================================
-# Install CMake
+# Verify Installer Download
 # ===================================================================
-# Install CMake using the provided PowerShell script.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake_bypass.ps1" -CMAKE_VERSION $env:CMAKE_VERSION
+RUN $installerSize = (Get-Item $env:TEMP_DIR\\vs_buildtools.exe).Length; `
+    if ($installerSize -lt 1MB) { `
+        throw "Downloaded Visual Studio Build Tools installer is too small ($installerSize bytes). Download may have failed." `
+    } else { `
+        Write-Host "Visual Studio Build Tools installer downloaded successfully! File size: $([Math]::Round($installerSize / 1MB, 2)) MB" `
+    }
 
 # ===================================================================
-# Verify CMake Installation
+# Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
-# Run a quick check to ensure CMake is installed and available in the PATH.
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
+RUN Write-Host "Installing Visual Studio Build Tools..."; `
+    $installArgs = @(`
+        '--quiet', `
+        '--wait', `
+        '--norestart', `
+        '--nocache', `
+        '--installPath', "`"$env:VS_BUILDTOOLS_PATH`"", `
+        '--add', 'Microsoft.VisualStudio.Workload.VCTools', `
+        '--includeRecommended', `
+        '--lang', 'en-US', `
+        '--log', "$env:TEMP_DIR\\vs_buildtools_install.log"`
+    ); `
+    $process = Start-Process -FilePath $env:TEMP_DIR\\vs_buildtools.exe -ArgumentList $installArgs -NoNewWindow -Wait -PassThru; `
+    switch ($process.ExitCode) { `
+        0 { Write-Host "Visual Studio Build Tools installed successfully." } `
+        3010 { `
+            Write-Host "Visual Studio Build Tools installation completed with exit code 3010 (restart required). Continuing without restart..." `
+        } `
+        default { `
+            Write-Host "Visual Studio Build Tools installer failed with exit code $($process.ExitCode)."; `
+            Write-Host "Installer log contents:"; `
+            Get-Content "$env:TEMP_DIR\\vs_buildtools_install.log" | Write-Host; `
+            throw "Visual Studio Build Tools installation failed. Check the log at $env:TEMP_DIR\\vs_buildtools_install.log" `
+        } `
+    }
+
+# ===================================================================
+# Clean Up Visual Studio Build Tools Installer
+# ===================================================================
+RUN Remove-Item -Path "$env:TEMP_DIR\\vs_buildtools.exe" -Force; `
+    Remove-Item -Path "$env:TEMP_DIR\\vs_buildtools_install.log" -Force
+
+# ===================================================================
+# Download and Install CMake
+# ===================================================================
+RUN Write-Host "Downloading CMake version $env:CMAKE_VERSION..."; `
+    $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi"; `
+    $cmakeInstaller = "$env:TEMP_DIR\\cmake.msi"; `
+    try { `
+        Invoke-WebRequest -Uri $cmakeUrl -OutFile $cmakeInstaller -UseBasicParsing -ErrorAction Stop `
+    } catch { `
+        throw "Failed to download CMake installer: $_" `
+    }
+
+# ===================================================================
+# Verify CMake Installer Download
+# ===================================================================
+RUN $cmakeInstallerSize = (Get-Item $cmakeInstaller).Length; `
+    if ($cmakeInstallerSize -lt 500KB) { `
+        throw "Downloaded CMake installer is too small ($cmakeInstallerSize bytes). Download may have failed." `
+    } else { `
+        Write-Host "CMake installer downloaded successfully! File size: $([Math]::Round($cmakeInstallerSize / 1MB, 2)) MB" `
+    }
+
+# ===================================================================
+# Install CMake Silently
+# ===================================================================
+RUN Write-Host "Installing CMake..."; `
+    Start-Process msiexec.exe -ArgumentList "/i `"$cmakeInstaller`" /quiet /qn /norestart" -Wait; `
+    # Add CMake to system PATH
+    $cmakePath = "C:\\Program Files\\CMake\\bin"; `
+    [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$cmakePath", "Machine"); `
+    # Verify CMake installation
     Write-Host "Verifying CMake installation..."; `
-    cmake --version
+    cmake --version; `
+    # Clean Up CMake Installer
+    Remove-Item -Path $cmakeInstaller -Force
+
+# ===================================================================
+# Verify Visual Studio Build Tools Installation
+# ===================================================================
+RUN Write-Host "Verifying Visual Studio Build Tools installation..."; `
+    $vswherePath = "$env:VS_BUILDTOOLS_PATH\\Common7\\Tools\\vswhere.exe"; `
+    if (-Not (Test-Path $vswherePath)) { `
+        throw "vswhere.exe not found at $vswherePath. Visual Studio Build Tools may not be installed correctly." `
+    } else { `
+        $installationPath = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath; `
+        if ([string]::IsNullOrEmpty($installationPath)) { `
+            throw "Visual Studio Build Tools installation not found by vswhere.exe." `
+        } else { `
+            Write-Host "Visual Studio Build Tools installed at: $installationPath" `
+        } `
+    }
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-# Set the working directory to where application code will be copied and executed.
 WORKDIR C:\\app
 
 # ===================================================================
 # Default Command
 # ===================================================================
-# Start a PowerShell prompt when the container runs.
 CMD ["powershell.exe"]
