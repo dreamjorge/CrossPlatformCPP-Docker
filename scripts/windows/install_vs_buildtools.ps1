@@ -11,8 +11,12 @@ if (-not $VS_VERSION) {
 
 Write-Host "Starting Visual Studio Build Tools installation for Version: $VS_VERSION"
 
-# Construct the download URL using VS_VERSION
-$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
+# Resolve environment variable and construct the download URL
+$resolvedVSVersion = $env:VS_VERSION
+if (-not $resolvedVSVersion) {
+    throw "Environment variable VS_VERSION is not set or is empty."
+}
+$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$resolvedVSVersion/release/vs_buildtools.exe"
 Write-Host "Constructed Build Tools URL: $VS_BUILD_TOOLS_URL"
 
 function Install-VSBuildTools {
@@ -35,55 +39,4 @@ function Install-VSBuildTools {
             }
         } catch {
             Write-Host "Download failed: $_"
-            if ($attempt -eq $maxAttempts) {
-                throw "Exceeded maximum download attempts. Please check the URL and network connection."
-            }
-            Start-Sleep -Seconds 5
-        }
-    }
-
-    # Build the argument list
-    $arguments = @(
-        "--quiet",
-        "--wait",
-        "--norestart",
-        "--nocache",
-        "--installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\BuildTools`""
-    )
-
-    foreach ($workload in $Workloads) {
-        $arguments += "--add"
-        $arguments += $workload
-    }
-
-    $arguments += @(
-        "--includeRecommended",
-        "--lang en-US",
-        "--log `"$env:TEMP\vs_buildtools_install.log`""
-    )
-
-    # Start the installation
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Starting Visual Studio Build Tools installation..."
-    Write-Host "Installer arguments: $($arguments -join ' ')"
-    try {
-        $startTime = Get-Date
-        $process = Start-Process -FilePath $InstallerPath -ArgumentList $arguments -NoNewWindow -Wait -PassThru
-        if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
-            $endTime = Get-Date
-            $duration = $endTime - $startTime
-            Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Installation completed in $([Math]::Round($duration.TotalMinutes, 2)) minutes."
-        } else {
-            throw "Installer exited with code $($process.ExitCode). Check the log at $env:TEMP\vs_buildtools_install.log"
-        }
-    } catch {
-        throw "Visual Studio Build Tools installation failed: $_"
-    }
-}
-
-# Execute the installation function
-Install-VSBuildTools -InstallerPath $InstallerPath -Workloads $Workloads
-
-# Clean up installer
-Remove-Item -Path $InstallerPath -Force
-
-Write-Host "Visual Studio Build Tools installation completed successfully."
+            if ($attempt -eq $
