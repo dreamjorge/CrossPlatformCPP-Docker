@@ -37,11 +37,14 @@ SHELL ["cmd", "/S", "/C"]
 # ===================================================================
 # Debug Arguments and Validate Inputs
 # ===================================================================
-# Debug: Print ARG values
-RUN cmd /C "echo CMAKE_VERSION=%CMAKE_VERSION% && echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && echo VS_CHANNEL=%VS_CHANNEL% && echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%"
+RUN echo CMAKE_VERSION=%CMAKE_VERSION% && \
+    echo CMAKE_DOWNLOAD_URL=%CMAKE_DOWNLOAD_URL% && \
+    echo VS_CHANNEL=%VS_CHANNEL% && \
+    echo VS_BUILD_TOOLS_URL=%VS_BUILD_TOOLS_URL%
 
-# Validate ARG values to prevent empty inputs
-RUN cmd /C "if \"%CMAKE_DOWNLOAD_URL%\"==\"\" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && if \"%VS_CHANNEL%\"==\"\" (echo Error: VS_CHANNEL is not set && exit /b 1) && if \"%VS_BUILD_TOOLS_URL%\"==\"\" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)"
+RUN if "%CMAKE_DOWNLOAD_URL%"=="" (echo Error: CMAKE_DOWNLOAD_URL is not set && exit /b 1) && \
+    if "%VS_CHANNEL%"=="" (echo Error: VS_CHANNEL is not set && exit /b 1) && \
+    if "%VS_BUILD_TOOLS_URL%"=="" (echo Error: VS_BUILD_TOOLS_URL is not set && exit /b 1)
 
 # ===================================================================
 # Download and Install Visual Studio Build Tools and CMake
@@ -59,7 +62,6 @@ RUN mkdir %TEMP_DIR% && \
     powershell -NoProfile -Command "
     Try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
-        Write-Host 'Downloading CMake from %CMAKE_DOWNLOAD_URL%';
         Invoke-WebRequest -Uri %CMAKE_DOWNLOAD_URL% -OutFile %TEMP_DIR%\cmake.zip;
     } Catch {
         Write-Error 'Failed to download CMake. Check URL or network connectivity.';
