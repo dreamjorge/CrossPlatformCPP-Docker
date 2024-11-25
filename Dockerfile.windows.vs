@@ -1,6 +1,5 @@
 # Use a base image with Windows and PowerShell
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
-
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 # Set environment variables
 ARG VS_VERSION
 ARG CMAKE_VERSION
