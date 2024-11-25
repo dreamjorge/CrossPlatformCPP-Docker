@@ -14,6 +14,7 @@ jobs:
     name: Build and Run Docker (Windows)
     runs-on: windows-latest
 
+    # Define a matrix to run the job with different configurations
     strategy:
       matrix:
         config: [Release]
@@ -35,6 +36,7 @@ jobs:
         run: |
           # Build the Docker image with the necessary build arguments
           docker build --no-cache `
+            --build-arg VS_VERSION=16 `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
             -t $env:DOCKER_NAME_BASE `
             -f Dockerfile.windows.vs .
@@ -45,35 +47,33 @@ jobs:
         run: |
           docker images
 
-      # Step 3: Debug the environment inside the Docker container
-      - name: Debug Environment Inside Docker
-        shell: pwsh
-        run: |
-          # Run the container and display environment variables for debugging
-          docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
-            -v "${{ github.workspace }}:C:\app" `
-            $env:DOCKER_NAME_BASE `
-            cmd.exe /c set
-
-      # Step 4: Execute the build script inside the Docker container
+      # Step 3: Execute the build script inside the Docker container
       - name: Run Build Script Inside Docker
         shell: pwsh
         run: |
+          # Define the build configuration
+          $config = "${{ matrix.config }}"
+
           # Run the build PowerShell script inside the container
           docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
+            -e CONFIG=$config `
+            -e VS_VERSION=16 `
             -v "${{ github.workspace }}:C:/app" `
             $env:DOCKER_NAME_BASE `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/build.ps1
+            powershell -NoProfile -ExecutionPolicy Bypass -Command `
+              "Set-Location C:/app; ./build.ps1 -CONFIG $config -VS_VERSION 16"
 
-      # Step 5: Execute the run script inside the Docker container
+      # Step 4: Execute the run script inside the Docker container
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
+          # Define the build configuration
+          $config = "${{ matrix.config }}"
+
           # Run the application PowerShell script inside the container
           docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
+            -e CONFIG=$config `
             -v "${{ github.workspace }}:C:/app" `
             $env:DOCKER_NAME_BASE `
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:/app/scripts/windows/run.ps1
+            powershell -NoProfile -ExecutionPolicy Bypass -Command `
+              "Set-Location C:/app; ./run.ps1 -CONFIG $config"
