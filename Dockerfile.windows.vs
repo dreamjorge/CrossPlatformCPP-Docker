@@ -1,6 +1,6 @@
 # escape=`
 
-# Use the latest Windows Server Core 2022 image for compatibility with Windows Server 2022 host
+# Use the latest Windows Server Core 2022 image.
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # Restore the default Windows shell for batch processing
@@ -19,7 +19,7 @@ ARG TEMP_DIR="C:\\TEMP"
 ENV TEMP_DIR=${TEMP_DIR} `
     VS_VERSION=${VS_VERSION} `
     CMAKE_VERSION=${CMAKE_VERSION} `
-    VS_BUILDTOOLS_PATH="C:\\BuildTools"
+    VS_BUILDTOOLS_PATH="C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools"
 
 # ===================================================================
 # Create TEMP Directory
@@ -33,10 +33,13 @@ RUN echo "Downloading Visual Studio Build Tools version %VS_VERSION%" && `
     curl -SL --output "%TEMP_DIR%\\vs_buildtools.exe" `
         "https://aka.ms/vs/%VS_VERSION%/release/vs_buildtools.exe" && `
     echo "Installing Visual Studio Build Tools..." && `
-    "%TEMP_DIR%\\vs_buildtools.exe" --quiet --wait --norestart `
+    start /wait "%TEMP_DIR%\\vs_buildtools.exe" `
+        --quiet --wait --norestart `
         --nocache `
         --installPath "%VS_BUILDTOOLS_PATH%" `
         --add Microsoft.VisualStudio.Workload.VCTools `
+        --add Microsoft.VisualStudio.Component.VC.CMake.Project `
+        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
         --lang en-US `
         --log "%TEMP_DIR%\\vs_buildtools_install.log" `
         || IF "%ERRORLEVEL%"=="3010" EXIT 0 && `
@@ -57,8 +60,11 @@ RUN echo "Downloading CMake version %CMAKE_VERSION%" && `
 # Verify Installations
 # ===================================================================
 # Verify Visual Studio installation
-RUN "%VS_BUILDTOOLS_PATH%\\Common7\\Tools\\VsDevCmd.bat" && `
-    echo "Visual Studio Build Tools installed successfully."
+RUN if exist "%VS_BUILDTOOLS_PATH%\\Common7\\Tools\\VsDevCmd.bat" ( `
+        echo "Visual Studio Build Tools installed successfully." `
+    ) else ( `
+        echo "Error: Visual Studio Build Tools not found at %VS_BUILDTOOLS_PATH%\\Common7\\Tools\\VsDevCmd.bat" && exit /b 1 `
+    )
 
 # Verify CMake installation
 RUN cmake --version
@@ -71,4 +77,4 @@ WORKDIR "C:\\app"
 # ===================================================================
 # Define Entry Point
 # ===================================================================
-ENTRYPOINT ["C:\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
+ENTRYPOINT ["C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
