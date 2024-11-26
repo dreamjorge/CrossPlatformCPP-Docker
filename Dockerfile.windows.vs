@@ -27,8 +27,13 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs
 # Install CMake
 # ===================================================================
 RUN powershell -Command `
-    Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v%CMAKE_VERSION%/cmake-%CMAKE_VERSION%-windows-x86_64.msi" -OutFile "C:\\cmake_installer.msi"; `
-    Start-Process msiexec.exe -ArgumentList "/i C:\\cmake_installer.msi /quiet /norestart" -NoNewWindow -Wait
+    $ErrorActionPreference = 'Stop'; `
+    Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi" -OutFile "C:\\cmake_installer.msi"; `
+    Start-Process msiexec.exe -ArgumentList "/i C:\\cmake_installer.msi /quiet /norestart" -NoNewWindow -Wait; `
+    if (!(Test-Path "C:\\Program Files\\CMake\\bin\\cmake.exe")) { `
+        throw "CMake installation failed. Executable not found."; `
+    } `
+    Write-Host "CMake installed successfully."
 
 # ===================================================================
 # Verify CMake Installation
