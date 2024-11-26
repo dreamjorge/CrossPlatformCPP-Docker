@@ -31,8 +31,8 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for branches and tags
 
-      # Step 2: Create Temp Directory
-      - name: Create Temp Directory
+      # Step 2: Create Host Temp Directory
+      - name: Create Host Temp Directory
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "${{ github.workspace }}\Temp" -Force
@@ -71,29 +71,25 @@ jobs:
         shell: pwsh
         run: |
           $config = "${{ matrix.config }}"
-          docker run --rm `
-            --name $env:DOCKER_CONTAINER_NAME `
+          docker run --rm --name $env:DOCKER_CONTAINER_NAME `
             -e CONFIG=$config `
             -e VS_VERSION=$env:VS_VERSION `
             -v "${{ github.workspace }}:C:/app" `
-            -v "${{ github.workspace }}\Temp:C:/TEMP" `  # Mount TEMP directory
+            -v "${{ github.workspace }}\Temp:C:/TEMP" `
             $env:DOCKER_IMAGE_NAME `
-            powershell -NoProfile -ExecutionPolicy Bypass -Command `
-              "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
 
       # Step 7: Run the application inside the Docker container
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
           $config = "${{ matrix.config }}"
-          docker run --rm `
-            --name $env:DOCKER_CONTAINER_NAME `
+          docker run --rm --name $env:DOCKER_CONTAINER_NAME `
             -e CONFIG=$config `
             -v "${{ github.workspace }}:C:/app" `
-            -v "${{ github.workspace }}\Temp:C:/TEMP" `  # Mount TEMP directory
+            -v "${{ github.workspace }}\Temp:C:/TEMP" `
             $env:DOCKER_IMAGE_NAME `
-            powershell -NoProfile -ExecutionPolicy Bypass -Command `
-              "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
       # Step 8: Upload Logs
       - name: Upload Logs
