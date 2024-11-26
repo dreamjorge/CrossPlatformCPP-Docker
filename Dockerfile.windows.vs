@@ -38,6 +38,12 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs
 # ===================================================================
 RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
 
+
+# ===================================================================
+# Check Installation Logs (Optional)
+# ===================================================================
+RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
+
 # ===================================================================
 # Install CMake Using External Script
 # ===================================================================

@@ -8,7 +8,8 @@ param(
 $VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$Version/release/vs_buildtools.exe"
 $InstallerPath = "C:\TEMP\vs_buildtools.exe"
 $LogPath = "C:\TEMP\vs_buildtools_install.log"
-$InstallPath = "C:\BuildTools"
+# Updated Install Path
+$InstallPath = "C:\Program Files (x86)\Microsoft Visual Studio\$Version\BuildTools"
 
 # Function to display messages
 function Write-Log {
@@ -54,8 +55,11 @@ try {
     exit 1
 }
 
-# Verify installation
-if (Test-Path $InstallPath) {
+# Verify installation by checking the presence of cl.exe (C++ compiler)
+$clPathPattern = "$InstallPath\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
+$clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+
+if ($clExists) {
     Write-Log "Visual Studio Build Tools version $Version installed successfully at $InstallPath."
 } else {
     Write-Log "Installation may have failed. Check the log at $LogPath for details."
