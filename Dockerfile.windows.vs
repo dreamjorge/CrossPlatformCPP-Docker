@@ -60,9 +60,14 @@ RUN powershell -Command "`
 # ===================================================================
 # Add CMake to PATH Correctly
 # ===================================================================
-ENV PATH C:\Program Files\CMake\bin;${PATH}
+ENV PATH "C:\\Program Files\\CMake\\bin;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\;${PATH}"
 
-#
+# ===================================================================
+# Verify PATH and PowerShell Availability
+# ===================================================================
+RUN echo %PATH%
+RUN where powershell
+
 # ===================================================================
 # Verify CMake Installation
 # ===================================================================
