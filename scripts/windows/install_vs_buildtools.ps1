@@ -1,15 +1,20 @@
 param(
     [Parameter(Mandatory = $false, HelpMessage = "Specify the version of Visual Studio Build Tools to install. Default is 16.")]
     [ValidateSet("16", "17", "18")]  # Adjust the set based on available versions
-    [string]$Version = "16"
+    [string]$VS_VERSION = "16",
+
+    [Parameter(Mandatory = $false, HelpMessage = "Specify the Visual Studio Year. Default is 2019.")]
+    [string]$VS_YEAR = "2019",
+
+    [Parameter(Mandatory = $false, HelpMessage = "Specify the version of CMake to install. Default is 3.26.4.")]
+    [string]$CMAKE_VERSION = "3.26.4"
 )
 
 # Define URLs and paths
-$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$Version/release/vs_buildtools.exe"
+$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
 $InstallerPath = "C:\TEMP\vs_buildtools.exe"
 $LogPath = "C:\TEMP\vs_buildtools_install.log"
-# Updated Install Path
-$InstallPath = "C:\Program Files (x86)\Microsoft Visual Studio\$Version\BuildTools"
+$InstallPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools"
 
 # Function to display messages
 function Write-Log {
@@ -24,7 +29,7 @@ if (-Not (Test-Path "C:\TEMP")) {
 }
 
 # Download the installer
-Write-Log "Downloading Visual Studio Build Tools version $Version from $VS_BUILD_TOOLS_URL..."
+Write-Log "Downloading Visual Studio Build Tools version $VS_VERSION from $VS_BUILD_TOOLS_URL..."
 try {
     Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile $InstallerPath -UseBasicParsing
     Write-Log "Download completed successfully."
@@ -34,7 +39,7 @@ try {
 }
 
 # Run the installer with specified arguments
-Write-Log "Starting the installation of Visual Studio Build Tools version $Version..."
+Write-Log "Starting the installation of Visual Studio Build Tools version $VS_VERSION..."
 $InstallerArguments = @(
     "--quiet",
     "--wait",
@@ -60,9 +65,10 @@ $clPathPattern = "$InstallPath\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
 $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($clExists) {
-    Write-Log "Visual Studio Build Tools version $Version installed successfully at $InstallPath."
+    Write-Log "Visual Studio Build Tools version $VS_VERSION installed successfully at $InstallPath."
 } else {
     Write-Log "Installation may have failed. Check the log at $LogPath for details."
+    exit 1
 }
 
 # Optional: Clean up the installer
