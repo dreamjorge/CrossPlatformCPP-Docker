@@ -25,7 +25,7 @@ ENV VS_YEAR=${VS_YEAR} `
 # ===================================================================
 COPY ./scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
 COPY ./scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
-COPY ./scripts/windows/run.cmd C:\app\scripts\windows\run.cmd
+COPY ./scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
 
 # ===================================================================
 # Install Visual Studio Build Tools
