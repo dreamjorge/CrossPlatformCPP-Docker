@@ -39,23 +39,14 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs
 RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
 
 # ===================================================================
-# Install CMake (Inline Installation)
+# Install CMake Using External Script
 # ===================================================================
-RUN powershell -Command "`
-    $ErrorActionPreference = 'Stop'; `
-    Write-Host 'Installing CMake version: $env:CMAKE_VERSION'; `
-    $url = 'https://github.com/Kitware/CMake/releases/download/v' + $env:CMAKE_VERSION + '/cmake-' + $env:CMAKE_VERSION + '-windows-x86_64.msi'; `
-    Write-Host 'Constructed URL: ' + $url; `
-    $output = 'C:\\cmake_installer.msi'; `
-    Write-Host 'Downloading CMake from ' + $url; `
-    Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing; `
-    Write-Host 'Installing CMake...'; `
-    Start-Process msiexec.exe -ArgumentList '/i', $output, '/quiet', '/norestart' -NoNewWindow -Wait; `
-    if (!(Test-Path 'C:\\Program Files\\CMake\\bin\\cmake.exe')) { `
-        throw 'CMake installation failed. Executable not found.'; `
-    } `
-    Write-Host 'CMake installed successfully.'; `
-    Remove-Item 'C:\\cmake_installer.msi' -Force"
+# Copy the CMake installation script into the container
+COPY ./scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
+
+# Execute the CMake installation script
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" || `
+    (Write-Host "CMake installation failed." && exit 1)
 
 # ===================================================================
 # Add CMake to PATH Correctly
