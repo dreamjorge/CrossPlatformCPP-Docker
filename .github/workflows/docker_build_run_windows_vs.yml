@@ -39,12 +39,12 @@ jobs:
       #     username: ${{ secrets.DOCKER_USERNAME }}
       #     password: ${{ secrets.DOCKER_PASSWORD }}
 
-
+      # Step 3: Build Base Docker Image
       - name: Build Base Docker Image
         run: |
           docker build --no-cache -t base -f Dockerfile.windows.base .
 
-      # Step 3: Build the Docker image
+      # Step 4: Build the Docker image
       - name: Build Docker Image
         shell: pwsh
         run: |
@@ -60,7 +60,7 @@ jobs:
         run: |
           docker images
 
-      # Step 4: Run the build process inside the Docker container
+      # Step 5: Run the build process inside the Docker container
       - name: Run Build Inside Docker
         shell: pwsh
         run: |
@@ -68,12 +68,13 @@ jobs:
           docker run --rm `
             --name $env:DOCKER_CONTAINER_NAME `
             -e CONFIG=$config `
+            -e VS_VERSION=$env:VS_VERSION `
             -v "${{ github.workspace }}:C:/app" `
             $env:DOCKER_IMAGE_NAME `
             powershell -NoProfile -ExecutionPolicy Bypass -Command `
-              "Set-Location C:/app; ./build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
+              "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
 
-      # Step 5: Run the application inside the Docker container
+      # Step 6: Run the application inside the Docker container
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
@@ -84,15 +85,15 @@ jobs:
             -v "${{ github.workspace }}:C:/app" `
             $env:DOCKER_IMAGE_NAME `
             powershell -NoProfile -ExecutionPolicy Bypass -Command `
-              "Set-Location C:/app; ./run.ps1 -CONFIG $config"
+              "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
+      # Step 7: Upload Logs
       - name: Upload Logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: vs-buildtools-log
-          path: TEMP/vs_buildtools_install.log
-      
+          path: C:\TEMP\vs_buildtools_install.log  # Ensure the correct path
 
       # Optional Step: Cleanup (Stop and Remove Containers)
       - name: Cleanup Docker Resources
