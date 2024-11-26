@@ -38,7 +38,23 @@ RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_in
 # ===================================================================
 # Install CMake
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" -CMAKE_VERSION $env:CMAKE_VERSION
+#RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" -CMAKE_VERSION $env:CMAKE_VERSION
+
+# Download and Install CMake
+RUN powershell -Command `
+    $ErrorActionPreference = 'Stop'; `
+    Write-Host "Installing CMake version: $env:CMAKE_VERSION"; `
+    $url = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi"; `
+    $output = "C:\\temp\\cmake_installer.msi"; `
+    Write-Host "Downloading CMake from $url"; `
+    Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing; `
+    Write-Host "Installing CMake..."; `
+    Start-Process msiexec.exe -ArgumentList @('/i', $output, '/quiet', '/norestart') -NoNewWindow -Wait; `
+    Write-Host "Verifying CMake installation..."; `
+    if (!(Test-Path "C:\\Program Files\\CMake\\bin\\cmake.exe")) { `
+        throw "CMake installation failed. Executable not found."; `
+    } `
+    Write-Host "CMake installed successfully."
 
 # ===================================================================
 # Verify CMake Installation
