@@ -28,13 +28,9 @@ COPY ./scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
 COPY ./scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
 
 # ===================================================================
-# Install Visual Studio Build Tools
+# Install Visual Studio Build Tools and CMake
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs_buildtools.ps1" || `
-    (if (Test-Path "C:\\TEMP\\vs_buildtools_install.log") { `
-        type C:\\TEMP\\vs_buildtools_install.log `
-    } `
-    exit 1)
+RUN C:\scripts\install_vs_buildtools.ps1 -VS_VERSION $env:VS_VERSION -VS_YEAR $env:VS_YEAR -CMAKE_VERSION $env:CMAKE_VERSION
 
 
 # ===================================================================
@@ -48,20 +44,20 @@ RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_in
 # ===================================================================
 RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
 
-# ===================================================================
-# Install CMake Using External Script
-# ===================================================================
-# Copy the CMake installation script into the container
-COPY ./scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
+# # ===================================================================
+# # Install CMake Using External Script
+# # ===================================================================
+# # Copy the CMake installation script into the container
+# COPY ./scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
 
-# Execute the CMake installation script
-RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" || `
-    (Write-Host "CMake installation failed." && exit 1)
+# # Execute the CMake installation script
+# RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" || `
+#     (Write-Host "CMake installation failed." && exit 1)
 
-# ===================================================================
-# Add CMake to PATH Correctly
-# ===================================================================
-ENV PATH "C:\\Program Files\\CMake\\bin;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\;${PATH}"
+# # ===================================================================
+# # Add CMake to PATH Correctly
+# # ===================================================================
+# ENV PATH "C:\\Program Files\\CMake\\bin;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\;${PATH}"
 
 # ===================================================================
 # Verify PATH and PowerShell Availability
