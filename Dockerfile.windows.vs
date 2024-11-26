@@ -3,7 +3,7 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM base AS vs19
+FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2019 AS vs19
 
 # ===================================================================
 # Build Arguments
@@ -25,6 +25,7 @@ ENV VS_YEAR=${VS_YEAR} `
 # Copy Installation Scripts
 # ===================================================================
 COPY ./scripts/windows/install_vs_buildtools.ps1 /scripts/install_vs_buildtools.ps1
+# Removed install_cmake.ps1 since installation is now inline
 COPY ./scripts/windows/build.vs19.cmd /app/scripts/windows/build.vs19.cmd
 COPY ./scripts/windows/run.cmd /app/scripts/windows/run.cmd
 
@@ -38,14 +39,32 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_vs
 RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
 
 # ===================================================================
-# Install CMake (Single-Line Command)
+# Install CMake (Inline Installation)
 # ===================================================================
-RUN powershell -Command "$ErrorActionPreference = 'Stop'; Write-Host 'Installing CMake version: $env:CMAKE_VERSION'; $url = 'https://github.com/Kitware/CMake/releases/download/v' + $env:CMAKE_VERSION + '/cmake-' + $env:CMAKE_VERSION + '-windows-x86_64.msi'; Write-Host 'Constructed URL: ' + $url; $output = 'C:\\cmake_installer.msi'; Write-Host 'Downloading CMake from ' + $url; Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing; Write-Host 'Installing CMake...'; Start-Process msiexec.exe -ArgumentList '/i', $output, '/quiet', '/norestart' -NoNewWindow -Wait; if (!(Test-Path 'C:\\Program Files\\CMake\\bin\\cmake.exe')) { throw 'CMake installation failed. Executable not found.' }; Write-Host 'CMake installed successfully.'"
+RUN powershell -Command "`
+    $ErrorActionPreference = 'Stop'; `
+    Write-Host 'Installing CMake version: $env:CMAKE_VERSION'; `
+    $url = 'https://github.com/Kitware/CMake/releases/download/v' + $env:CMAKE_VERSION + '/cmake-' + $env:CMAKE_VERSION + '-windows-x86_64.msi'; `
+    Write-Host 'Constructed URL: ' + $url; `
+    $output = 'C:\\cmake_installer.msi'; `
+    Write-Host 'Downloading CMake from ' + $url; `
+    Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing; `
+    Write-Host 'Installing CMake...'; `
+    Start-Process msiexec.exe -ArgumentList '/i', $output, '/quiet', '/norestart' -NoNewWindow -Wait; `
+    if (!(Test-Path 'C:\\Program Files\\CMake\\bin\\cmake.exe')) { `
+        throw 'CMake installation failed. Executable not found.'; `
+    } `
+    Write-Host 'CMake installed successfully.'"
+
+# ===================================================================
+# Add CMake to PATH
+# ===================================================================
+ENV PATH="C:\\Program Files\\CMake\\bin\\${PATH}"
 
 # ===================================================================
 # Verify CMake Installation
 # ===================================================================
-RUN powershell -Command "C:\\Program Files\\CMake\\bin\\cmake.exe --version"
+RUN powershell -Command "& 'C:\\Program Files\\CMake\\bin\\cmake.exe' --version"
 
 # ===================================================================
 # Set Working Directory
