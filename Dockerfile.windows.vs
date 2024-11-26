@@ -44,6 +44,7 @@ RUN powershell -Command `
     $ErrorActionPreference = 'Stop'; `
     Write-Host "Installing CMake version: $env:CMAKE_VERSION"; `
     $url = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.msi"; `
+    Write-Host "Constructed URL: $url"; `
     $output = "C:\\cmake_installer.msi"; `
     Write-Host "Downloading CMake from $url"; `
     Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing; `
