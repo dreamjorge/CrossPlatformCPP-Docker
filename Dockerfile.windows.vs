@@ -24,7 +24,7 @@ ENV VS_YEAR=${VS_YEAR} `
 # Copy Installation Scripts
 # ===================================================================
 COPY ./scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-COPY ./scripts/windows/build.vs19.cmd C:\app\scripts\windows\build.vs19.cmd
+COPY ./scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
 COPY ./scripts/windows/run.cmd C:\app\scripts\windows\run.cmd
 
 # ===================================================================
