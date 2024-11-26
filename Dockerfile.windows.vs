@@ -1,6 +1,3 @@
-# ===================================================================
-# Set the Escape Character to Backtick for Windows
-# ===================================================================
 # escape=`
 
 # ===================================================================
@@ -26,10 +23,9 @@ ENV VS_YEAR=${VS_YEAR} `
 # ===================================================================
 # Copy Installation Scripts
 # ===================================================================
-COPY ./scripts/windows/install_vs_buildtools.ps1 /scripts/install_vs_buildtools.ps1
-# Removed install_cmake.ps1 since CMake installation is now inline
-COPY ./scripts/windows/build.vs19.cmd /app/scripts/windows/build.vs19.cmd
-COPY ./scripts/windows/run.cmd /app/scripts/windows/run.cmd
+COPY ./scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
+COPY ./scripts/windows/build.vs19.cmd C:\app\scripts\windows\build.vs19.cmd
+COPY ./scripts/windows/run.cmd C:\app\scripts\windows\run.cmd
 
 # ===================================================================
 # Install Visual Studio Build Tools
