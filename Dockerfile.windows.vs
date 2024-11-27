@@ -24,19 +24,20 @@ RUN powershell -Command Start-Process -Wait -FilePath C:\\TEMP\\vs_buildtools.ex
     "--log C:\\TEMP\\vs_buildtools_install.log"
 
 # Verify installation by checking for cl.exe
-RUN Write-Host "Verifying Visual Studio Build Tools installation..." `
-    ; $clPathPattern = Join-Path $env:BUILD_TOOLS_PATH 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe' `
-    ; Write-Host "clPathPattern: $clPathPattern" `
-    ; $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1 `
-    ; if ($clExists) { `
-        Write-Host "Verification successful: cl.exe found at $($clExists.FullName)." `
+RUN powershell -Command `
+    "Write-Host 'Verifying Visual Studio Build Tools installation...'; `
+    $clPathPattern = Join-Path $env:BUILD_TOOLS_PATH 'VC\\Tools\\MSVC\\*\\bin\\Hostx64\\x64\\cl.exe'; `
+    Write-Host 'clPathPattern: ' $clPathPattern; `
+    $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1; `
+    if ($clExists) { `
+        Write-Host 'Verification successful: cl.exe found at ' $clExists.FullName; `
     } else { `
-        Write-Host "Verification failed: cl.exe not found. Installation may have failed." `
-        exit 1 `
-    }
+        Write-Host 'Verification failed: cl.exe not found. Installation may have failed.'; `
+        exit 1; `
+    }"
 
 # Set the working directory
-WORKDIR C:\app
+WORKDIR C:\\app
 
 # Default command
 CMD ["cmd.exe"]
