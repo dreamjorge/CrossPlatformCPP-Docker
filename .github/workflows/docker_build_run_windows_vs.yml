@@ -21,7 +21,7 @@ jobs:
     env:
       DOCKER_IMAGE_NAME: crossplatformapp-windows
       DOCKER_CONTAINER_NAME: crossplatformapp-container
-      VS_VERSION: 16  # Must match the ARG in Dockerfile
+      VS_VERSION: 16  # Must match the ARG in Dockerfile.windows.vs
 
     steps:
       # Step 1: Checkout the repository code
@@ -53,26 +53,26 @@ jobs:
             -t $env:DOCKER_IMAGE_NAME `
             -f Dockerfile.windows.vs .
 
-      # Optional Step: List Docker images for verification
-      - name: List Docker Images
-        shell: pwsh
-        run: |
-          docker images
+      # Step 5: List Docker Images (Commented Out)
+      # - name: List Docker Images
+      #   shell: pwsh
+      #   run: |
+      #     docker images
 
-      # Step 5: Run the build process inside the Docker container
-      - name: Run Build Inside Docker
-        shell: pwsh
-        run: |
-          $config = "${{ matrix.config }}"
-          docker run --rm --name $env:DOCKER_CONTAINER_NAME `
-            -e CONFIG=$config `
-            -e VS_VERSION=$env:VS_VERSION `
-            -v "${{ github.workspace }}:C:/app" `
-            -v "${{ github.workspace }}\Temp:C:/TEMP" `
-            $env:DOCKER_IMAGE_NAME `
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
+      # Step 6: Run Build Inside Docker (Commented Out)
+      # - name: Run Build Inside Docker
+      #   shell: pwsh
+      #   run: |
+      #     $config = "${{ matrix.config }}"
+      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
+      #       -e CONFIG=$config `
+      #       -e VS_VERSION=$env:VS_VERSION `
+      #       -v "${{ github.workspace }}:C:/app" `
+      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
+      #       $env:DOCKER_IMAGE_NAME `
+      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
 
-      # Step 6: Run the application inside the Docker container
+      # Step 7: Run Application Inside Docker
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
@@ -84,7 +84,7 @@ jobs:
             $env:DOCKER_IMAGE_NAME `
             powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
-      # Step 7: Extract Build Tools Installation Log
+      # Step 8: Extract Build Tools Installation Log
       - name: Extract Build Tools Installation Log
         shell: pwsh
         run: |
@@ -92,7 +92,7 @@ jobs:
           docker cp extract-log:C:/TEMP/vs_buildtools_install.log $env:GITHUB_WORKSPACE\Temp\vs_buildtools_install.log
           docker rm extract-log
 
-      # Step 8: Display the Log Content in the Terminal
+      # Step 9: Display the Log Content in the Terminal (Optional)
       - name: Display Build Tools Installation Log
         shell: pwsh
         run: |
@@ -104,7 +104,7 @@ jobs:
             Write-Host "vs_buildtools_install.log not found."
           }
 
-      # Step 9: Upload Logs
+      # Step 10: Upload Logs
       - name: Upload Logs
         if: failure()
         uses: actions/upload-artifact@v3
@@ -112,7 +112,7 @@ jobs:
           name: vs-buildtools-log
           path: Temp\vs_buildtools_install.log  # Host path after mounting
 
-      # Optional Step: Cleanup Docker Containers
+      # Step 11: Cleanup Docker Containers
       - name: Cleanup Docker Resources
         if: always()
         shell: pwsh
