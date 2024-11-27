@@ -6,8 +6,7 @@ ENV BUILD_TOOLS_PATH="C:\\BuildTools"
 ENV TEMP_DIR="C:\\TEMP"
 
 # Create necessary directories
-RUN mkdir C:\\TEMP
-RUN mkdir C:\\BuildTools
+RUN mkdir C:\\TEMP C:\\BuildTools
 
 # Download Visual Studio Build Tools installer
 ADD https://aka.ms/vs/17/release/vs_buildtools.exe C:\\TEMP\\vs_buildtools.exe
