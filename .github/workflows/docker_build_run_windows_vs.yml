@@ -93,7 +93,7 @@ jobs:
 
       - name: Extract Build Tools Installation Log
         run: |
-    docker create --name extract-log ${{ env.DOCKER_IMAGE_NAME }}
+          docker create --name extract-log ${{ env.DOCKER_IMAGE_NAME }}
     docker cp extract-log:C:/TEMP/vs_buildtools_install.log ${{ github.workspace }}/Temp/vs_buildtools_install.log
     docker rm extract-log
 
