@@ -1,4 +1,3 @@
-# Escape Character
 # Use ` as the escape character for Windows
 # This must be the first line in the Dockerfile
 # Note: This line is optional in newer Docker versions
@@ -8,8 +7,8 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # Set environment variables
-ENV BUILD_TOOLS_PATH="C:\\BuildTools"
-ENV TEMP_DIR="C:\\TEMP"
+ENV BUILD_TOOLS_PATH="C:\\BuildTools" `
+    TEMP_DIR="C:\\TEMP"
 
 # Create necessary directories
 RUN mkdir C:\TEMP `
