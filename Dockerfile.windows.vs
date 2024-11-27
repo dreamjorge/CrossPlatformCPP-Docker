@@ -28,10 +28,9 @@ COPY ./scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
 COPY ./scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
 
 # ===================================================================
-# Install Visual Studio Build Tools and CMake
+# Install Visual Studio Build Tools
 # ===================================================================
-RUN C:\scripts\install_vs_buildtools.ps1 -VS_VERSION $env:VS_VERSION -VS_YEAR $env:VS_YEAR -CMAKE_VERSION $env:CMAKE_VERSION
-
+RUN C:\scripts\install_vs_buildtools.ps1 -VS_VERSION $env:VS_VERSION -VS_YEAR $env:VS_YEAR
 
 # ===================================================================
 # Check Installation Logs (Optional)
