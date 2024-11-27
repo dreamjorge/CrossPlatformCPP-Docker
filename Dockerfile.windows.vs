@@ -52,9 +52,8 @@ RUN Write-Host "Downloading Visual Studio Build Tools installer..." `
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
 RUN Write-Host "Installing Visual Studio Build Tools..." `
-    ; Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList `
-        "--quiet --wait --norestart --nocache --installPath `"$env:BUILD_TOOLS_PATH`" --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --log `"$env:LOG_PATH`"" `
-        -NoNewWindow -Wait `
+    ; & "$env:TEMP_DIR\vs_buildtools.exe" `
+        "--quiet --wait --norestart --nocache --installPath C:\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --log C:\TEMP\vs_buildtools_install.log" `
     ; Write-Host "Visual Studio Build Tools installation completed."
 
 # ===================================================================
