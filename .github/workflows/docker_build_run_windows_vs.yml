@@ -21,7 +21,8 @@ jobs:
     env:
       DOCKER_IMAGE_NAME: crossplatformapp-windows
       DOCKER_CONTAINER_NAME: crossplatformapp-container
-      VS_VERSION: 16  # Must match the ARG in Dockerfile.windows.vs
+      VS_VERSION: 16
+      # CMAKE_VERSION: 3.26.4  # Removed to eliminate the warning
 
     steps:
       # Step 1: Checkout the repository code
@@ -72,17 +73,17 @@ jobs:
       #       $env:DOCKER_IMAGE_NAME `
       #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
 
-      # Step 7: Run Application Inside Docker
-      - name: Run Application Inside Docker
-        shell: pwsh
-        run: |
-          $config = "${{ matrix.config }}"
-          docker run --rm --name $env:DOCKER_CONTAINER_NAME `
-            -e CONFIG=$config `
-            -v "${{ github.workspace }}:C:/app" `
-            -v "${{ github.workspace }}\Temp:C:/TEMP" `
-            $env:DOCKER_IMAGE_NAME `
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
+      # Step 7: Run Application Inside Docker (Commented Out)
+      # - name: Run Application Inside Docker
+      #   shell: pwsh
+      #   run: |
+      #     $config = "${{ matrix.config }}"
+      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
+      #       -e CONFIG=$config `
+      #       -v "${{ github.workspace }}:C:/app" `
+      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
+      #       $env:DOCKER_IMAGE_NAME `
+      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
       # Step 8: Extract Build Tools Installation Log
       - name: Extract Build Tools Installation Log
@@ -92,7 +93,7 @@ jobs:
           docker cp extract-log:C:/TEMP/vs_buildtools_install.log $env:GITHUB_WORKSPACE\Temp\vs_buildtools_install.log
           docker rm extract-log
 
-      # Step 9: Display the Log Content in the Terminal (Optional)
+      # Step 9: Display Build Tools Installation Log
       - name: Display Build Tools Installation Log
         shell: pwsh
         run: |
