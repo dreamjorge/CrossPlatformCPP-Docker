@@ -14,15 +14,11 @@ jobs:
     name: Build and Run Docker (Windows)
     runs-on: windows-latest
 
-    # Define a matrix to allow for different configurations (e.g., Debug/Release)
-    strategy:
-      matrix:
-        config: [Release]
+    # Define environment variables
     env:
       DOCKER_IMAGE_NAME: crossplatformapp-windows
       DOCKER_CONTAINER_NAME: crossplatformapp-container
       VS_VERSION: 16
-      # CMAKE_VERSION: 3.26.4  # Removed to eliminate the warning
 
     steps:
       # Step 1: Checkout the repository code
@@ -38,7 +34,7 @@ jobs:
           New-Item -ItemType Directory -Path "${{ github.workspace }}\Temp" -Force
 
       # Step 3: Login to Docker Hub (if using a private repository)
-      # Uncomment if Docker Hub authentication is required
+      # Uncomment and configure if Docker Hub authentication is required
       # - name: Log in to Docker Hub
       #   uses: docker/login-action@v2
       #   with:
