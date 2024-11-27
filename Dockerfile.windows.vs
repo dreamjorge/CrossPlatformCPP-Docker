@@ -1,95 +1,121 @@
-# escape=`
+name: Docker Build and Run on Windows Runner
 
-# ===================================================================
-# Base Image
-# ===================================================================
-FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS base
+# Trigger the workflow on push and pull request events to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-# ===================================================================
-# Metadata
-# ===================================================================
-LABEL maintainer="your-email@example.com" `
-      description="Docker image for building and running CrossPlatformApp using Visual Studio Build Tools" `
-      version="1.0.0" `
-      repository="https://github.com/your-repo/CrossPlatformCPP-Docker" `
-      documentation="https://github.com/your-repo/CrossPlatformCPP-Docker#readme" `
-      issues="https://github.com/your-repo/CrossPlatformCPP-Docker/issues" `
-      license="MIT"
+jobs:
+  build-and-run-windows-docker:
+    name: Build and Run Docker (Windows)
+    runs-on: windows-latest
 
-# ===================================================================
-# Build Arguments
-# ===================================================================
-ARG VS_VERSION=16  # Use 16 for VS2019, 17 for VS2022, etc.
-ARG VS_YEAR=2019
+    # Define a matrix to allow for different configurations (e.g., Debug/Release)
+    strategy:
+      matrix:
+        config: [Release]
+    env:
+      DOCKER_IMAGE_NAME: crossplatformapp-windows
+      DOCKER_CONTAINER_NAME: crossplatformapp-container
+      VS_VERSION: 16
+      # CMAKE_VERSION: 3.26.4  # Removed to eliminate the warning
 
-# ===================================================================
-# Environment Variables
-# ===================================================================
-ENV BUILD_TOOLS_PATH=C:\BuildTools `
-    TEMP_DIR=C:\TEMP `
-    LOG_PATH=C:\TEMP\vs_buildtools_install.log `
-    VS_VERSION=${VS_VERSION} `
-    VS_YEAR=${VS_YEAR}
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for branches and tags
 
-# ===================================================================
-# Set Shell to PowerShell
-# ===================================================================
-SHELL ["powershell.exe", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop';"]
+      # Step 2: Create Host Temp Directory
+      - name: Create Host Temp Directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "${{ github.workspace }}\Temp" -Force
 
-# ===================================================================
-# Create Temporary Directory for Downloads
-# ===================================================================
-RUN New-Item -Path $env:TEMP_DIR -ItemType Directory -Force
+      # Step 3: Login to Docker Hub (if using a private repository)
+      # Uncomment if Docker Hub authentication is required
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
 
-# ===================================================================
-# Download Visual Studio Build Tools Installer
-# ===================================================================
-RUN Write-Host "Downloading Visual Studio Build Tools installer..." `
-    ; Invoke-WebRequest -Uri "https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe" -OutFile "$env:TEMP_DIR\vs_buildtools.exe" `
-    ; Write-Host "Downloaded Visual Studio Build Tools installer successfully."
+      # Step 4: Build the Docker image
+      - name: Build Docker Image
+        shell: pwsh
+        run: |
+          docker build --no-cache `
+            --build-arg VS_VERSION=$env:VS_VERSION `
+            -t $env:DOCKER_IMAGE_NAME `
+            -f Dockerfile.windows.vs .
 
-# ===================================================================
-# Install Visual Studio Build Tools with C++ Workload
-# ===================================================================
-RUN Write-Host "Installing Visual Studio Build Tools..." `
-    ; & "$env:TEMP_DIR\vs_buildtools.exe" `
-        "--quiet --wait --norestart --nocache --installPath C:\BuildTools --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --log C:\TEMP\vs_buildtools_install.log" `
-    ; Write-Host "Visual Studio Build Tools installation completed."
+      # Step 5: List Docker Images (Commented Out)
+      # - name: List Docker Images
+      #   shell: pwsh
+      #   run: |
+      #     docker images
 
-# ===================================================================
-# Verify Installation by Checking for cl.exe
-# ===================================================================
-RUN Write-Host "Verifying Visual Studio Build Tools installation..." `
-    ; $clPathPattern = Join-Path $env:BUILD_TOOLS_PATH 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe' `
-    ; Write-Host "clPathPattern: $clPathPattern" `
-    ; $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1 `
-    ; if ($clExists) { `
-        Write-Host "Verification successful: cl.exe found at $($clExists.FullName)." `
-    } else { `
-        Write-Host "Verification failed: cl.exe not found. Installation may have failed." `
-        exit 1 `
-    }
+      # Step 6: Run Build Inside Docker (Commented Out)
+      # - name: Run Build Inside Docker
+      #   shell: pwsh
+      #   run: |
+      #     $config = "${{ matrix.config }}"
+      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
+      #       -e CONFIG=$config `
+      #       -e VS_VERSION=$env:VS_VERSION `
+      #       -v "${{ github.workspace }}:C:/app" `
+      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
+      #       $env:DOCKER_IMAGE_NAME `
+      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
 
-# ===================================================================
-# Output Installation Logs (Optional)
-# ===================================================================
-RUN if (Test-Path "C:\\TEMP\\vs_buildtools_install.log") { `
-        Get-Content "C:\\TEMP\\vs_buildtools_install.log" `
-    }
+      # Step 7: Run Application Inside Docker (Commented Out)
+      # - name: Run Application Inside Docker
+      #   shell: pwsh
+      #   run: |
+      #     $config = "${{ matrix.config }}"
+      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
+      #       -e CONFIG=$config `
+      #       -v "${{ github.workspace }}:C:/app" `
+      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
+      #       $env:DOCKER_IMAGE_NAME `
+      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
-# ===================================================================
-# Clean Up Temporary Files
-# ===================================================================
-RUN Write-Host "Cleaning up temporary files..." `
-    ; Remove-Item -Path "$env:TEMP_DIR\vs_buildtools.exe" -Force `
-    ; Write-Host "Temporary files removed successfully."
+      # Step 8: Extract Build Tools Installation Log
+      - name: Extract Build Tools Installation Log
+        shell: pwsh
+        run: |
+          docker create --name extract-log $env:DOCKER_IMAGE_NAME
+          docker cp extract-log:C:/TEMP/vs_buildtools_install.log $env:GITHUB_WORKSPACE\Temp\vs_buildtools_install.log
+          docker rm extract-log
 
-# ===================================================================
-# Set Working Directory
-# ===================================================================
-WORKDIR C:\app
+      # Step 9: Display Build Tools Installation Log
+      - name: Display Build Tools Installation Log
+        shell: pwsh
+        run: |
+          if (Test-Path "Temp\vs_buildtools_install.log") {
+            Write-Host "----- Begin vs_buildtools_install.log -----"
+            Get-Content "Temp\vs_buildtools_install.log" | Write-Host
+            Write-Host "----- End vs_buildtools_install.log -----"
+          } else {
+            Write-Host "vs_buildtools_install.log not found."
+          }
 
-# ===================================================================
-# Default Command
-# ===================================================================
-CMD ["cmd.exe"]
+      # Step 10: Upload Logs
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: vs-buildtools-log
+          path: Temp\vs_buildtools_install.log  # Host path after mounting
+
+      # Step 11: Cleanup Docker Containers
+      - name: Cleanup Docker Resources
+        if: always()
+        shell: pwsh
+        run: |
+          docker ps -a -q --filter "name=$env:DOCKER_CONTAINER_NAME" | ForEach-Object { docker rm -f $_ }
