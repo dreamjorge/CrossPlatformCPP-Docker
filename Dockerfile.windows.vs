@@ -1,121 +1,42 @@
-name: Docker Build and Run on Windows Runner
+# Use the official Windows Server Core as the base image
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-# Trigger the workflow on push and pull request events to the main branch
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+# Set environment variables
+ENV BUILD_TOOLS_PATH="C:\\BuildTools"
+ENV TEMP_DIR="C:\\TEMP"
 
-jobs:
-  build-and-run-windows-docker:
-    name: Build and Run Docker (Windows)
-    runs-on: windows-latest
+# Create necessary directories
+RUN mkdir C:\\TEMP
+RUN mkdir C:\\BuildTools
 
-    # Define a matrix to allow for different configurations (e.g., Debug/Release)
-    strategy:
-      matrix:
-        config: [Release]
-    env:
-      DOCKER_IMAGE_NAME: crossplatformapp-windows
-      DOCKER_CONTAINER_NAME: crossplatformapp-container
-      VS_VERSION: 16
-      # CMAKE_VERSION: 3.26.4  # Removed to eliminate the warning
+# Download Visual Studio Build Tools installer
+ADD https://aka.ms/vs/17/release/vs_buildtools.exe C:\\TEMP\\vs_buildtools.exe
 
-    steps:
-      # Step 1: Checkout the repository code
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Fetch all history for branches and tags
+# Install Visual Studio Build Tools with required workloads
+RUN powershell -Command Start-Process -Wait -FilePath C:\\TEMP\\vs_buildtools.exe -ArgumentList `
+    "--quiet", `
+    "--wait", `
+    "--norestart", `
+    "--nocache", `
+    "--installPath C:\\BuildTools", `
+    "--add Microsoft.VisualStudio.Workload.VCTools", `
+    "--includeRecommended", `
+    "--log C:\\TEMP\\vs_buildtools_install.log"
 
-      # Step 2: Create Host Temp Directory
-      - name: Create Host Temp Directory
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path "${{ github.workspace }}\Temp" -Force
+# Verify installation by checking for cl.exe
+RUN Write-Host "Verifying Visual Studio Build Tools installation..." `
+    ; $clPathPattern = Join-Path $env:BUILD_TOOLS_PATH 'VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe' `
+    ; Write-Host "clPathPattern: $clPathPattern" `
+    ; $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1 `
+    ; if ($clExists) { `
+        Write-Host "Verification successful: cl.exe found at $($clExists.FullName)." `
+    } else { `
+        Write-Host "Verification failed: cl.exe not found. Installation may have failed." `
+        exit 1 `
+    }
 
-      # Step 3: Login to Docker Hub (if using a private repository)
-      # Uncomment if Docker Hub authentication is required
-      # - name: Log in to Docker Hub
-      #   uses: docker/login-action@v2
-      #   with:
-      #     username: ${{ secrets.DOCKER_USERNAME }}
-      #     password: ${{ secrets.DOCKER_PASSWORD }}
+# Set the working directory
+WORKDIR C:\app
 
-      # Step 4: Build the Docker image
-      - name: Build Docker Image
-        shell: pwsh
-        run: |
-          docker build --no-cache `
-            --build-arg VS_VERSION=$env:VS_VERSION `
-            -t $env:DOCKER_IMAGE_NAME `
-            -f Dockerfile.windows.vs .
-
-      # Step 5: List Docker Images (Commented Out)
-      # - name: List Docker Images
-      #   shell: pwsh
-      #   run: |
-      #     docker images
-
-      # Step 6: Run Build Inside Docker (Commented Out)
-      # - name: Run Build Inside Docker
-      #   shell: pwsh
-      #   run: |
-      #     $config = "${{ matrix.config }}"
-      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
-      #       -e CONFIG=$config `
-      #       -e VS_VERSION=$env:VS_VERSION `
-      #       -v "${{ github.workspace }}:C:/app" `
-      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
-      #       $env:DOCKER_IMAGE_NAME `
-      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
-
-      # Step 7: Run Application Inside Docker (Commented Out)
-      # - name: Run Application Inside Docker
-      #   shell: pwsh
-      #   run: |
-      #     $config = "${{ matrix.config }}"
-      #     docker run --rm --name $env:DOCKER_CONTAINER_NAME `
-      #       -e CONFIG=$config `
-      #       -v "${{ github.workspace }}:C:/app" `
-      #       -v "${{ github.workspace }}\Temp:C:/TEMP" `
-      #       $env:DOCKER_IMAGE_NAME `
-      #       powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
-
-      # Step 8: Extract Build Tools Installation Log
-      - name: Extract Build Tools Installation Log
-        shell: pwsh
-        run: |
-          docker create --name extract-log $env:DOCKER_IMAGE_NAME
-          docker cp extract-log:C:/TEMP/vs_buildtools_install.log $env:GITHUB_WORKSPACE\Temp\vs_buildtools_install.log
-          docker rm extract-log
-
-      # Step 9: Display Build Tools Installation Log
-      - name: Display Build Tools Installation Log
-        shell: pwsh
-        run: |
-          if (Test-Path "Temp\vs_buildtools_install.log") {
-            Write-Host "----- Begin vs_buildtools_install.log -----"
-            Get-Content "Temp\vs_buildtools_install.log" | Write-Host
-            Write-Host "----- End vs_buildtools_install.log -----"
-          } else {
-            Write-Host "vs_buildtools_install.log not found."
-          }
-
-      # Step 10: Upload Logs
-      - name: Upload Logs
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: vs-buildtools-log
-          path: Temp\vs_buildtools_install.log  # Host path after mounting
-
-      # Step 11: Cleanup Docker Containers
-      - name: Cleanup Docker Resources
-        if: always()
-        shell: pwsh
-        run: |
-          docker ps -a -q --filter "name=$env:DOCKER_CONTAINER_NAME" | ForEach-Object { docker rm -f $_ }
+# Default command
+CMD ["cmd.exe"]
