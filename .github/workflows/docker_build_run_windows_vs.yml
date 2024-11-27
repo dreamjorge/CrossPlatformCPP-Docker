@@ -46,10 +46,10 @@ jobs:
       #     password: ${{ secrets.DOCKER_PASSWORD }}
 
       # Step 4: Build Base Docker Image
-      - name: Build Base Docker Image
-        run: |
-          docker build --no-cache -t base -f Dockerfile.windows.base .
-
+#      - name: Build Base Docker Image
+#        run: |
+#          docker build --no-cache -t # #base -f Dockerfile.windows.base .
+#
       # Step 5: Build the Docker image
       - name: Build Docker Image
         shell: pwsh
