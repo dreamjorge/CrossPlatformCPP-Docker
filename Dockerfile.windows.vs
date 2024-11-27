@@ -19,7 +19,7 @@ LABEL maintainer="your-email@example.com" `
 # ===================================================================
 # Build Arguments
 # ===================================================================
-ARG VS_VERSION=16.0.28701.123  # Specify the exact version or use a variable
+ARG VS_VERSION=16  # Use 16 for VS2019, 17 for VS2022, etc.
 ARG VS_YEAR=2019
 
 # ===================================================================
@@ -53,14 +53,8 @@ RUN Write-Host "Downloading Visual Studio Build Tools installer..." `
 # ===================================================================
 RUN Write-Host "Installing Visual Studio Build Tools..." `
     ; Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList `
-        "--quiet", `
-        "--wait", `
-        "--norestart", `
-        "--nocache", `
-        "--installPath", "`"$env:BUILD_TOOLS_PATH`"", `
-        "--add", "Microsoft.VisualStudio.Workload.VCTools", `
-        "--includeRecommended", `
-        "--log", "`"$env:LOG_PATH`"" -NoNewWindow -Wait `
+        "--quiet --wait --norestart --nocache --installPath `"$env:BUILD_TOOLS_PATH`" --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --log `"$env:LOG_PATH`"" `
+        -NoNewWindow -Wait `
     ; Write-Host "Visual Studio Build Tools installation completed."
 
 # ===================================================================
