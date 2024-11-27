@@ -3,43 +3,60 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM base AS vs19
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS base
+
+# ===================================================================
+# Metadata
+# ===================================================================
+LABEL maintainer="your-email@example.com" `
+      description="Docker image for building and running CrossPlatformApp using Visual Studio Build Tools" `
+      version="1.0.0" `
+      repository="https://github.com/your-repo/CrossPlatformCPP-Docker" `
+      documentation="https://github.com/your-repo/CrossPlatformCPP-Docker#readme" `
+      issues="https://github.com/your-repo/CrossPlatformCPP-Docker/issues" `
+      license="MIT"
 
 # ===================================================================
 # Build Arguments
 # ===================================================================
+ARG VS_VERSION=16.0.28701.123  # Specify the exact version or use a variable
 ARG VS_YEAR=2019
-ARG VS_VERSION=16
-ARG CMAKE_VERSION=3.26.4
 
 # ===================================================================
 # Environment Variables
 # ===================================================================
-ENV VS_YEAR=${VS_YEAR} `
+ENV BUILD_TOOLS_PATH=C:\BuildTools `
+    TEMP_DIR=C:\TEMP `
+    LOG_PATH=C:\TEMP\vs_buildtools_install.log `
     VS_VERSION=${VS_VERSION} `
-    CMAKE_VERSION=${CMAKE_VERSION} `
-    LOG_PATH=C:\\TEMP\\vs_buildtools_install.log
+    VS_YEAR=${VS_YEAR}
 
 # ===================================================================
-# Copy Installation Scripts
+# Set Shell to PowerShell
 # ===================================================================
-COPY ./scripts/windows/install_vs_buildtools.ps1 C:\scripts\install_vs_buildtools.ps1
-COPY ./scripts/windows/build.ps1 C:\app\scripts\windows\build.ps1
-COPY ./scripts/windows/run.ps1 C:\app\scripts\windows\run.ps1
+SHELL ["powershell.exe", "-NoProfile", "-Command", "$ErrorActionPreference = 'Stop';"]
 
-#
+# ===================================================================
+# Create Temporary Directory for Downloads
+# ===================================================================
+RUN New-Item -Path $env:TEMP_DIR -ItemType Directory -Force
+
 # ===================================================================
 # Download Visual Studio Build Tools Installer
 # ===================================================================
 RUN Write-Host "Downloading Visual Studio Build Tools installer..." `
-    ; Invoke-WebRequest -Uri "https://aka.ms/vs/$($env:VS_VERSION)/release/vs_buildtools.exe" -OutFile "$env:TEMP_DIR\vs_buildtools.exe" `
+    ; Invoke-WebRequest -Uri "https://aka.ms/vs/$env:VS_VERSION/release/vs_buildtools.exe" -OutFile "$env:TEMP_DIR\vs_buildtools.exe" `
     ; Write-Host "Downloaded Visual Studio Build Tools installer successfully."
 
 # ===================================================================
 # Install Visual Studio Build Tools with C++ Workload
 # ===================================================================
 RUN Write-Host "Installing Visual Studio Build Tools..." `
-    ; Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
+    ; Start-Process -FilePath "$env:TEMP_DIR\vs_buildtools.exe" -ArgumentList `
+        "--quiet", `
+        "--wait", `
+        "--norestart", `
+        "--nocache", `
         "--installPath", "`"$env:BUILD_TOOLS_PATH`"", `
         "--add", "Microsoft.VisualStudio.Workload.VCTools", `
         "--includeRecommended", `
@@ -59,43 +76,19 @@ RUN Write-Host "Verifying Visual Studio Build Tools installation..." `
         exit 1 `
     }
 
+# ===================================================================
+# Output Installation Logs (Optional)
+# ===================================================================
+RUN if (Test-Path "C:\\TEMP\\vs_buildtools_install.log") { `
+        Get-Content "C:\\TEMP\\vs_buildtools_install.log" `
+    }
 
 # ===================================================================
-# Check Installation Logs (Optional)
+# Clean Up Temporary Files
 # ===================================================================
-RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
-
-
-# ===================================================================
-# Check Installation Logs (Optional)
-# ===================================================================
-RUN if exist C:\\TEMP\\vs_buildtools_install.log type C:\\TEMP\\vs_buildtools_install.log
-
-# # ===================================================================
-# # Install CMake Using External Script
-# # ===================================================================
-# # Copy the CMake installation script into the container
-# COPY ./scripts/windows/install_cmake.ps1 C:\scripts\install_cmake.ps1
-
-# # Execute the CMake installation script
-# RUN powershell -NoProfile -ExecutionPolicy Bypass -File "C:\\scripts\\install_cmake.ps1" || `
-#     (Write-Host "CMake installation failed." && exit 1)
-
-# # ===================================================================
-# # Add CMake to PATH Correctly
-# # ===================================================================
-# ENV PATH "C:\\Program Files\\CMake\\bin;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\;${PATH}"
-
-# ===================================================================
-# Verify PATH and PowerShell Availability
-# ===================================================================
-RUN echo %PATH%
-RUN where powershell
-
-# ===================================================================
-# Verify CMake Installation
-# ===================================================================
-RUN powershell -Command "& 'C:\\Program Files\\CMake\\bin\\cmake.exe' --version"
+RUN Write-Host "Cleaning up temporary files..." `
+    ; Remove-Item -Path "$env:TEMP_DIR\vs_buildtools.exe" -Force `
+    ; Write-Host "Temporary files removed successfully."
 
 # ===================================================================
 # Set Working Directory
