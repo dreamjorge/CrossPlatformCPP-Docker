@@ -91,6 +91,12 @@ jobs:
             $env:DOCKER_IMAGE_NAME `
             powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location C:/app/scripts/windows; .\run.ps1 -CONFIG $config"
 
+      - name: Extract Build Tools Installation Log
+        run: |
+    docker create --name extract-log ${{ env.DOCKER_IMAGE_NAME }}
+    docker cp extract-log:C:/TEMP/vs_buildtools_install.log ${{ github.workspace }}/Temp/vs_buildtools_install.log
+    docker rm extract-log
+
       # Step 8: Upload Logs
       - name: Upload Logs
         if: failure()
