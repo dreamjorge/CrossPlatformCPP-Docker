@@ -60,7 +60,7 @@ RUN Write-Host "Installing Visual Studio Build Tools..." `
 # Verify Installation by Checking for cl.exe
 # ===================================================================
 RUN Write-Host "Verifying Visual Studio Build Tools installation..." `
-    ; $clPathPattern = "$env:BUILD_TOOLS_PATH/VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe" `
+    ; $clPathPattern = "${env:BUILD_TOOLS_PATH}/VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe" `
     ; $clExists = Get-ChildItem -Path $clPathPattern -ErrorAction SilentlyContinue | Select-Object -First 1 `
     ; if ($clExists) { `
         Write-Host "Verification successful: cl.exe found at $($clExists.FullName)." `
