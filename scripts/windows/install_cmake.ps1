@@ -7,21 +7,39 @@ $ErrorActionPreference = 'Stop'
 
 # Construct the download URL
 $url = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
+$output = "C:\TEMP\cmake_installer.msi"
+
 Write-Host "Installing CMake version: $CMAKE_VERSION"
 Write-Host "Constructed URL: $url"
 
-# Download destination
-$output = "C:\cmake_installer.msi"
+# Retry logic for downloading CMake
+$maxRetries = 3
+$retryCount = 0
+$downloadSuccess = $false
 
-# Download the installer
-Write-Host "Downloading CMake from $url"
-Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
+    try {
+        $retryCount++
+        Write-Host "Attempt $retryCount: Downloading CMake from $url..."
+        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+        $downloadSuccess = $true
+    } catch {
+        Write-Warning "Attempt $retryCount failed: $($_.Exception.Message)"
+        Start-Sleep -Seconds 5
+    }
+}
+
+if (-not $downloadSuccess) {
+    throw "Failed to download CMake after $maxRetries attempts. Exiting."
+}
+
+Write-Host "CMake downloaded successfully to $output."
 
 # Install CMake
 Write-Host "Installing CMake..."
 Start-Process msiexec.exe -ArgumentList "/i", $output, "/quiet", "/norestart" -NoNewWindow -Wait
 
-# Check if the installation was successful
+# Verify installation
 if (!(Test-Path "C:\Program Files\CMake\bin\cmake.exe")) {
     throw "CMake installation failed. Executable not found."
 }
@@ -29,7 +47,7 @@ if (!(Test-Path "C:\Program Files\CMake\bin\cmake.exe")) {
 Write-Host "CMake installed successfully."
 
 # Clean up installer
-Remove-Item "C:\cmake_installer.msi" -Force
+Remove-Item $output -Force
 
 # Add CMake to the system PATH
 $env:Path += ";C:\Program Files\CMake\bin"
