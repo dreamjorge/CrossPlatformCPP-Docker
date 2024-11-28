@@ -19,16 +19,16 @@ function Download-File {
     do {
         try {
             $retryCount++
-            Write-Host "Attempt $($retryCount): Downloading CMake from $url..."
+            Write-Host ("Attempt {0}: Downloading CMake from {1}..." -f $retryCount, $url)
             Invoke-WebRequest -Uri $url -OutFile $outputPath -UseBasicParsing
             Write-Host "Download successful."
             return $true
         } catch {
-            Write-Host "Attempt $($retryCount) failed: $($_.Exception.Message)"
+            Write-Host ("Attempt {0} failed: {1}" -f $retryCount, $_.Exception.Message)
             Start-Sleep -Seconds 5
         }
     } while ($retryCount -lt $maxRetries)
-    Write-Error "Failed to download CMake after $maxRetries attempts."
+    Write-Error ("Failed to download CMake after {0} attempts." -f $maxRetries)
     exit 1
 }
 
@@ -39,11 +39,11 @@ function Extract-Zip {
         [string]$outputPath
     )
     try {
-        Write-Host "Extracting $zipPath to $outputPath..."
+        Write-Host ("Extracting {0} to {1}..." -f $zipPath, $outputPath)
         Expand-Archive -Path $zipPath -DestinationPath $outputPath -Force
         Write-Host "Extraction complete."
     } catch {
-        Write-Error "Failed to extract $zipPath: $($_.Exception.Message)"
+        Write-Error ("Failed to extract {0}: {1}" -f $zipPath, $_.Exception.Message)
         exit 1
     }
 }
@@ -54,11 +54,11 @@ function Update-Path {
         [string]$newPath
     )
     try {
-        Write-Host "Updating PATH to include $newPath..."
+        Write-Host ("Updating PATH to include {0}..." -f $newPath)
         [Environment]::SetEnvironmentVariable("Path", "$($env:Path);$newPath", [System.EnvironmentVariableTarget]::Machine)
         Write-Host "PATH updated successfully."
     } catch {
-        Write-Error "Failed to update PATH: $($_.Exception.Message)"
+        Write-Error ("Failed to update PATH: {0}" -f $_.Exception.Message)
         exit 1
     }
 }
