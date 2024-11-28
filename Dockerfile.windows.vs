@@ -6,6 +6,14 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 # Restore the default Windows shell for correct batch processing.
 SHELL ["cmd", "/S", "/C"]
 
+# Install PowerShell
+RUN curl -SL --output PowerShell-7.3.6-win-x64.msi https://github.com/PowerShell/PowerShell/releases/download/v7.3.6/PowerShell-7.3.6-win-x64.msi `
+    && start /wait msiexec /i PowerShell-7.3.6-win-x64.msi /quiet `
+    && del PowerShell-7.3.6-win-x64.msi
+
+# Set PowerShell path in the environment
+ENV PATH="C:\\Program Files\\PowerShell\\7;$PATH"
+
 # Arguments for build-time
 ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.26.4
@@ -23,10 +31,10 @@ COPY scripts/windows/install_vs_buildtools.ps1 C:\TEMP\install_vs_buildtools.ps1
 COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
 # Install Visual Studio Build Tools
-RUN powershell -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1 -VS_VERSION ${VS_VERSION}
+RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1 -VS_VERSION ${VS_VERSION}
 
 # Install CMake
-RUN powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION ${CMAKE_VERSION}
+RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION ${CMAKE_VERSION}
 
 # Cleanup the temporary files
 RUN del /q C:\TEMP\install_vs_buildtools.ps1 C:\TEMP\install_cmake.ps1
