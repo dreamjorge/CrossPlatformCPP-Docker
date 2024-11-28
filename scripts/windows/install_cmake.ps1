@@ -1,6 +1,11 @@
-param (
-    [string]$CMAKE_VERSION = "3.27.1"
-)
+# Read CMAKE_VERSION from the environment variable
+$CMAKE_VERSION = $env:CMAKE_VERSION
+
+# Validate version is provided
+if (-not $CMAKE_VERSION) {
+    Write-Error "CMAKE_VERSION is not specified."
+    exit 1
+}
 
 # Set variables
 $retryCount = 0
