@@ -1,45 +1,35 @@
-# Use ` as the escape character for Windows
-# This must be the first line in the Dockerfile
-# Note: This line is optional in newer Docker versions
 # escape=`
 
-# Use the official Windows Server Core as the base image
+# Use the latest Windows Server Core 2022 image.
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-# Set environment variables
-ENV BUILD_TOOLS_PATH=C:\\BuildTools
-ENV TEMP_DIR=C:\\TEMP
+# Restore the default Windows shell for correct batch processing.
+SHELL ["cmd", "/S", "/C"]
 
-# Create necessary directories
-RUN mkdir C:\TEMP `
-    && mkdir C:\BuildTools
+RUN `
+    # Download the Build Tools bootstrapper for VS 2019.
+    curl -SL --output vs_buildtools.exe https://aka.ms/vs/16/release/vs_buildtools.exe `
+    `
+    # Install Build Tools with the required workloads for Visual Studio 2019.
+    && (start /w vs_buildtools.exe --quiet --wait --norestart --nocache `
+        --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools" `
+        --add Microsoft.VisualStudio.Workload.VCTools `
+        --add Microsoft.VisualStudio.Workload.AzureBuildTools `
+        --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools `
+        --includeRecommended `
+        --remove Microsoft.VisualStudio.Component.Windows10SDK.10240 `
+        --remove Microsoft.VisualStudio.Component.Windows10SDK.10586 `
+        --remove Microsoft.VisualStudio.Component.Windows10SDK.14393 `
+        --remove Microsoft.VisualStudio.Component.Windows81SDK `
+        || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
+    `
+    # Cleanup
+    && del /q vs_buildtools.exe
 
-# Download Visual Studio Build Tools installer
-ADD https://aka.ms/vs/16/release/vs_buildtools.exe C:\TEMP\vs_buildtools.exe
+# Set up environment variables for the developer command prompt.
+ENV PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools\Common7\Tools;%PATH%"
+ENV VS_INSTALL_PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools"
 
-# Install Visual Studio Build Tools with required workloads
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    Start-Process -Wait -FilePath C:\TEMP\vs_buildtools.exe -ArgumentList `
-        '--quiet', `
-        '--wait', `
-        '--norestart', `
-        '--nocache', `
-        '--installPath', 'C:\BuildTools', `
-        '--add', 'Microsoft.VisualStudio.Workload.VCTools', `
-        '--includeRecommended', `
-        '--log', 'C:\TEMP\vs_buildtools_install.log'
-
-# Verify installation by checking for cl.exe
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    if (Test-Path -Path "$env:BUILD_TOOLS_PATH\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe") { `
-        Write-Host 'Verification successful: cl.exe found.' `
-    } else { `
-        Write-Host 'Verification failed: cl.exe not found. Installation may have failed.'; `
-        Exit 1 `
-    }
-
-# Set the working directory
-WORKDIR C:\app
-
-# Default command
-CMD ["cmd.exe"]
+# Define the entry point for the Docker container.
+# This entry point starts the developer command prompt and launches the PowerShell shell.
+ENTRYPOINT ["%ProgramFiles(x86)%\\Microsoft Visual Studio\\2019\\BuildTools\\Common7\\Tools\\VsDevCmd.bat", "&&", "powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
