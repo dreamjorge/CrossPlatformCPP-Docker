@@ -30,7 +30,7 @@ RUN `
         || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
     `
     # Run the CMake installation script with the specified version as a parameter.
-    && powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION "$Env:CMAKE_VERSION" `
+    && powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION "${CMAKE_VERSION}" `
     `
     # Cleanup temporary files.
     && del /q vs_buildtools.exe `
