@@ -1,59 +1,39 @@
-param(
-    [string]$CMAKE_VERSION = "3.26.4"  # Default version of CMake to install
-)
+# escape=`
 
-# Stop on all errors
-$ErrorActionPreference = 'Stop'
+# Use the latest Windows Server Core 2022 image.
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-# Construct the download URL
-$url = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
-$output = "C:\TEMP\cmake_installer.msi"
+# Restore the default Windows shell for correct batch processing.
+SHELL ["cmd", "/S", "/C"]
 
-Write-Host "Installing CMake version: $CMAKE_VERSION"
-Write-Host "Constructed URL: $url"
+# Copy the CMake installation script to the container
+COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
-# Retry logic for downloading CMake
-$maxRetries = 3
-$retryCount = 0
-$downloadSuccess = $false
+# Argument to specify the CMake version
+ARG CMAKE_VERSION="3.26.4"
 
-while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
-    try {
-        $retryCount++
-        Write-Host "Attempt $retryCount: Downloading CMake from $url..."
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-        $downloadSuccess = $true
-    } catch {
-        Write-Warning "Attempt $retryCount failed: $($_.Exception.Message)"
-        Start-Sleep -Seconds 5
-    }
-}
+# Commented out Visual Studio Build Tools installation for testing only CMake installation
+# RUN `
+#     curl -SL --output vs_buildtools.exe https://aka.ms/vs/16/release/vs_buildtools.exe `
+#     && (start /w vs_buildtools.exe --quiet --wait --norestart --nocache `
+#         --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools" `
+#         --add Microsoft.VisualStudio.Workload.VCTools `
+#         --add Microsoft.VisualStudio.Workload.AzureBuildTools `
+#         --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools `
+#         --includeRecommended `
+#         --remove Microsoft.VisualStudio.Component.Windows10SDK.10240 `
+#         --remove Microsoft.VisualStudio.Component.Windows10SDK.10586 `
+#         --remove Microsoft.VisualStudio.Component.Windows10SDK.14393 `
+#         --remove Microsoft.VisualStudio.Component.Windows81SDK `
+#         || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
+#     && del /q vs_buildtools.exe
 
-if (-not $downloadSuccess) {
-    throw "Failed to download CMake after $maxRetries attempts. Exiting."
-}
+# Step 1: Install CMake
+RUN powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION "${CMAKE_VERSION}" `
+    && del /q C:\TEMP\install_cmake.ps1
 
-Write-Host "CMake downloaded successfully to $output."
+# Set up environment variables for the developer command prompt.
+ENV PATH="C:\Program Files\CMake\bin;%PATH%"
 
-# Install CMake
-Write-Host "Installing CMake..."
-Start-Process msiexec.exe -ArgumentList "/i", $output, "/quiet", "/norestart" -NoNewWindow -Wait
-
-# Verify installation
-if (!(Test-Path "C:\Program Files\CMake\bin\cmake.exe")) {
-    throw "CMake installation failed. Executable not found."
-}
-
-Write-Host "CMake installed successfully."
-
-# Clean up installer
-Remove-Item $output -Force
-
-# Add CMake to the system PATH
-$env:Path += ";C:\Program Files\CMake\bin"
-
-# Output the updated PATH to verify
-Write-Host "Updated PATH: $env:Path"
-
-# Verify the CMake installation by checking its version
-& "C:\Program Files\CMake\bin\cmake.exe" --version
+# Define the entry point for the Docker container.
+ENTRYPOINT ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
