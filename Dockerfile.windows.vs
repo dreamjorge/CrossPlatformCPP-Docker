@@ -9,6 +9,7 @@ SHELL ["cmd", "/S", "/C"]
 # Copy the CMake installation script to the container
 COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
+# Argument to specify the CMake version
 ARG CMAKE_VERSION="3.26.4"
 
 RUN `
@@ -29,9 +30,9 @@ RUN `
         || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
     `
     # Run the CMake installation script with the specified version.
-    && powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 `
+    && powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION $Env:CMAKE_VERSION `
     `
-    # Cleanup
+    # Cleanup temporary files.
     && del /q vs_buildtools.exe `
     && del /q C:\TEMP\install_cmake.ps1
 
