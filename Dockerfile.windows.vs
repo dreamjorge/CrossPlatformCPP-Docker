@@ -31,7 +31,7 @@ COPY scripts/windows/install_vs_buildtools.ps1 C:\TEMP\install_vs_buildtools.ps1
 COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
 # Install Visual Studio Build Tools
-RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1 -VS_VERSION ${VS_VERSION}
+RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1
 
 # Install CMake
 RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION ${CMAKE_VERSION}
