@@ -6,6 +6,11 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 # Restore the default Windows shell for correct batch processing.
 SHELL ["cmd", "/S", "/C"]
 
+# Copy the CMake installation script to the container
+COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
+
+ARG CMAKE_VERSION="3.26.4"
+
 RUN `
     # Download the Build Tools bootstrapper for VS 2019.
     curl -SL --output vs_buildtools.exe https://aka.ms/vs/16/release/vs_buildtools.exe `
@@ -23,8 +28,12 @@ RUN `
         --remove Microsoft.VisualStudio.Component.Windows81SDK `
         || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
     `
+    # Run the CMake installation script with the specified version.
+    && powershell -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION $Env:CMAKE_VERSION `
+    `
     # Cleanup
-    && del /q vs_buildtools.exe
+    && del /q vs_buildtools.exe `
+    && del /q C:\TEMP\install_cmake.ps1
 
 # Set up environment variables for the developer command prompt.
 ENV PATH="%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools\Common7\Tools;%PATH%"
