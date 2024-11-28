@@ -1,59 +1,83 @@
-param(
-    [string]$CMAKE_VERSION = "3.26.4"  # Default version of CMake to install
+param (
+    [string]$CMAKE_VERSION = "3.27.1"
 )
 
-# Stop on all errors
-$ErrorActionPreference = 'Stop'
-
-# Construct the download URL
-$url = "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.msi"
-$output = "C:\TEMP\cmake_installer.msi"
-
-Write-Host "Installing CMake version: $CMAKE_VERSION"
-Write-Host "Constructed URL: $url"
-
-# Retry logic for downloading CMake
-$maxRetries = 3
+# Set variables
 $retryCount = 0
-$downloadSuccess = $false
+$maxRetries = 5
+$cmakeBaseUrl = "https://github.com/Kitware/CMake/releases/download"
+$url = "$cmakeBaseUrl/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.zip"
+$destination = "C:\TEMP\cmake.zip"
+$installPath = "C:\Program Files\CMake"
 
-while (-not $downloadSuccess -and $retryCount -lt $maxRetries) {
+# Function to download file with retries
+function Download-File {
+    param (
+        [string]$url,
+        [string]$outputPath
+    )
+    do {
+        try {
+            $retryCount++
+            Write-Host "Attempt $($retryCount): Downloading CMake from $url..."
+            Invoke-WebRequest -Uri $url -OutFile $outputPath -UseBasicParsing
+            Write-Host "Download successful."
+            return $true
+        } catch {
+            Write-Host "Attempt $($retryCount) failed: $($_.Exception.Message)"
+            Start-Sleep -Seconds 5
+        }
+    } while ($retryCount -lt $maxRetries)
+    Write-Error "Failed to download CMake after $maxRetries attempts."
+    exit 1
+}
+
+# Function to extract the ZIP file
+function Extract-Zip {
+    param (
+        [string]$zipPath,
+        [string]$outputPath
+    )
     try {
-        $retryCount++
-        Write-Host "Attempt $retryCount: Downloading CMake from $url..."
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-        $downloadSuccess = $true
+        Write-Host "Extracting $zipPath to $outputPath..."
+        Expand-Archive -Path $zipPath -DestinationPath $outputPath -Force
+        Write-Host "Extraction complete."
     } catch {
-        Write-Warning "Attempt $retryCount failed: $($_.Exception.Message)"
-        Start-Sleep -Seconds 5
+        Write-Error "Failed to extract $zipPath: $($_.Exception.Message)"
+        exit 1
     }
 }
 
-if (-not $downloadSuccess) {
-    throw "Failed to download CMake after $maxRetries attempts. Exiting."
+# Function to update the PATH environment variable
+function Update-Path {
+    param (
+        [string]$newPath
+    )
+    try {
+        Write-Host "Updating PATH to include $newPath..."
+        [Environment]::SetEnvironmentVariable("Path", "$($env:Path);$newPath", [System.EnvironmentVariableTarget]::Machine)
+        Write-Host "PATH updated successfully."
+    } catch {
+        Write-Error "Failed to update PATH: $($_.Exception.Message)"
+        exit 1
+    }
 }
 
-Write-Host "CMake downloaded successfully to $output."
+# Main script logic
+Write-Host "Starting CMake installation..."
 
-# Install CMake
-Write-Host "Installing CMake..."
-Start-Process msiexec.exe -ArgumentList "/i", $output, "/quiet", "/norestart" -NoNewWindow -Wait
-
-# Verify installation
-if (!(Test-Path "C:\Program Files\CMake\bin\cmake.exe")) {
-    throw "CMake installation failed. Executable not found."
+# Ensure TEMP folder exists
+if (!(Test-Path -Path "C:\TEMP")) {
+    New-Item -ItemType Directory -Path "C:\TEMP" | Out-Null
 }
 
-Write-Host "CMake installed successfully."
+# Download CMake
+Download-File -url $url -outputPath $destination
 
-# Clean up installer
-Remove-Item $output -Force
+# Extract the ZIP
+Extract-Zip -zipPath $destination -outputPath $installPath
 
-# Add CMake to the system PATH
-$env:Path += ";C:\Program Files\CMake\bin"
+# Update PATH
+Update-Path -newPath "$installPath\bin"
 
-# Output the updated PATH to verify
-Write-Host "Updated PATH: $env:Path"
-
-# Verify the CMake installation by checking its version
-& "C:\Program Files\CMake\bin\cmake.exe" --version
+Write-Host "CMake installation completed successfully."
