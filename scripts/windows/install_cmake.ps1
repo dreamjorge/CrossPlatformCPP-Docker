@@ -1,5 +1,3 @@
-# PowerShell script to install CMake on Windows
-
 param(
     [string]$CMAKE_VERSION = "3.26.4"  # Default version of CMake to install
 )
