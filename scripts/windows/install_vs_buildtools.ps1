@@ -1,83 +1,42 @@
 param (
-    [string]$CMAKE_VERSION = "3.27.1"
+    [string]$VS_VERSION = "17", # Default to Visual Studio 2022 (Build Tools)
+    [string]$INSTALL_PATH = "$env:ProgramFiles(x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools",
+    [string]$WORKLOAD = "Microsoft.VisualStudio.Workload.AzureBuildTools"
 )
 
 # Set variables
-$retryCount = 0
-$maxRetries = 5
-$cmakeBaseUrl = "https://github.com/Kitware/CMake/releases/download"
-$url = "$cmakeBaseUrl/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.zip"
-$destination = "C:\TEMP\cmake.zip"
-$installPath = "C:\Program Files\CMake"
+$vsBootstrapperUrl = "https://aka.ms/vs/$VS_VERSION/release/vs_buildtools.exe"
+$vsInstaller = "C:\TEMP\vs_buildtools.exe"
 
-# Function to download file with retries
-function Download-File {
-    param (
-        [string]$url,
-        [string]$outputPath
-    )
-    do {
-        try {
-            $retryCount++
-            Write-Host "Attempt ${retryCount}: Downloading CMake from ${url}..."
-            Invoke-WebRequest -Uri $url -OutFile $outputPath -UseBasicParsing
-            Write-Host "Download successful."
-            return $true
-        } catch {
-            Write-Host "Attempt ${retryCount} failed: $($_.Exception.Message)"
-            Start-Sleep -Seconds 5
-        }
-    } while ($retryCount -lt $maxRetries)
-    Write-Error "Failed to download CMake after ${maxRetries} attempts."
+Write-Host "Downloading Visual Studio Build Tools version $VS_VERSION from $vsBootstrapperUrl..."
+
+# Download the Visual Studio Build Tools bootstrapper
+try {
+    Invoke-WebRequest -Uri $vsBootstrapperUrl -OutFile $vsInstaller -UseBasicParsing
+    Write-Host "Download successful: $vsInstaller"
+} catch {
+    Write-Error "Failed to download Visual Studio Build Tools. Error: $($_.Exception.Message)"
     exit 1
 }
 
-# Function to extract the ZIP file
-function Extract-Zip {
-    param (
-        [string]$zipPath,
-        [string]$outputPath
-    )
-    try {
-        Write-Host "Extracting ${zipPath} to ${outputPath}..."
-        Expand-Archive -Path $zipPath -DestinationPath $outputPath -Force
-        Write-Host "Extraction complete."
-    } catch {
-        Write-Error "Failed to extract `${zipPath}`: $($_.Exception.Message)"
-        exit 1
+Write-Host "Installing Visual Studio Build Tools version $VS_VERSION..."
+
+# Install Visual Studio Build Tools
+$installCommand = "& `"$vsInstaller`" --quiet --wait --norestart --nocache --installPath `"$INSTALL_PATH`" --add $WORKLOAD --remove Microsoft.VisualStudio.Component.Windows10SDK.10240 --remove Microsoft.VisualStudio.Component.Windows10SDK.10586 --remove Microsoft.VisualStudio.Component.Windows10SDK.14393 --remove Microsoft.VisualStudio.Component.Windows81SDK"
+
+try {
+    Invoke-Expression $installCommand
+    Write-Host "Visual Studio Build Tools installation completed successfully."
+} catch {
+    if ($LASTEXITCODE -eq 3010) {
+        Write-Host "Installation succeeded but requires a restart (ignored for container builds)."
+    } else {
+        Write-Error "Visual Studio Build Tools installation failed. Exit code: $LASTEXITCODE"
+        exit $LASTEXITCODE
     }
 }
 
-# Function to update the PATH environment variable
-function Update-Path {
-    param (
-        [string]$newPath
-    )
-    try {
-        Write-Host "Updating PATH to include ${newPath}..."
-        [Environment]::SetEnvironmentVariable("Path", "$($env:Path);${newPath}", [System.EnvironmentVariableTarget]::Machine)
-        Write-Host "PATH updated successfully."
-    } catch {
-        Write-Error "Failed to update PATH: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
-# Main script logic
-Write-Host "Starting CMake installation..."
-
-# Ensure TEMP folder exists
-if (!(Test-Path -Path "C:\TEMP")) {
-    New-Item -ItemType Directory -Path "C:\TEMP" | Out-Null
-}
-
-# Download CMake
-Download-File -url $url -outputPath $destination
-
-# Extract the ZIP
-Extract-Zip -zipPath $destination -outputPath $installPath
-
-# Update PATH
-Update-Path -newPath "$installPath\bin"
-
-Write-Host "CMake installation completed successfully."
+# Cleanup
+Write-Host "Cleaning up temporary files..."
+Remove-Item -Path $vsInstaller -Force
+Write-Host "Cleanup completed."
