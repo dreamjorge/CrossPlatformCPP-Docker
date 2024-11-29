@@ -45,15 +45,21 @@ Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerAr
 
 # Verify Installation
 Write-Host "Verifying installation..."
-$clPath = Get-ChildItem -Path "$BUILD_TOOLS_PATH\VC\Tools\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
-$msbuildPath = "$BUILD_TOOLS_PATH\MSBuild\Current\Bin\MSBuild.exe"
+$vcToolsPath = Join-Path -Path $BUILD_TOOLS_PATH -ChildPath "VC\Tools\MSVC"
+$clPath = Get-ChildItem -Path $vcToolsPath -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
+$msbuildPath = Join-Path -Path $BUILD_TOOLS_PATH -ChildPath "MSBuild\Current\Bin\MSBuild.exe"
 
-if ((Test-Path $clPath) -and (Test-Path $msbuildPath)) {
-    Write-Host "Validation successful: cl.exe and MSBuild.exe found."
-} else {
-    Write-Error "Validation failed: Required executables not found."
+if (-not (Test-Path $clPath)) {
+    Write-Error "Validation failed: cl.exe not found. Please ensure required components are installed."
     exit 1
 }
+
+if (-not (Test-Path $msbuildPath)) {
+    Write-Error "Validation failed: MSBuild.exe not found. Please ensure required components are installed."
+    exit 1
+}
+
+Write-Host "Validation successful: cl.exe and MSBuild.exe found."
 
 # Clean Up Installer Files
 Write-Host "Cleaning up temporary files..."
