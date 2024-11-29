@@ -29,7 +29,7 @@ if (-not (Test-Path -Path $buildDir)) {
 Set-Location $buildDir
 
 # Run CMake to configure the project
-cmake -G "$generatorName" -A x64 -DCMAKE_BUILD_TYPE=$CONFIG C:\app
+cmake -G "`"$generatorName`"" -A x64 -DCMAKE_BUILD_TYPE=$CONFIG C:\app
 
 # Build the project
 cmake --build . --config $CONFIG
