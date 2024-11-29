@@ -32,6 +32,9 @@ ENV PATH="$INSTALL_PATH\Common7\Tools;C:\Program Files\CMake\bin;$PATH"
 COPY scripts/windows/install_vs_buildtools.ps1 C:\TEMP\install_vs_buildtools.ps1
 COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
+# (Optional) Verify the content of the installation script
+# RUN type C:\TEMP\install_vs_buildtools.ps1
+
 # Install Visual Studio Build Tools
 RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1
 
