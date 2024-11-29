@@ -32,6 +32,8 @@ $installerArguments = @(
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
     "--add", "Microsoft.VisualStudio.Component.MSBuild",
+    "--add", "Microsoft.VisualStudio.Component.VC.CoreBuildTools",
+    "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
     "--includeRecommended",
     "--installPath", $BUILD_TOOLS_PATH,
     "--log", $LOG_PATH
@@ -46,7 +48,7 @@ Write-Host "Verifying installation..."
 $clPath = Get-ChildItem -Path "$BUILD_TOOLS_PATH\VC\Tools\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
 $msbuildPath = "$BUILD_TOOLS_PATH\MSBuild\Current\Bin\MSBuild.exe"
 
-if (Test-Path $clPath -and Test-Path $msbuildPath) {
+if ((Test-Path $clPath) -and (Test-Path $msbuildPath)) {
     Write-Host "Validation successful: cl.exe and MSBuild.exe found."
 } else {
     Write-Error "Validation failed: Required executables not found."
