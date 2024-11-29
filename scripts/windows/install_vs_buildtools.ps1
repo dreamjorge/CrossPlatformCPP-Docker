@@ -3,7 +3,7 @@ param (
     [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
     [string]$BUILD_TOOLS_PATH = "C:\BuildTools",
     [string]$TEMP_DIR = "C:\TEMP",
-    [string]$LOG_PATH = "C:\TEMP\vs_install_log.txt"
+    [string]$LOG_PATH = "$TEMP_DIR\vs_install_log.txt"
 )
 
 # Ensure TEMP_DIR exists
@@ -14,23 +14,11 @@ if (-not (Test-Path $TEMP_DIR)) {
 
 # Download Visual Studio Channel Manifest
 Write-Host "Downloading Visual Studio Channel Manifest from $CHANNEL_URL..."
-try {
-    Invoke-WebRequest -Uri $CHANNEL_URL -OutFile "$TEMP_DIR\VisualStudio.chman" -UseBasicParsing -Verbose
-    Write-Host "Channel Manifest downloaded successfully."
-} catch {
-    Write-Error "Failed to download Visual Studio Channel Manifest. Error: $($_.Exception.Message)"
-    exit 1
-}
+Invoke-WebRequest -Uri $CHANNEL_URL -OutFile "$TEMP_DIR\VisualStudio.chman" -UseBasicParsing
 
 # Download Visual Studio Build Tools Installer
 Write-Host "Downloading Visual Studio Build Tools from $VS_BUILD_TOOLS_URL..."
-try {
-    Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile "$TEMP_DIR\vs_buildtools.exe" -UseBasicParsing -Verbose
-    Write-Host "Visual Studio Build Tools downloaded successfully."
-} catch {
-    Write-Error "Failed to download Visual Studio Build Tools. Error: $($_.Exception.Message)"
-    exit 1
-}
+Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile "$TEMP_DIR\vs_buildtools.exe" -UseBasicParsing
 
 # Define Installer Arguments
 $installerArguments = @(
@@ -51,24 +39,10 @@ $installerArguments = @(
 
 # Install Visual Studio Build Tools
 Write-Host "Installing Visual Studio Build Tools..."
-try {
-    Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru | Out-Null
-    Write-Host "Installer process completed successfully."
-} catch {
-    Write-Error "Failed to run Visual Studio Build Tools installer. Error: $($_.Exception.Message)"
-    exit 1
-}
-
-# Check for Installation Log
-if (-not (Test-Path $LOG_PATH)) {
-    Write-Warning "Installation log not found at $LOG_PATH. Continuing with validation..."
-} else {
-    Write-Host "Displaying installation log:"
-    Get-Content -Path $LOG_PATH | Write-Host
-}
+Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait
 
 # Verify Installation
-Write-Host "Verifying Visual Studio Build Tools installation..."
+Write-Host "Verifying installation..."
 $clPath = Get-ChildItem -Path "$BUILD_TOOLS_PATH\VC\Tools\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
 $msbuildPath = "$BUILD_TOOLS_PATH\MSBuild\Current\Bin\MSBuild.exe"
 
@@ -83,4 +57,3 @@ if (Test-Path $clPath -and Test-Path $msbuildPath) {
 Write-Host "Cleaning up temporary files..."
 Remove-Item -Path "$TEMP_DIR\VisualStudio.chman" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$TEMP_DIR\vs_buildtools.exe" -Force -ErrorAction SilentlyContinue
-Write-Host "Cleanup completed successfully."
