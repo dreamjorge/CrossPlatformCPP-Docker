@@ -22,14 +22,4 @@ Write-Host "Using CMake generator: $generatorName"
 # Create build directory
 $buildDir = "C:\build"
 if (-not (Test-Path -Path $buildDir)) {
-    New-Item -ItemType Directory -Path $buildDir | Out-Null
-}
-
-# Navigate to build directory
-Set-Location $buildDir
-
-# Run CMake to configure the project
-cmake -G "`"$generatorName`"" -A x64 -DCMAKE_BUILD_TYPE=$CONFIG C:\app
-
-# Build the project
-cmake --build . --config $CONFIG
+    New-Item -ItemType Directory -Path $build
