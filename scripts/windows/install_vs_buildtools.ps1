@@ -1,3 +1,8 @@
+param (
+    [string]$VS_VERSION = $env:VS_VERSION,
+    [string]$VS_YEAR = $env:VS_YEAR
+)
+
 # Ensure C:\TEMP exists
 if (-not (Test-Path "C:\TEMP")) {
     Write-Host "Creating C:\TEMP directory..."
@@ -57,10 +62,28 @@ Write-Host "Running installer with arguments: $installerArguments"
 
 # Run the installer and capture output and errors
 try {
-    Start-Process -FilePath $vsInstaller -ArgumentList $installerArguments -NoNewWindow -Wait -RedirectStandardOutput $installerOutputLog -RedirectStandardError $installerErrorLog
-    Write-Host "Installer process completed."
+    $process = Start-Process -FilePath $vsInstaller -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru -RedirectStandardOutput $installerOutputLog -RedirectStandardError $installerErrorLog
+    Write-Host "Installer process completed with exit code $($process.ExitCode)."
 } catch {
     Write-Error "Failed to run installer: $($_.Exception.Message)"
+    exit 1
+}
+
+# Check installer exit code
+if ($process.ExitCode -ne 0) {
+    Write-Error "Installer exited with code $($process.ExitCode)."
+    Write-Host "Displaying installer output log:"
+    if (Test-Path $installerOutputLog) {
+        Get-Content -Path $installerOutputLog | Write-Host
+    } else {
+        Write-Host "Installer output log not found at $installerOutputLog"
+    }
+    Write-Host "Displaying installer error log:"
+    if (Test-Path $installerErrorLog) {
+        Get-Content -Path $installerErrorLog | Write-Host
+    } else {
+        Write-Host "Installer error log not found at $installerErrorLog"
+    }
     exit 1
 }
 
@@ -68,20 +91,20 @@ try {
 if (Test-Path $logPath) {
     Write-Host "Installation log created at $logPath"
 } else {
-    Write-Host "Installation log not found at $logPath. Checking for installer output log..."
+    Write-Error "Installation log not found at $logPath"
+    Write-Host "Displaying installer output log:"
     if (Test-Path $installerOutputLog) {
-        Write-Host "Installer output log found at $installerOutputLog. Checking for errors..."
-        $outputLogContent = Get-Content -Path $installerOutputLog
-        if ($outputLogContent -match "Error") {
-            Write-Error "Installer output log contains errors. Installation failed."
-            exit 1
-        } else {
-            Write-Host "Installer output log does not contain errors. Installation successful."
-        }
+        Get-Content -Path $installerOutputLog | Write-Host
     } else {
-        Write-Error "Installer output log not found at $installerOutputLog. Installation failed."
-        exit 1
+        Write-Host "Installer output log not found at $installerOutputLog"
     }
+    Write-Host "Displaying installer error log:"
+    if (Test-Path $installerErrorLog) {
+        Get-Content -Path $installerErrorLog | Write-Host
+    } else {
+        Write-Host "Installer error log not found at $installerErrorLog"
+    }
+    exit 1
 }
 
 # Validate installation path
@@ -95,4 +118,34 @@ if (Test-Path $installPath) {
     $clPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
     $msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
     
-    $clExists = Get-ChildItem -Path $clPath -Recurse -
+    $clExists = Get-ChildItem -Path $clPath -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    $msbuildExists = Test-Path $msbuildPath
+    
+    if ($clExists -and $msbuildExists) {
+        Write-Host "Validation successful: cl.exe and MSBuild.exe found."
+    } else {
+        Write-Error "Validation failed: Required executables not found."
+        Write-Host "Displaying installation log:"
+        Get-Content -Path $logPath | Write-Host
+        exit 1
+    }
+} else {
+    Write-Error "Validation failed: Installation directory not found."
+    Write-Host "Displaying installer output log:"
+    if (Test-Path $installerOutputLog) {
+        Get-Content -Path $installerOutputLog | Write-Host
+    } else {
+        Write-Host "Installer output log not found at $installerOutputLog"
+    }
+    Write-Host "Displaying installer error log:"
+    if (Test-Path $installerErrorLog) {
+        Get-Content -Path $installerErrorLog | Write-Host
+    } else {
+        Write-Host "Installer error log not found at $installerErrorLog"
+    }
+    exit 1
+}
+
+Write-Host "Cleaning up..."
+Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
+Write-Host "Cleanup completed."
