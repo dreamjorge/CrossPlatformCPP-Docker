@@ -52,3 +52,24 @@ try {
 Write-Host "Cleaning up temporary files..."
 Remove-Item -Path $vsInstaller -Force
 Write-Host "Cleanup completed."
+
+# Validate the installation
+$installPath = "$env:ProgramFiles(x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools"
+
+if (Test-Path $installPath) {
+    Write-Host "Visual Studio Build Tools installed at $installPath"
+    
+    # Check for the presence of key executables
+    $clPath = Join-Path $installPath "VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
+    $msbuildPath = Join-Path $installPath "MSBuild\Current\Bin\MSBuild.exe"
+    
+    if (Test-Path $clPath -and Test-Path $msbuildPath) {
+        Write-Host "Validation successful: Key executables found."
+    } else {
+        Write-Error "Validation failed: Key executables not found."
+        exit 1
+    }
+} else {
+    Write-Error "Validation failed: Installation directory not found."
+    exit 1
+}
