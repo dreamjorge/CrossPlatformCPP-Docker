@@ -1,92 +1,45 @@
-param (
-    [string]$VS_VERSION = $env:VS_VERSION,
-    [string]$VS_YEAR = $env:VS_YEAR
-)
+# escape=`
 
-# Validate that VS_VERSION and VS_YEAR are provided
-if (-not $VS_VERSION) {
-    Write-Error "VS_VERSION is not specified. Provide it as an argument or set it as an environment variable."
-    exit 1
-}
+# Use the latest Windows Server Core 2022 image.
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
-if (-not $VS_YEAR) {
-    Write-Error "VS_YEAR is not specified. Provide it as an argument or set it as an environment variable."
-    exit 1
-}
+# Restore the default Windows shell for correct batch processing.
+SHELL ["cmd", "/S", "/C"]
 
-# Construct the download URL based on VS_VERSION
-if ($VS_VERSION -eq "16") {
-    $vsBootstrapperUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
-} elseif ($VS_VERSION -eq "17") {
-    $vsBootstrapperUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe"
-} else {
-    Write-Error "Unsupported VS_VERSION: $VS_VERSION. Only 16 and 17 are supported."
-    exit 1
-}
+# Install PowerShell
+RUN curl -SL --output PowerShell-7.3.6-win-x64.msi https://github.com/PowerShell/PowerShell/releases/download/v7.3.6/PowerShell-7.3.6-win-x64.msi `
+    && start /wait msiexec /i PowerShell-7.3.6-win-x64.msi /quiet `
+    && del PowerShell-7.3.6-win-x64.msi
 
-$vsInstaller = "C:\TEMP\vs_buildtools.exe"
+# Set PowerShell path in the environment
+ENV PATH="C:\\Program Files\\PowerShell\\7;$PATH"
 
-Write-Host "Downloading Visual Studio Build Tools version $VS_VERSION from $vsBootstrapperUrl..."
-# Download the Visual Studio Build Tools bootstrapper
-try {
-    Invoke-WebRequest -Uri $vsBootstrapperUrl -OutFile $vsInstaller -UseBasicParsing
-    Write-Host "Download successful: $vsInstaller"
-} catch {
-    Write-Error "Failed to download Visual Studio Build Tools. Error: $($_.Exception.Message)"
-    exit 1
-}
+# Arguments for build-time
+ARG VS_VERSION=16
+ARG VS_YEAR=2019
+ARG CMAKE_VERSION=3.26.4
 
-Write-Host "Installing Visual Studio Build Tools version $VS_VERSION..."
-$logPath = "C:\TEMP\vs_install_log.txt"
+# Environment variables for runtime
+ENV VS_VERSION=${VS_VERSION}
+ENV VS_YEAR=${VS_YEAR}
+ENV CMAKE_VERSION=${CMAKE_VERSION}
 
-try {
-    Start-Process -FilePath $vsInstaller -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
-        "--add", "Microsoft.VisualStudio.Workload.AzureBuildTools", `
-        "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", `
-        "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041", `
-        "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools", `
-        "--log", $logPath `
-        -NoNewWindow -Wait
-    Write-Host "Installation initiated. Logs at: $logPath"
-} catch {
-    Write-Error "Installation failed to start. Check logs at: $logPath"
-    exit 1
-}
+# Set environment variables for Visual Studio paths
+ENV INSTALL_PATH="C:\Program Files (x86)\Microsoft Visual Studio\${VS_YEAR}\BuildTools"
+ENV PATH="$INSTALL_PATH\Common7\Tools;C:\Program Files\CMake\bin;$PATH"
 
-# Wait until all installer processes are complete
-Write-Host "Waiting for installer processes to complete..."
-while (Get-Process -Name "vs_setup" -ErrorAction SilentlyContinue) {
-    Start-Sleep -Seconds 10
-}
+# Copy the installation scripts to the container
+COPY scripts/windows/install_vs_buildtools.ps1 C:\TEMP\install_vs_buildtools.ps1
+COPY scripts/windows/install_cmake.ps1 C:\TEMP\install_cmake.ps1
 
-Write-Host "Validating installation..."
-$installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools"
+# Install Visual Studio Build Tools
+RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1
 
-if (Test-Path $installPath) {
-    Write-Host "Validation successful: Build Tools installed at $installPath"
+# Install CMake
+RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION ${CMAKE_VERSION}
 
-    # Optionally, check for key executables
-    $clPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
-    $msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+# Cleanup the temporary files
+RUN del /q C:\TEMP\install_vs_buildtools.ps1 C:\TEMP\install_cmake.ps1
 
-    $clExists = Get-ChildItem -Path $clPath -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    $msbuildExists = Test-Path $msbuildPath
-
-    if ($clExists -and $msbuildExists) {
-        Write-Host "Validation successful: cl.exe and MSBuild.exe found."
-    } else {
-        Write-Error "Validation failed: Required executables not found."
-        Write-Host "Displaying installation log:"
-        Get-Content -Path $logPath | Write-Host
-        exit 1
-    }
-} else {
-    Write-Error "Validation failed: Installation directory not found."
-    Write-Host "Displaying installation log:"
-    Get-Content -Path $logPath | Write-Host
-    exit 1
-}
-
-Write-Host "Cleaning up..."
-Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
-Write-Host "Cleanup completed."
+# Define the entry point for the Docker container
+ENTRYPOINT ["cmd.exe", "/k", "C:\\Program Files (x86)\\Microsoft Visual Studio\\${VS_YEAR}\\BuildTools\\Common7\\Tools\\VsDevCmd.bat"]
