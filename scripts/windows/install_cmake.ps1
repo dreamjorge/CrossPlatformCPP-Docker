@@ -106,10 +106,11 @@ function Validate-Installation {
             exit 1
         }
         $cmakeVersionOutput = & "$cmakeExecutable" --version
-        if ($cmakeVersionOutput -like "*CMake $CMAKE_VERSION*") {
-            Write-Host "CMake version $CMAKE_VERSION installed and verified successfully."
+        $installedVersion = ($cmakeVersionOutput -split "\s+")[2] # Extract version number
+        if ($installedVersion -eq $CMAKE_VERSION) {
+            Write-Host "CMake version $installedVersion installed and verified successfully."
         } else {
-            Write-Error "CMake installation validation failed. Installed version does not match the expected version."
+            Write-Error "CMake installation validation failed. Expected version: $CMAKE_VERSION, but found: $installedVersion."
             exit 1
         }
         Write-Host "Installed CMake version details:"
@@ -119,6 +120,7 @@ function Validate-Installation {
         exit 1
     }
 }
+
 
 # Main script logic
 Write-Host "Starting CMake installation..."
