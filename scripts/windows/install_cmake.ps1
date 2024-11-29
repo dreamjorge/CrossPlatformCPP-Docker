@@ -62,6 +62,9 @@ function Update-Path {
         Write-Host ("Updating PATH to include {0}..." -f $newPath)
         [Environment]::SetEnvironmentVariable("Path", "$($env:Path);$newPath", [System.EnvironmentVariableTarget]::Machine)
         Write-Host "PATH updated successfully."
+
+        # Refresh the PATH for the current session
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
     } catch {
         Write-Error ("Failed to update PATH: {0}" -f $_.Exception.Message)
         exit 1
@@ -75,7 +78,12 @@ function Validate-Installation {
     )
     try {
         Write-Host "Validating CMake installation..."
-        $cmakeVersionOutput = & "$cmakePath\cmake.exe" --version
+        $cmakeExecutable = Join-Path -Path $cmakePath -ChildPath "cmake.exe"
+        if (!(Test-Path -Path $cmakeExecutable)) {
+            Write-Error "CMake executable not found at $cmakeExecutable."
+            exit 1
+        }
+        $cmakeVersionOutput = & "$cmakeExecutable" --version
         if ($cmakeVersionOutput -like "*CMake $CMAKE_VERSION*") {
             Write-Host "CMake version $CMAKE_VERSION installed and verified successfully."
         } else {
