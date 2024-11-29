@@ -2,7 +2,8 @@ param (
     [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
     [string]$INSTALL_PATH = "C:\BuildTools",
     [string]$TEMP_DIR = "C:\TEMP",
-    [string]$LOG_PATH = "C:\TEMP\vs_buildtools_install.log"
+    [string]$SCRIPT_LOG_PATH = "C:\TEMP\vs_buildtools_script.log",
+    [string]$INSTALLER_LOG_PATH = "C:\TEMP\vs_buildtools_install.log"
 )
 
 # Function to log messages with timestamps and severity levels
@@ -13,8 +14,8 @@ function Log-Message {
     )
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "$timestamp [$Type] $Message"
-    # Write to log file
-    $logMessage | Out-File -FilePath $LOG_PATH -Append
+    # Write to script log file
+    $logMessage | Out-File -FilePath $SCRIPT_LOG_PATH -Append -Encoding UTF8
     # Also write to console
     Write-Host $logMessage
 }
@@ -60,16 +61,37 @@ $installerArguments = @(
     "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",      # VC++ Redistributable
     "--add", "Microsoft.VisualStudio.Component.MSBuild",                  # MSBuild tools
     "--includeRecommended",                                               # Include recommended components
-    "--log", $LOG_PATH                                                    # Log file path
+    "--log", $INSTALLER_LOG_PATH                                        # Installer log path
 )
 
 # Install Visual Studio Build Tools
 Log-Message "Initiating Visual Studio Build Tools installation."
 try {
-    Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -ErrorAction Stop
-    Log-Message "Visual Studio Build Tools installation process completed."
+    $process = Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" `
+                             -ArgumentList $installerArguments `
+                             -NoNewWindow `
+                             -Wait `
+                             -PassThru `
+                             -ErrorAction Stop
+    $exitCode = $process.ExitCode
+    Log-Message "Visual Studio Build Tools installer exited with code $exitCode."
+    
+    if ($exitCode -ne 0) {
+        Log-Message "Visual Studio Build Tools installation failed with exit code $exitCode." "ERROR"
+        # Output the installer log content for debugging
+        try {
+            Log-Message "----- Installer Log Start -----" "INFO"
+            Get-Content $INSTALLER_LOG_PATH | Out-String | Write-Host
+            Log-Message "----- Installer Log End -----" "INFO"
+        } catch {
+            Log-Message "Failed to read the installer log: $_" "ERROR"
+        }
+        exit 1
+    } else {
+        Log-Message "Visual Studio Build Tools installation exited successfully."
+    }
 } catch {
-    Log-Message "Visual Studio Build Tools installation failed: $_" "ERROR"
+    Log-Message "Visual Studio Build Tools installation encountered an error: $_" "ERROR"
     exit 1
 }
 
@@ -79,14 +101,14 @@ Log-Message "Validating Visual Studio Build Tools installation."
 # Check if MSVC directory exists
 $vcToolsPath = Join-Path -Path $INSTALL_PATH -ChildPath "VC\Tools\MSVC"
 if (-not (Test-Path -Path $vcToolsPath)) {
-    Log-Message "MSVC tools directory not found at $vcToolsPath. Check the installation log at $LOG_PATH for details." "ERROR"
-    # Output the log content for debugging
+    Log-Message "MSVC tools directory not found at $vcToolsPath. Check the installation log at $INSTALLER_LOG_PATH for details." "ERROR"
+    # Output the installer log content for debugging
     try {
-        Log-Message "----- Installation Log Start -----" "INFO"
-        Get-Content $LOG_PATH | Out-String | Write-Host
-        Log-Message "----- Installation Log End -----" "INFO"
+        Log-Message "----- Installer Log Start -----" "INFO"
+        Get-Content $INSTALLER_LOG_PATH | Out-String | Write-Host
+        Log-Message "----- Installer Log End -----" "INFO"
     } catch {
-        Log-Message "Failed to read the installation log: $_" "ERROR"
+        Log-Message "Failed to read the installer log: $_" "ERROR"
     }
     exit 1
 } else {
