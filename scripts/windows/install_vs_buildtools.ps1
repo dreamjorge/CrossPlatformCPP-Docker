@@ -27,16 +27,19 @@ if (-not (Test-Path $vsInstaller)) {
 
 Write-Host "Installing Visual Studio Build Tools..."
 $logPath = "C:\TEMP\vs_install_log.txt"
+
 try {
-    & "$vsInstaller" --quiet --wait --norestart --nocache `
-        --add Microsoft.VisualStudio.Workload.AzureBuildTools `
-        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-        --log $logPath
-    Write-Host "Installation succeeded. Logs at: $logPath"
+    Start-Process -FilePath $vsInstaller -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", "--add", "Microsoft.VisualStudio.Workload.AzureBuildTools", "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041", "--log", $logPath -NoNewWindow -Wait
+    Write-Host "Installation initiated. Logs at: $logPath"
 } catch {
-    Write-Error "Installation failed. Check logs at: $logPath"
+    Write-Error "Installation failed to start. Check logs at: $logPath"
     exit 1
+}
+
+# Wait until all installer processes are complete
+Write-Host "Waiting for installer processes to complete..."
+while (Get-Process -Name "vs_setup" -ErrorAction SilentlyContinue) {
+    Start-Sleep -Seconds 10
 }
 
 Write-Host "Validating installation..."
