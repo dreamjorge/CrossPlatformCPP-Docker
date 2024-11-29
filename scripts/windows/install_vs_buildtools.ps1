@@ -64,9 +64,24 @@ $installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildToo
 
 if (Test-Path $installPath) {
     Write-Host "Validation successful: Build Tools installed at $installPath"
+
+    # Optionally, check for key executables
+    $clPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
+    $msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
+
+    $clExists = Get-ChildItem -Path $clPath -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    $msbuildExists = Test-Path $msbuildPath
+
+    if ($clExists -and $msbuildExists) {
+        Write-Host "Validation successful: cl.exe and MSBuild.exe found."
+    } else {
+        Write-Error "Validation failed: Required executables not found."
+        Write-Host "Displaying installation log:"
+        Get-Content -Path $logPath | Write-Host
+        exit 1
+    }
 } else {
     Write-Error "Validation failed: Installation directory not found."
-    # Optionally, output the installation log for debugging
     Write-Host "Displaying installation log:"
     Get-Content -Path $logPath | Write-Host
     exit 1
