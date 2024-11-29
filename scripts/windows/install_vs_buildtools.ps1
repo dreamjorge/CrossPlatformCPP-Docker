@@ -12,7 +12,11 @@ function Log-Message {
         [string]$Type = "INFO"
     )
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$timestamp [$Type] $Message" | Out-File -FilePath $LOG_PATH -Append
+    $logMessage = "$timestamp [$Type] $Message"
+    # Write to log file
+    $logMessage | Out-File -FilePath $LOG_PATH -Append
+    # Also write to console
+    Write-Host $logMessage
 }
 
 # Start Logging
@@ -44,19 +48,19 @@ try {
 
 # Define Installer Arguments
 $installerArguments = @(
-    "--quiet",
-    "--wait",
-    "--norestart",
-    "--nocache",
-    "--installPath", $INSTALL_PATH,
+    "--quiet",                              # Silent installation
+    "--wait",                               # Wait for completion
+    "--norestart",                          # Do not restart after installation
+    "--nocache",                            # Do not cache downloaded files
+    "--installPath", $INSTALL_PATH,         # Installation directory
     "--add", "Microsoft.VisualStudio.Workload.VCTools",                   # Core VC++ tools
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",         # MSVC compilers
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",       # Windows 10 SDK
     "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",          # CMake support
     "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",      # VC++ Redistributable
     "--add", "Microsoft.VisualStudio.Component.MSBuild",                  # MSBuild tools
-    "--includeRecommended",                                               # Recommended components
-    "--log", $LOG_PATH
+    "--includeRecommended",                                               # Include recommended components
+    "--log", $LOG_PATH                                                    # Log file path
 )
 
 # Install Visual Studio Build Tools
@@ -72,10 +76,18 @@ try {
 # Verify Installation
 Log-Message "Validating Visual Studio Build Tools installation."
 
-# Check MSVC directory
+# Check if MSVC directory exists
 $vcToolsPath = Join-Path -Path $INSTALL_PATH -ChildPath "VC\Tools\MSVC"
 if (-not (Test-Path -Path $vcToolsPath)) {
     Log-Message "MSVC tools directory not found at $vcToolsPath. Check the installation log at $LOG_PATH for details." "ERROR"
+    # Output the log content for debugging
+    try {
+        Log-Message "----- Installation Log Start -----" "INFO"
+        Get-Content $LOG_PATH | Out-String | Write-Host
+        Log-Message "----- Installation Log End -----" "INFO"
+    } catch {
+        Log-Message "Failed to read the installation log: $_" "ERROR"
+    }
     exit 1
 } else {
     Log-Message "MSVC tools directory exists at $vcToolsPath."
