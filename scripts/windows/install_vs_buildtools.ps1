@@ -1,152 +1,105 @@
 param (
-    [string]$VS_VERSION = $env:VS_VERSION,
-    [string]$VS_YEAR = $env:VS_YEAR
+    [string]$CHANNEL_URL = "https://aka.ms/vs/16/release/channel",
+    [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
+    [string]$BUILD_TOOLS_PATH = "C:\BuildTools",
+    [string]$TEMP_DIR = "C:\TEMP",
+    [string]$LOG_PATH = "C:\TEMP\vs_install_log.txt",
+    [string]$INSTALL_SCRIPT = "C:\scripts\windows\install_vs_buildtools.ps1"
 )
 
-# Ensure C:\TEMP exists
-if (-not (Test-Path "C:\TEMP")) {
-    Write-Host "Creating C:\TEMP directory..."
-    New-Item -ItemType Directory -Path "C:\TEMP" | Out-Null
+# Ensure TEMP_DIR exists
+if (-not (Test-Path $TEMP_DIR)) {
+    Write-Host "Creating $TEMP_DIR directory..."
+    New-Item -ItemType Directory -Path $TEMP_DIR | Out-Null
 }
 
-# Validate that VS_VERSION and VS_YEAR are provided
-if (-not $VS_VERSION) {
-    Write-Error "VS_VERSION is not specified. Provide it as an argument or set it as an environment variable."
-    exit 1
-}
-
-if (-not $VS_YEAR) {
-    Write-Error "VS_YEAR is not specified. Provide it as an argument or set it as an environment variable."
-    exit 1
-}
-
-# Construct the download URL based on VS_VERSION
-switch ($VS_VERSION) {
-    "16" { $vsBootstrapperUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe" }
-    "17" { $vsBootstrapperUrl = "https://aka.ms/vs/17/release/vs_buildtools.exe" }
-    default {
-        Write-Error "Unsupported VS_VERSION: $VS_VERSION. Only 16 and 17 are supported."
-        exit 1
-    }
-}
-
-$vsInstaller = "C:\TEMP\vs_buildtools.exe"
-$logPath = "C:\TEMP\vs_install_log.txt"
-$installerOutputLog = "C:\TEMP\installer_output.log"
-$installerErrorLog = "C:\TEMP\installer_error.log"
-
-Write-Host "Downloading Visual Studio Build Tools version $VS_VERSION from $vsBootstrapperUrl..."
-# Download the Visual Studio Build Tools bootstrapper
+# Download Visual Studio Channel Manifest
+Write-Host "Downloading Visual Studio Channel Manifest from $CHANNEL_URL..."
 try {
-    Invoke-WebRequest -Uri $vsBootstrapperUrl -OutFile $vsInstaller -UseBasicParsing -Verbose
-    Write-Host "Download successful: $vsInstaller"
+    Invoke-WebRequest -Uri $CHANNEL_URL -OutFile "$TEMP_DIR\VisualStudio.chman" -UseBasicParsing -Verbose
+    Write-Host "Channel Manifest downloaded successfully."
+} catch {
+    Write-Error "Failed to download Visual Studio Channel Manifest. Error: $($_.Exception.Message)"
+    exit 1
+}
+
+# Download Visual Studio Build Tools Installer
+Write-Host "Downloading Visual Studio Build Tools from $VS_BUILD_TOOLS_URL..."
+try {
+    Invoke-WebRequest -Uri $VS_BUILD_TOOLS_URL -OutFile "$TEMP_DIR\vs_buildtools.exe" -UseBasicParsing -Verbose
+    Write-Host "Visual Studio Build Tools downloaded successfully."
 } catch {
     Write-Error "Failed to download Visual Studio Build Tools. Error: $($_.Exception.Message)"
     exit 1
 }
 
-Write-Host "Installing Visual Studio Build Tools version $VS_VERSION..."
+# Define Installer Arguments
 $installerArguments = @(
     "--quiet",
     "--wait",
     "--norestart",
     "--nocache",
+    "--channelUri", "$TEMP_DIR\VisualStudio.chman",
+    "--installChannelUri", "$TEMP_DIR\VisualStudio.chman",
     "--add", "Microsoft.VisualStudio.Workload.VCTools",
     "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
     "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",
     "--add", "Microsoft.VisualStudio.Component.MSBuild",
-    "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools",
-    "--log", $logPath
+    "--includeRecommended",
+    "--installPath", $BUILD_TOOLS_PATH,
+    "--log", $LOG_PATH
 )
 
-Write-Host "Running installer with arguments: $installerArguments"
-
-# Run the installer and capture output and errors
+# Install Visual Studio Build Tools
+Write-Host "Installing Visual Studio Build Tools..."
 try {
-    $process = Start-Process -FilePath $vsInstaller -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru -RedirectStandardOutput $installerOutputLog -RedirectStandardError $installerErrorLog
-    Write-Host "Installer process completed with exit code $($process.ExitCode)."
+    Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru -RedirectStandardOutput "$TEMP_DIR\installer_output.log" -RedirectStandardError "$TEMP_DIR\installer_error.log"
+    Write-Host "Installer process completed with exit code $($_.ExitCode)."
 } catch {
-    Write-Error "Failed to run installer: $($_.Exception.Message)"
+    Write-Error "Failed to run Visual Studio Build Tools installer. Error: $($_.Exception.Message)"
     exit 1
 }
 
-# Check installer exit code
-if ($process.ExitCode -ne 0) {
-    Write-Error "Installer exited with code $($process.ExitCode)."
+# Check Installer Exit Code
+if ($_.ExitCode -ne 0) {
+    Write-Error "Installer exited with code $($_.ExitCode)."
     Write-Host "Displaying installer output log:"
-    if (Test-Path $installerOutputLog) {
-        Get-Content -Path $installerOutputLog | Write-Host
+    if (Test-Path "$TEMP_DIR\installer_output.log") {
+        Get-Content -Path "$TEMP_DIR\installer_output.log" | Write-Host
     } else {
-        Write-Host "Installer output log not found at $installerOutputLog"
+        Write-Host "Installer output log not found at $TEMP_DIR\installer_output.log"
     }
     Write-Host "Displaying installer error log:"
-    if (Test-Path $installerErrorLog) {
-        Get-Content -Path $installerErrorLog | Write-Host
+    if (Test-Path "$TEMP_DIR\installer_error.log") {
+        Get-Content -Path "$TEMP_DIR\installer_error.log" | Write-Host
     } else {
-        Write-Host "Installer error log not found at $installerErrorLog"
+        Write-Host "Installer error log not found at $TEMP_DIR\installer_error.log"
     }
     exit 1
 }
 
-# Check if log file was created
-if (Test-Path $logPath) {
-    Write-Host "Installation log created at $logPath"
+# Verify Installation
+Write-Host "Verifying Visual Studio Build Tools installation..."
+$clPath = Get-ChildItem -Path "$BUILD_TOOLS_PATH\VC\Tools\MSVC" -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
+$msbuildPath = "$BUILD_TOOLS_PATH\MSBuild\Current\Bin\MSBuild.exe"
+
+if (Test-Path $clPath -and Test-Path $msbuildPath) {
+    Write-Host "Validation successful: cl.exe and MSBuild.exe found."
 } else {
-    Write-Error "Installation log not found at $logPath"
-    Write-Host "Displaying installer output log:"
-    if (Test-Path $installerOutputLog) {
-        Get-Content -Path $installerOutputLog | Write-Host
+    Write-Error "Validation failed: Required executables not found."
+    Write-Host "Displaying installation log:"
+    if (Test-Path $LOG_PATH) {
+        Get-Content -Path $LOG_PATH | Write-Host
     } else {
-        Write-Host "Installer output log not found at $installerOutputLog"
-    }
-    Write-Host "Displaying installer error log:"
-    if (Test-Path $installerErrorLog) {
-        Get-Content -Path $installerErrorLog | Write-Host
-    } else {
-        Write-Host "Installer error log not found at $installerErrorLog"
+        Write-Host "Installation log not found at $LOG_PATH"
     }
     exit 1
 }
 
-# Validate installation path
-Write-Host "Validating installation..."
-$installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools"
-
-if (Test-Path $installPath) {
-    Write-Host "Validation successful: Build Tools installed at $installPath"
-    
-    # Check for key executables
-    $clPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64\cl.exe"
-    $msbuildPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_YEAR\BuildTools\MSBuild\Current\Bin\MSBuild.exe"
-    
-    $clExists = Get-ChildItem -Path $clPath -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    $msbuildExists = Test-Path $msbuildPath
-    
-    if ($clExists -and $msbuildExists) {
-        Write-Host "Validation successful: cl.exe and MSBuild.exe found."
-    } else {
-        Write-Error "Validation failed: Required executables not found."
-        Write-Host "Displaying installation log:"
-        Get-Content -Path $logPath | Write-Host
-        exit 1
-    }
-} else {
-    Write-Error "Validation failed: Installation directory not found."
-    Write-Host "Displaying installer output log:"
-    if (Test-Path $installerOutputLog) {
-        Get-Content -Path $installerOutputLog | Write-Host
-    } else {
-        Write-Host "Installer output log not found at $installerOutputLog"
-    }
-    Write-Host "Displaying installer error log:"
-    if (Test-Path $installerErrorLog) {
-        Get-Content -Path $installerErrorLog | Write-Host
-    } else {
-        Write-Host "Installer error log not found at $installerErrorLog"
-    }
-    exit 1
-}
-
-Write-Host "Cleaning up..."
-Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
-Write-Host "Cleanup completed."
+# Clean Up Installer Files
+Write-Host "Cleaning up temporary files..."
+Remove-Item -Path "$TEMP_DIR\VisualStudio.chman" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$TEMP_DIR\vs_buildtools.exe" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$TEMP_DIR\installer_output.log" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$TEMP_DIR\installer_error.log" -Force -ErrorAction SilentlyContinue
+Write-Host "Cleanup completed successfully."
