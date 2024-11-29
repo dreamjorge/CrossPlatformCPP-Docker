@@ -26,22 +26,23 @@ if (-not (Test-Path $vsInstaller)) {
 }
 
 Write-Host "Installing Visual Studio Build Tools..."
+$logPath = "C:\TEMP\vs_install_log.txt"
 try {
     & "$vsInstaller" --quiet --wait --norestart --nocache `
         --add Microsoft.VisualStudio.Workload.AzureBuildTools `
         --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
         --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
-        --installPath "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools" `
-        --log C:\TEMP\vs_install_log.txt
-    Write-Host "Installation successful."
+        --log $logPath
+    Write-Host "Installation succeeded. Logs at: $logPath"
 } catch {
-    Write-Error "Installation failed. Error: $($_.Exception.Message)"
+    Write-Error "Installation failed. Check logs at: $logPath"
     exit 1
 }
 
 Write-Host "Validating installation..."
-if (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools") {
-    Write-Host "Validation successful: Installation directory found."
+$installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools"
+if (Test-Path $installPath) {
+    Write-Host "Validation successful: Build Tools installed at $installPath"
 } else {
     Write-Error "Validation failed: Installation directory not found."
     exit 1
