@@ -68,6 +68,28 @@ function Update-Path {
     }
 }
 
+# Function to validate installation
+function Validate-Installation {
+    param (
+        [string]$cmakePath
+    )
+    try {
+        Write-Host "Validating CMake installation..."
+        $cmakeVersionOutput = & "$cmakePath\cmake.exe" --version
+        if ($cmakeVersionOutput -like "*CMake $CMAKE_VERSION*") {
+            Write-Host "CMake version $CMAKE_VERSION installed and verified successfully."
+        } else {
+            Write-Error "CMake installation validation failed. Installed version does not match the expected version."
+            exit 1
+        }
+        Write-Host "Installed CMake version details:"
+        Write-Host $cmakeVersionOutput
+    } catch {
+        Write-Error ("CMake validation failed: {0}" -f $_.Exception.Message)
+        exit 1
+    }
+}
+
 # Main script logic
 Write-Host "Starting CMake installation..."
 
@@ -84,5 +106,8 @@ Extract-Zip -zipPath $destination -outputPath $installPath
 
 # Update PATH
 Update-Path -newPath "$installPath\bin"
+
+# Validate installation and print version
+Validate-Installation -cmakePath "$installPath\bin"
 
 Write-Host "CMake installation completed successfully."
