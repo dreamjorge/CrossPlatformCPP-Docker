@@ -17,7 +17,7 @@ $tempExtractPath = "C:\TEMP\cmake_extracted"
 $installPath = "C:\Program Files\CMake"
 
 # Function to download file with retries
-function Download-File {
+function Get-File {
     param (
         [string]$url,
         [string]$outputPath
@@ -39,7 +39,7 @@ function Download-File {
 }
 
 # Function to extract the ZIP file
-function Extract-Zip {
+function Expand-Zip {
     param (
         [string]$zipPath,
         [string]$outputPath
@@ -94,7 +94,7 @@ function Update-Path {
 }
 
 # Function to validate installation
-function Validate-Installation {
+function Test-Installation {
     param (
         [string]$cmakePath
     )
@@ -121,8 +121,6 @@ function Validate-Installation {
     }
 }
 
-
-
 # Main script logic
 Write-Host "Starting CMake installation..."
 
@@ -132,13 +130,13 @@ if (!(Test-Path -Path "C:\TEMP")) {
 }
 
 # Download CMake
-Download-File -url $url -outputPath $destination
+Get-File -url $url -outputPath $destination
 
 # Extract the ZIP to a temporary path
 if (Test-Path -Path $tempExtractPath) {
     Remove-Item -Path $tempExtractPath -Recurse -Force
 }
-Extract-Zip -zipPath $destination -outputPath $tempExtractPath
+Expand-Zip -zipPath $destination -outputPath $tempExtractPath
 
 # Move extracted files to the final installation path
 Move-Extracted-Files -sourcePath $tempExtractPath -destinationPath $installPath
@@ -147,7 +145,6 @@ Move-Extracted-Files -sourcePath $tempExtractPath -destinationPath $installPath
 Update-Path -newPath "$installPath\bin"
 
 # Validate installation and print version
-Validate-Installation -cmakePath "$installPath\bin"
+Test-Installation -cmakePath "$installPath\bin"
 
 Write-Host "CMake installation completed successfully."
-``
