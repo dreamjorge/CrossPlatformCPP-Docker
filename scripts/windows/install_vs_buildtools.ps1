@@ -61,8 +61,7 @@ try {
 
 # Check for Installation Log
 if (-not (Test-Path $LOG_PATH)) {
-    Write-Error "Installation log not found at $LOG_PATH."
-    exit 1
+    Write-Warning "Installation log not found at $LOG_PATH. Continuing with validation..."
 } else {
     Write-Host "Displaying installation log:"
     Get-Content -Path $LOG_PATH | Write-Host
