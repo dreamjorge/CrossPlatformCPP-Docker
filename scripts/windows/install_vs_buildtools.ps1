@@ -3,8 +3,7 @@ param (
     [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
     [string]$BUILD_TOOLS_PATH = "C:\BuildTools",
     [string]$TEMP_DIR = "C:\TEMP",
-    [string]$LOG_PATH = "C:\TEMP\vs_install_log.txt",
-    [string]$INSTALL_SCRIPT = "C:\scripts\windows\install_vs_buildtools.ps1"
+    [string]$LOG_PATH = "C:\TEMP\vs_install_log.txt"
 )
 
 # Ensure TEMP_DIR exists
@@ -53,29 +52,20 @@ $installerArguments = @(
 # Install Visual Studio Build Tools
 Write-Host "Installing Visual Studio Build Tools..."
 try {
-    Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru -RedirectStandardOutput "$TEMP_DIR\installer_output.log" -RedirectStandardError "$TEMP_DIR\installer_error.log"
-    Write-Host "Installer process completed with exit code $($_.ExitCode)."
+    Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -PassThru | Out-Null
+    Write-Host "Installer process completed successfully."
 } catch {
     Write-Error "Failed to run Visual Studio Build Tools installer. Error: $($_.Exception.Message)"
     exit 1
 }
 
-# Check Installer Exit Code
-if ($_.ExitCode -ne 0) {
-    Write-Error "Installer exited with code $($_.ExitCode)."
-    Write-Host "Displaying installer output log:"
-    if (Test-Path "$TEMP_DIR\installer_output.log") {
-        Get-Content -Path "$TEMP_DIR\installer_output.log" | Write-Host
-    } else {
-        Write-Host "Installer output log not found at $TEMP_DIR\installer_output.log"
-    }
-    Write-Host "Displaying installer error log:"
-    if (Test-Path "$TEMP_DIR\installer_error.log") {
-        Get-Content -Path "$TEMP_DIR\installer_error.log" | Write-Host
-    } else {
-        Write-Host "Installer error log not found at $TEMP_DIR\installer_error.log"
-    }
+# Check for Installation Log
+if (-not (Test-Path $LOG_PATH)) {
+    Write-Error "Installation log not found at $LOG_PATH."
     exit 1
+} else {
+    Write-Host "Displaying installation log:"
+    Get-Content -Path $LOG_PATH | Write-Host
 }
 
 # Verify Installation
@@ -87,12 +77,6 @@ if (Test-Path $clPath -and Test-Path $msbuildPath) {
     Write-Host "Validation successful: cl.exe and MSBuild.exe found."
 } else {
     Write-Error "Validation failed: Required executables not found."
-    Write-Host "Displaying installation log:"
-    if (Test-Path $LOG_PATH) {
-        Get-Content -Path $LOG_PATH | Write-Host
-    } else {
-        Write-Host "Installation log not found at $LOG_PATH"
-    }
     exit 1
 }
 
@@ -100,6 +84,4 @@ if (Test-Path $clPath -and Test-Path $msbuildPath) {
 Write-Host "Cleaning up temporary files..."
 Remove-Item -Path "$TEMP_DIR\VisualStudio.chman" -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "$TEMP_DIR\vs_buildtools.exe" -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$TEMP_DIR\installer_output.log" -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$TEMP_DIR\installer_error.log" -Force -ErrorAction SilentlyContinue
 Write-Host "Cleanup completed successfully."
