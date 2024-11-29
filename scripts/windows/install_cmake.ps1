@@ -13,6 +13,7 @@ $maxRetries = 5
 $cmakeBaseUrl = "https://github.com/Kitware/CMake/releases/download"
 $url = "$cmakeBaseUrl/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-windows-x86_64.zip"
 $destination = "C:\TEMP\cmake.zip"
+$tempExtractPath = "C:\TEMP\cmake_extracted"
 $installPath = "C:\Program Files\CMake"
 
 # Function to download file with retries
@@ -49,6 +50,27 @@ function Extract-Zip {
         Write-Host "Extraction complete."
     } catch {
         Write-Error ("Failed to extract {0}: {1}" -f $zipPath, $_.Exception.Message)
+        exit 1
+    }
+}
+
+# Function to move extracted files to the final installation path
+function Move-Extracted-Files {
+    param (
+        [string]$sourcePath,
+        [string]$destinationPath
+    )
+    try {
+        $cmakeFolder = Get-ChildItem -Path $sourcePath -Directory | Where-Object { $_.Name -like "cmake*" }
+        if (-not $cmakeFolder) {
+            Write-Error "CMake folder not found in the extracted files."
+            exit 1
+        }
+        Write-Host ("Moving extracted files from {0} to {1}..." -f $cmakeFolder.FullName, $destinationPath)
+        Move-Item -Path $cmakeFolder.FullName -Destination $destinationPath -Force
+        Write-Host "Files moved successfully."
+    } catch {
+        Write-Error ("Failed to move extracted files: {0}" -f $_.Exception.Message)
         exit 1
     }
 }
@@ -109,8 +131,14 @@ if (!(Test-Path -Path "C:\TEMP")) {
 # Download CMake
 Download-File -url $url -outputPath $destination
 
-# Extract the ZIP
-Extract-Zip -zipPath $destination -outputPath $installPath
+# Extract the ZIP to a temporary path
+if (Test-Path -Path $tempExtractPath) {
+    Remove-Item -Path $tempExtractPath -Recurse -Force
+}
+Extract-Zip -zipPath $destination -outputPath $tempExtractPath
+
+# Move extracted files to the final installation path
+Move-Extracted-Files -sourcePath $tempExtractPath -destinationPath $installPath
 
 # Update PATH
 Update-Path -newPath "$installPath\bin"
@@ -119,3 +147,4 @@ Update-Path -newPath "$installPath\bin"
 Validate-Installation -cmakePath "$installPath\bin"
 
 Write-Host "CMake installation completed successfully."
+``
