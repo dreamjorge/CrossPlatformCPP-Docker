@@ -122,6 +122,7 @@ function Validate-Installation {
 }
 
 
+
 # Main script logic
 Write-Host "Starting CMake installation..."
 
