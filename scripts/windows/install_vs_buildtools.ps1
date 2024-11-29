@@ -1,12 +1,11 @@
 param (
-    [string]$CHANNEL_URL = "https://aka.ms/vs/16/release/channel",
     [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
     [string]$INSTALL_PATH = "C:\BuildTools",
     [string]$TEMP_DIR = "C:\TEMP",
     [string]$LOG_PATH = "C:\TEMP\vs_buildtools_install.log"
 )
 
-# Function to log messages
+# Function to log messages with timestamps and severity levels
 function Log-Message {
     param (
         [string]$Message,
@@ -17,29 +16,20 @@ function Log-Message {
 }
 
 # Start Logging
-Log-Message "Starting Visual Studio Build Tools installation."
+Log-Message "===== Starting Visual Studio Build Tools Installation ====="
 
 # Ensure TEMP directory exists
 if (-not (Test-Path -Path $TEMP_DIR)) {
     Log-Message "Creating TEMP directory at $TEMP_DIR."
     try {
         New-Item -ItemType Directory -Path $TEMP_DIR | Out-Null
+        Log-Message "TEMP directory created successfully."
     } catch {
         Log-Message "Failed to create TEMP directory: $_" "ERROR"
         exit 1
     }
 } else {
     Log-Message "TEMP directory already exists at $TEMP_DIR."
-}
-
-# Download Visual Studio Channel Manifest
-Log-Message "Downloading Visual Studio Channel Manifest from $CHANNEL_URL."
-try {
-    Invoke-WebRequest -Uri $CHANNEL_URL -OutFile "$TEMP_DIR\VisualStudio.chman" -UseBasicParsing -ErrorAction Stop
-    Log-Message "Successfully downloaded Visual Studio Channel Manifest."
-} catch {
-    Log-Message "Failed to download Visual Studio Channel Manifest: $_" "ERROR"
-    exit 1
 }
 
 # Download Visual Studio Build Tools Installer
@@ -54,25 +44,23 @@ try {
 
 # Define Installer Arguments
 $installerArguments = @(
-    "--quiet",
-    "--wait",
-    "--norestart",
-    "--nocache",
-    "--channelUri", "$TEMP_DIR\VisualStudio.chman",
-    "--installChannelUri", "$TEMP_DIR\VisualStudio.chman",
-    "--add", "Microsoft.VisualStudio.Workload.VCTools",                 # Core VC++ build tools
-    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",       # x86 and x64 compilers
-    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",     # Windows 10 SDK
-    "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",        # CMake support
-    "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",    # VC++ Redistributable
-    "--add", "Microsoft.VisualStudio.Component.MSBuild",                # MSBuild
-    "--includeRecommended",
-    "--installPath", $INSTALL_PATH,
-    "--log", $LOG_PATH
+    "--quiet",                              # Silent installation
+    "--wait",                               # Wait for completion
+    "--norestart",                          # Do not restart after installation
+    "--nocache",                            # Do not cache downloaded files
+    "--installPath", $INSTALL_PATH,         # Installation directory
+    "--add", "Microsoft.VisualStudio.Workload.VCTools",                   # Core VC++ build tools
+    "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",         # x86 and x64 compilers
+    "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041",       # Windows 10 SDK
+    "--add", "Microsoft.VisualStudio.Component.VC.CMake.Project",          # CMake support
+    "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",      # VC++ Redistributable
+    "--add", "Microsoft.VisualStudio.Component.MSBuild",                  # MSBuild tools
+    "--includeRecommended",                                                    # Include recommended components
+    "--log", $LOG_PATH                                                        # Log file path
 )
 
 # Install Visual Studio Build Tools
-Log-Message "Starting installation of Visual Studio Build Tools."
+Log-Message "Initiating Visual Studio Build Tools installation."
 try {
     Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerArguments -NoNewWindow -Wait -ErrorAction Stop
     Log-Message "Visual Studio Build Tools installation process completed."
@@ -93,7 +81,7 @@ if (-not (Test-Path -Path $vcToolsPath)) {
     Log-Message "MSVC tools directory exists at $vcToolsPath."
 }
 
-# Find cl.exe
+# Locate cl.exe
 $clPath = Get-ChildItem -Path $vcToolsPath -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { Join-Path $_.FullName "bin\Hostx64\x64\cl.exe" }
 
 if (-not (Test-Path -Path $clPath)) {
@@ -115,13 +103,12 @@ if (-not (Test-Path -Path $msbuildPath)) {
 Log-Message "Validation successful: cl.exe and MSBuild.exe are present."
 
 # Clean Up Installer Files
-Log-Message "Cleaning up temporary files."
+Log-Message "Cleaning up temporary installer files."
 try {
-    Remove-Item -Path "$TEMP_DIR\VisualStudio.chman" -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "$TEMP_DIR\vs_buildtools.exe" -Force -ErrorAction SilentlyContinue
-    Log-Message "Temporary installer files removed."
+    Log-Message "Removed vs_buildtools.exe."
 } catch {
-    Log-Message "Failed to clean up some installer files: $_" "WARNING"
+    Log-Message "Failed to remove vs_buildtools.exe: $_" "WARNING"
 }
 
-Log-Message "Visual Studio Build Tools installation completed successfully."
+Log-Message "===== Visual Studio Build Tools Installation Completed Successfully ====="
