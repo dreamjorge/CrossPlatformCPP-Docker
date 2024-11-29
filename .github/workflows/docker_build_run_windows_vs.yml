@@ -38,18 +38,19 @@ jobs:
             -f Dockerfile.windows.vs .
 
       - name: Run Build Inside Docker
-        shell: '"C:\Program Files\PowerShell\7\pwsh.EXE"'
+        shell: pwsh
         run: |
           $config = "Release"
           docker run --rm --name $env:DOCKER_CONTAINER_NAME `
             -e CONFIG=$config `
             -e VS_VERSION=$env:VS_VERSION `
-            -v "${{ github.workspace }}:C:/app" `
-            -v "${{ github.workspace }}\Temp:C:/TEMP" `
+            -v "${{ github.workspace }}:C:\app" `
+            -v "${{ github.workspace }}\Temp:C:\TEMP" `
             $env:DOCKER_IMAGE_NAME `
             powershell -NoProfile -ExecutionPolicy Bypass -Command `
-            "Set-Location C:/app/scripts/windows; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
-      
+            "Set-Location 'C:\app\scripts\windows'; .\build.ps1 -CONFIG $config -VS_VERSION $env:VS_VERSION"
+          
+            
       - name: Extract Build Tools Installation Log
         shell: pwsh
         run: |
