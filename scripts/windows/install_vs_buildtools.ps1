@@ -7,6 +7,7 @@ if (-not $VS_VERSION) {
     exit 1
 }
 
+$vsInstaller = "C:\TEMP\vs_buildtools.exe"
 $vsBootstrapperUrl = if ($VS_VERSION -eq "16") {
     "https://aka.ms/vs/16/release/vs_buildtools.exe"
 } elseif ($VS_VERSION -eq "17") {
@@ -16,40 +17,35 @@ $vsBootstrapperUrl = if ($VS_VERSION -eq "16") {
     exit 1
 }
 
-$vsInstaller = "C:\TEMP\vs_buildtools.exe"
-
 Write-Host "Downloading Visual Studio Build Tools..."
 Invoke-WebRequest -Uri $vsBootstrapperUrl -OutFile $vsInstaller -UseBasicParsing
 
-if (Test-Path $vsInstaller) {
-    Write-Host "Installer exists at: $vsInstaller"
-} else {
-    Write-Error "Installer not found at: $vsInstaller"
+if (-not (Test-Path $vsInstaller)) {
+    Write-Error "Installer download failed. File not found: $vsInstaller"
     exit 1
 }
 
 Write-Host "Installing Visual Studio Build Tools..."
 try {
-    & "$vsInstaller" --quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.AzureBuildTools --log C:\TEMP\vs_install_log.txt
+    & "$vsInstaller" --quiet --wait --norestart --nocache `
+        --add Microsoft.VisualStudio.Workload.AzureBuildTools `
+        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 `
+        --installPath "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools" `
+        --log C:\TEMP\vs_install_log.txt
     Write-Host "Installation successful."
 } catch {
-    Write-Error "Installation failed. Exit code: $LASTEXITCODE"
-    exit $LASTEXITCODE
+    Write-Error "Installation failed. Error: $($_.Exception.Message)"
+    exit 1
 }
 
-Write-Host "Cleaning up..."
-try {
-    Remove-Item -Path $vsInstaller -Force -ErrorAction Stop
-} catch {
-    Start-Sleep -Seconds 5
-    Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
-    Write-Warning "Failed to remove installer. Skipping cleanup."
-}
-
-$installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools"
-if (Test-Path $installPath) {
-    Write-Host "Validation successful: Visual Studio installed at $installPath."
+Write-Host "Validating installation..."
+if (Test-Path "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools") {
+    Write-Host "Validation successful: Installation directory found."
 } else {
     Write-Error "Validation failed: Installation directory not found."
     exit 1
 }
+
+Write-Host "Cleaning up..."
+Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
