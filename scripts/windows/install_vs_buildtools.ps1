@@ -34,6 +34,7 @@ $installerArguments = @(
     "--add", "Microsoft.VisualStudio.Component.MSBuild",
     "--add", "Microsoft.VisualStudio.Component.VC.CoreBuildTools",
     "--add", "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
+    "--add", "Microsoft.VisualStudio.Component.TextTemplating",
     "--includeRecommended",
     "--installPath", $BUILD_TOOLS_PATH,
     "--log", $LOG_PATH
@@ -46,16 +47,25 @@ Start-Process -FilePath "$TEMP_DIR\vs_buildtools.exe" -ArgumentList $installerAr
 # Verify Installation
 Write-Host "Verifying installation..."
 $vcToolsPath = Join-Path -Path $BUILD_TOOLS_PATH -ChildPath "VC\Tools\MSVC"
-$clPath = Get-ChildItem -Path $vcToolsPath -Directory | Sort-Object Name -Descending | Select-Object -First 1 | ForEach-Object { "$($_.FullName)\bin\Hostx64\x64\cl.exe" }
+$clPath = Get-ChildItem -Path $vcToolsPath -Directory -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending |
+    Select-Object -First 1 |
+    ForEach-Object { Join-Path -Path $_.FullName -ChildPath "bin\Hostx64\x64\cl.exe" }
+
 $msbuildPath = Join-Path -Path $BUILD_TOOLS_PATH -ChildPath "MSBuild\Current\Bin\MSBuild.exe"
 
+if (-not (Test-Path $vcToolsPath)) {
+    Write-Error "Validation failed: MSVC tools directory not found. Check if Visual Studio Build Tools installed correctly."
+    exit 1
+}
+
 if (-not (Test-Path $clPath)) {
-    Write-Error "Validation failed: cl.exe not found. Please ensure required components are installed."
+    Write-Error "Validation failed: cl.exe not found. Ensure the required components are installed."
     exit 1
 }
 
 if (-not (Test-Path $msbuildPath)) {
-    Write-Error "Validation failed: MSBuild.exe not found. Please ensure required components are installed."
+    Write-Error "Validation failed: MSBuild.exe not found. Ensure the required components are installed."
     exit 1
 }
 
