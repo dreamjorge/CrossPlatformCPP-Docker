@@ -42,7 +42,7 @@ try {
     exit 1
 }
 
-# Define Installer Arguments
+# Define Installer Arguments with Correct Component IDs
 $installerArguments = @(
     "--quiet",                              # Silent installation
     "--wait",                               # Wait for completion
@@ -76,6 +76,8 @@ Log-Message "Validating Visual Studio Build Tools installation."
 $vcToolsPath = Join-Path -Path $INSTALL_PATH -ChildPath "VC\Tools\MSVC"
 if (-not (Test-Path -Path $vcToolsPath)) {
     Log-Message "MSVC tools directory not found at $vcToolsPath. Check the installation log at $LOG_PATH for details." "ERROR"
+    # Optionally, output the log content for debugging
+    Get-Content $LOG_PATH | Out-String | Write-Host
     exit 1
 } else {
     Log-Message "MSVC tools directory exists at $vcToolsPath."
