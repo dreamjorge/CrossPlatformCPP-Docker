@@ -16,14 +16,16 @@ ENV PATH="C:\\Program Files\\PowerShell\\7;$PATH"
 
 # Arguments for build-time
 ARG VS_VERSION=16
+ARG VS_YEAR=2019
 ARG CMAKE_VERSION=3.26.4
 
 # Environment variables for runtime
 ENV VS_VERSION=${VS_VERSION}
+ENV VS_YEAR=${VS_YEAR}
 ENV CMAKE_VERSION=${CMAKE_VERSION}
 
 # Set environment variables for Visual Studio paths
-ENV INSTALL_PATH="C:\Program Files (x86)\Microsoft Visual Studio\${VS_VERSION}\BuildTools"
+ENV INSTALL_PATH="C:\Program Files (x86)\Microsoft Visual Studio\${VS_YEAR}\BuildTools"
 ENV PATH="$INSTALL_PATH\Common7\Tools;C:\Program Files\CMake\bin;$PATH"
 
 # Copy the installation scripts to the container
@@ -40,4 +42,4 @@ RUN pwsh -ExecutionPolicy Bypass -File C:\TEMP\install_cmake.ps1 -CMAKE_VERSION 
 RUN del /q C:\TEMP\install_vs_buildtools.ps1 C:\TEMP\install_cmake.ps1
 
 # Define the entry point for the Docker container
-ENTRYPOINT ["cmd.exe", "/k", "C:\\Program Files (x86)\\Microsoft Visual Studio\\${VS_VERSION}\\BuildTools\\Common7\\Tools\\VsDevCmd.bat"]
+ENTRYPOINT ["cmd.exe", "/k", "C:\\Program Files (x86)\\Microsoft Visual Studio\\${VS_YEAR}\\BuildTools\\Common7\\Tools\\VsDevCmd.bat"]
