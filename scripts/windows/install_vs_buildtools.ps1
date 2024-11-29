@@ -21,9 +21,16 @@ $vsInstaller = "C:\TEMP\vs_buildtools.exe"
 Write-Host "Downloading Visual Studio Build Tools..."
 Invoke-WebRequest -Uri $vsBootstrapperUrl -OutFile $vsInstaller -UseBasicParsing
 
+if (Test-Path $vsInstaller) {
+    Write-Host "Installer exists at: $vsInstaller"
+} else {
+    Write-Error "Installer not found at: $vsInstaller"
+    exit 1
+}
+
 Write-Host "Installing Visual Studio Build Tools..."
 try {
-    Invoke-Expression "& `"$vsInstaller`" --quiet --wait --norestart --nocache --installPath `"$env:ProgramFiles(x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools`" --add Microsoft.VisualStudio.Workload.AzureBuildTools"
+    & "$vsInstaller" --quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.AzureBuildTools --log C:\TEMP\vs_install_log.txt
     Write-Host "Installation successful."
 } catch {
     Write-Error "Installation failed. Exit code: $LASTEXITCODE"
@@ -31,15 +38,15 @@ try {
 }
 
 Write-Host "Cleaning up..."
-Start-Sleep -Seconds 5
 try {
     Remove-Item -Path $vsInstaller -Force -ErrorAction Stop
-    Write-Host "Cleanup completed."
 } catch {
+    Start-Sleep -Seconds 5
+    Remove-Item -Path $vsInstaller -Force -ErrorAction SilentlyContinue
     Write-Warning "Failed to remove installer. Skipping cleanup."
 }
 
-$installPath = "$env:ProgramFiles(x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools"
+$installPath = "C:\Program Files (x86)\Microsoft Visual Studio\$VS_VERSION\BuildTools"
 if (Test-Path $installPath) {
     Write-Host "Validation successful: Visual Studio installed at $installPath."
 } else {
