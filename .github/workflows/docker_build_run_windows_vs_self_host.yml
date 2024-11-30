@@ -49,7 +49,7 @@ jobs:
 
       # Step 4: Build Docker Image using Dockerfile.ws10
       - name: Build Docker Image
-        shell: powershell
+        shell: powershell  # Use built-in PowerShell shell
         run: |
           $imageTag = "$env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
           Write-Host "Building Docker image with tag: $imageTag"
