@@ -1,5 +1,5 @@
 param (
-    [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe",
+    [string]$VS_BUILD_TOOLS_URL = "https://aka.ms/vs/16/release/vs_buildtools.exe", # Build Tools 2019 URL
     [string]$INSTALL_PATH = "C:\BuildTools",
     [string]$TEMP_DIR = "C:\TEMP",
     [string]$SCRIPT_LOG_PATH = "C:\TEMP\vs_buildtools_script.log",
@@ -47,7 +47,7 @@ try {
     exit 1
 }
 
-# Define Installer Arguments
+# Define Installer Arguments for Build Tools 2019
 $installerArguments = @(
     "--quiet",                              # Silent installation
     "--wait",                               # Wait for completion
