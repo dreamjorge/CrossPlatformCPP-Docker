@@ -24,7 +24,7 @@ jobs:
         vs_year: [2019]  # Extend this array if you add more years
 
     steps:
-      # Step 1: Checkout the repository code
+      # Step 1: Checkout the repository code 
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
