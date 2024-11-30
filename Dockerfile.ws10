@@ -31,35 +31,34 @@ ENV SCRIPT_LOG_PATH=C:\TEMP\vs_buildtools_script.log
 ENV INSTALLER_LOG_PATH=C:\TEMP\vs_buildtools_install.log
 
 # ===================================================================
-# Set Shell to cmd
+# Set Shell to PowerShell
 # ===================================================================
-SHELL ["cmd", "/S", "/C"]
+SHELL ["powershell", "-Command", ""]
 
 # ===================================================================
 # Create Temporary Directory for Downloads
 # ===================================================================
-RUN mkdir %TEMP_DIR%
+RUN mkdir $env:TEMP_DIR
 
 # ===================================================================
 # Download Visual Studio Channel and Installer
 # ===================================================================
-RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile %TEMP_DIR%\VisualStudio.chman" && `
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe"
+RUN Invoke-WebRequest -Uri $env:CHANNEL_URL -OutFile "$env:TEMP_DIR\VisualStudio.chman" `
+    -UseBasicParsing; `
+    Invoke-WebRequest -Uri $env:VS_BUILD_TOOLS_URL -OutFile "$env:TEMP_DIR\vs_buildtools.exe" `
+    -UseBasicParsing
 
 # ===================================================================
 # Install Chocolatey Package Manager
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 # ===================================================================
 # Install CMake via Chocolatey
 # ===================================================================
-RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+RUN choco install cmake --version=$env:CMAKE_VERSION --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
 # Copy the PowerShell installation script into the container
@@ -74,7 +73,7 @@ RUN powershell -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1
 # ===================================================================
 # Clean Up Temporary Files
 # ===================================================================
-RUN rmdir /S /Q %TEMP_DIR%
+RUN Remove-Item -Path $env:TEMP_DIR -Recurse -Force
 
 # ===================================================================
 # Set Working Directory
@@ -89,12 +88,12 @@ COPY scripts/windows C:\scripts\windows
 # ===================================================================
 # Verify BUILD_DIR Environment Variable
 # ===================================================================
-RUN echo BUILD_DIR=%BUILD_DIR%
+RUN Write-Host "BUILD_DIR=$env:BUILD_DIR"
 
 # ===================================================================
 # Update PATH to include MSBuild and MSVC tools
 # ===================================================================
-ENV PATH="C:\BuildTools\MSBuild\Current\Bin;C:\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64;${PATH}"
+ENV PATH="C:\BuildTools\MSBuild\Current\Bin;C:\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64;$env:PATH"
 
 # ===================================================================
 # Default Command

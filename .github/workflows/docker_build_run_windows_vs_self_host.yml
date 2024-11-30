@@ -40,14 +40,14 @@ jobs:
             exit 1
           }
 
-      # Step 3: List Files for Debugging (Optional but Recommended)
+      # Step 3: List Repository Files (Optional but Recommended)
       - name: List Repository Files
         shell: powershell
         run: |
           Write-Host "Listing files in the repository:"
           Get-ChildItem -Recurse | Format-Table -AutoSize
 
-      # Step 4: Build Docker Image using dockerfile.2019
+      # Step 4: Build Docker Image using Dockerfile.ws10
       - name: Build Docker Image
         shell: powershell
         run: |
@@ -58,7 +58,7 @@ jobs:
             --build-arg VS_BUILD_TOOLS_URL=$env:VS_BUILD_TOOLS_URL `
             --build-arg CMAKE_VERSION=$env:CMAKE_VERSION `
             -t $imageTag `
-            -f ./dockerfile.ws10 .
+            -f ./Dockerfile.ws10 .
           Write-Host "INFO: Built Docker image: $imageTag"
 
   run-tests:
