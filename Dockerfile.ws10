@@ -1,0 +1,102 @@
+# ===================================================================
+# Base Image
+# ===================================================================
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+
+# ===================================================================
+# Metadata
+# ===================================================================
+LABEL maintainer="jorge-kun@live.com" `
+      description="Docker image for building and running CrossPlatformApp using Visual Studio 2019" `
+      version="1.0.0" `
+      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" `
+      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" `
+      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" `
+      license="MIT"
+
+# ===================================================================
+# Build Arguments
+# ===================================================================
+ARG CHANNEL_URL=https://aka.ms/vs/16/release/channel
+ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/16/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.21.3
+
+# ===================================================================
+# Environment Variables
+# ===================================================================
+ENV BUILD_TOOLS_PATH=C:\BuildTools
+ENV BUILD_DIR=C:\app
+ENV TEMP_DIR=C:\TEMP
+ENV SCRIPT_LOG_PATH=C:\TEMP\vs_buildtools_script.log
+ENV INSTALLER_LOG_PATH=C:\TEMP\vs_buildtools_install.log
+
+# ===================================================================
+# Set Shell to cmd
+# ===================================================================
+SHELL ["cmd", "/S", "/C"]
+
+# ===================================================================
+# Create Temporary Directory for Downloads
+# ===================================================================
+RUN mkdir %TEMP_DIR%
+
+# ===================================================================
+# Download Visual Studio Channel and Installer
+# ===================================================================
+RUN powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile %TEMP_DIR%\VisualStudio.chman" && `
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe"
+
+# ===================================================================
+# Install Chocolatey Package Manager
+# ===================================================================
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# ===================================================================
+# Install CMake via Chocolatey
+# ===================================================================
+RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+# ===================================================================
+# Copy the PowerShell installation script into the container
+# ===================================================================
+COPY scripts/windows/install_vs_buildtools.ps1 C:\TEMP\install_vs_buildtools.ps1
+
+# ===================================================================
+# Run the installation script
+# ===================================================================
+RUN powershell -ExecutionPolicy Bypass -File C:\TEMP\install_vs_buildtools.ps1
+
+# ===================================================================
+# Clean Up Temporary Files
+# ===================================================================
+RUN rmdir /S /Q %TEMP_DIR%
+
+# ===================================================================
+# Set Working Directory
+# ===================================================================
+WORKDIR C:\app
+
+# ===================================================================
+# Copy Scripts Directory
+# ===================================================================
+COPY scripts/windows C:\scripts\windows
+
+# ===================================================================
+# Verify BUILD_DIR Environment Variable
+# ===================================================================
+RUN echo BUILD_DIR=%BUILD_DIR%
+
+# ===================================================================
+# Update PATH to include MSBuild and MSVC tools
+# ===================================================================
+ENV PATH="C:\BuildTools\MSBuild\Current\Bin;C:\BuildTools\VC\Tools\MSVC\*\bin\Hostx64\x64;${PATH}"
+
+# ===================================================================
+# Default Command
+# ===================================================================
+CMD ["cmd.exe"]
