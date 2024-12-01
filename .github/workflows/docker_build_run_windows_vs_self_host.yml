@@ -11,7 +11,7 @@ on:
 jobs:
   build-docker-images:
     name: Build Docker Images
-    runs-on: [self-hosted, windows, docker]
+    runs-on: [self-hosted]
 
     env:
       DOCKER_NAME_BASE: crossplatformapp-windows
