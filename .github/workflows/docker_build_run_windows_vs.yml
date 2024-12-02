@@ -11,7 +11,9 @@ on:
 env:
   CMAKE_VERSION: 3.21.3  # Global environment variable for CMake version
   DOCKERFILE_PATH: Dockerfile.windows.vs  # Default Dockerfile path
-  CROSSPLATFORMAPP_IMAGE_PREFIX: crossplatformapp  # Image prefix for Docker
+  DOCKER_IMAGE_PREFIX: crossplatformapp  # Image prefix for Docker
+  BUILD_SCRIPT: C:\scripts\windows\build.cmd  # Path to build script
+  RUN_SCRIPT: C:\scripts\windows\run.cmd  # Path to run script
 
 jobs:
   build-and-run-windows-docker:
@@ -37,7 +39,9 @@ jobs:
           echo "Build Configuration: ${{ matrix.config }}"
           echo "CMake Version: ${{ env.CMAKE_VERSION }}"
           echo "Using Dockerfile: ${{ env.DOCKERFILE_PATH }}"
-          echo "Image Prefix: ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}"
+          echo "Image Prefix: ${{ env.DOCKER_IMAGE_PREFIX }}"
+          echo "Build Script: ${{ env.BUILD_SCRIPT }}"
+          echo "Run Script: ${{ env.RUN_SCRIPT }}"
 
       - name: Build Docker Image
         shell: pwsh
@@ -45,7 +49,7 @@ jobs:
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
+            -t ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
       - name: Run Build Script Inside Docker
@@ -53,13 +57,13 @@ jobs:
         run: |
           docker run --rm `
             -v "${{ github.workspace }}:C:\app" `
-            ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
-            cmd.exe /c C:\scripts\windows\build.cmd ${{ matrix.vs_version.version }} ${{ matrix.config }}
+            ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
+            cmd.exe /c ${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}
 
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
           docker run --rm `
             -v "${{ github.workspace }}:C:\app" `
-            ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
-            cmd.exe /c C:\scripts\windows\run.cmd
+            ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
+            cmd.exe /c ${{ env.RUN_SCRIPT }}
