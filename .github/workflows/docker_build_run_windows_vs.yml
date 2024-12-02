@@ -59,7 +59,6 @@ jobs:
 
       # Step 2: Define Docker Image Tag
       - name: Define Docker Image Tag
-        id: docker_tag
         run: echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}" >> $GITHUB_ENV
 
       # Step 3: Log Build Configuration for Transparency
@@ -71,7 +70,7 @@ jobs:
           echo "Build Configuration: ${{ matrix.config }}"
           echo "CMake Version: ${{ env.CMAKE_VERSION }}"
           echo "Using Dockerfile: ${{ env.DOCKERFILE_PATH }}"
-          echo "Docker Image Tag: ${{ env.DOCKER_IMAGE_TAG }}"
+          echo "Docker Image Tag: ${{ github.env.DOCKER_IMAGE_TAG}}"
           echo "Build Script: ${{ env.BUILD_SCRIPT }}"
           echo "Run Script: ${{ env.RUN_SCRIPT }}"
           echo "Mount Path: ${{ env.MOUNT_PATH }}"
@@ -84,7 +83,7 @@ jobs:
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t ${{ env.DOCKER_IMAGE_TAG }} `
+            -t ${{ github.env.DOCKER_IMAGE_TAG }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
       # Step 5: Run the Build Script Inside Docker
@@ -94,7 +93,7 @@ jobs:
           # Execute the build script in the container, passing necessary arguments
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `  # Mount the workspace into the container
-            ${{ env.DOCKER_IMAGE_TAG }} `
+            ${{ github.env.DOCKER_IMAGE_TAG }} `
             cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
 
       # Step 6: Run the Application Inside Docker
@@ -104,5 +103,5 @@ jobs:
           # Execute the run script in the container
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `  # Mount the workspace into the container
-            ${{ env.DOCKER_IMAGE_TAG }} `
+            ${{ github.env.DOCKER_IMAGE_TAG }} `
             cmd.exe /c "${{ env.RUN_SCRIPT }}"
