@@ -78,7 +78,12 @@ WORKDIR C:\app
 # ===================================================================
 # Copy Scripts Directory
 # ===================================================================
+# Copy scripts directory into the container
 COPY scripts/windows C:\app\scripts\windows
+
+# Verify the scripts exist
+RUN dir C:\app\scripts\windows
+
 
 # ===================================================================
 # Verify BUILD_DIR Environment Variable
