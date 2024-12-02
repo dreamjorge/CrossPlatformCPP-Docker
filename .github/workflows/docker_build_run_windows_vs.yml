@@ -10,7 +10,7 @@ on:
 
 env:
   CMAKE_VERSION: 3.21.3  # Global environment variable for CMake version
-  DOCKERFILE_PATH: Dockerfile.windows.ws  # Default Dockerfile path
+  DOCKERFILE_PATH: Dockerfile.windows.vs  # Default Dockerfile path
 
 jobs:
   build-and-run-windows-docker:
