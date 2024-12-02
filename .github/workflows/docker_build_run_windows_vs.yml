@@ -2,18 +2,6 @@
 # GitHub Actions Workflow: Docker Build and Run on Windows
 # ==============================================================
 
-# Purpose:
-# This workflow automates building and running a Docker container 
-# for testing a cross-platform C++ application with various 
-# configurations of Visual Studio and build modes.
-
-# Key Steps:
-# 1. Checkout the source code from the repository.
-# 2. Log the build configuration details.
-# 3. Build a Docker image with a meaningful and traceable tag.
-# 4. Run a build script inside the container.
-# 5. Execute the application inside the container.
-
 name: Docker Build and Run on Windows
 
 on:
@@ -25,12 +13,12 @@ on:
       - main
 
 env:
-  CMAKE_VERSION: 3.21.3         # Version of CMake used in Docker build
-  DOCKERFILE_PATH: Dockerfile.windows.vs  # Path to the Dockerfile
-  DOCKER_IMAGE_PREFIX: crossplatformapp  # Prefix for Docker image tags
-  MOUNT_PATH: C:\app            # Path to mount the workspace inside the container
-  BUILD_SCRIPT: C:\app\scripts\windows\build.cmd  # Path to the build script
-  RUN_SCRIPT: C:\app\scripts\windows\run.cmd      # Path to the run script
+  CMAKE_VERSION: 3.21.3
+  DOCKERFILE_PATH: Dockerfile.windows.vs
+  DOCKER_IMAGE_PREFIX: crossplatformapp
+  MOUNT_PATH: C:\app
+  BUILD_SCRIPT: C:\app\scripts\windows\build.cmd
+  RUN_SCRIPT: C:\app\scripts\windows\run.cmd
 
 jobs:
   build-and-run-windows-docker:
@@ -52,11 +40,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Step 2: Define and Log Docker Image Tag
+      # Step 2: Define Docker Image Tag
       - name: Define Docker Image Tag
         id: set_tag
         run: |
-          IMAGE_TAG="${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${{ matrix.config | lower }}-${{ github.run_number }}"
+          # Explicitly convert matrix.config to lowercase
+          CONFIG=$(echo "${{ matrix.config }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG="${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${CONFIG}-${{ github.run_number }}"
           echo "DOCKER_IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "Docker Image Tag set to: $IMAGE_TAG"
         shell: bash
