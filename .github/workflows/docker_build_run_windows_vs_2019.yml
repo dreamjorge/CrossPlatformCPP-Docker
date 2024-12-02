@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Build Script Inside Docker
         run: |
-          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\windows\build.vs19.cmd
+          docker run --rm -e CONFIG=${{ matrix.config }} -v "${{ github.workspace }}:C:\app" crossplatformapp-windows cmd.exe /c C:\scripts\windows\build.vs16.cmd
 
       - name: Run Application Inside Docker
         run: |

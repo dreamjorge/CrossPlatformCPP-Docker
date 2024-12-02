@@ -1,0 +1,50 @@
+name: Docker Build and Run on Windows
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-run-windows-docker:
+    name: Build and Run Docker (Windows)
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        vs_version: [15, 16, 17]  # Corresponding to VS2017, VS2019, VS2022
+        config: [Debug, Release]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build Docker Image
+        shell: pwsh
+        run: |
+          docker build --no-cache `
+            --build-arg VS_VERSION=${{ matrix.vs_version }} `
+            --build-arg CMAKE_VERSION=3.21.3 `
+            -t crossplatformapp-vs${{ matrix.vs_version }} `
+            -f Dockerfile.windows.vs .
+
+      - name: Run Build Script Inside Docker
+        shell: pwsh
+        run: |
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:C:\app" `
+            crossplatformapp-vs${{ matrix.vs_version }} `
+            cmd.exe /c C:\scripts\windows\build.vs${{ matrix.vs_version }}.cmd
+
+      - name: Run Application Inside Docker
+        shell: pwsh
+        run: |
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:C:\app" `
+            crossplatformapp-vs${{ matrix.vs_version }} `
+            cmd.exe /c C:\scripts\windows\run.cmd
