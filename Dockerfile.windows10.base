@@ -1,6 +1,6 @@
 # escape=`
 
-FROM mcr.microsoft.com/windows/servercore:ltsc2019 AS base
+FROM mcr.microsoft.com/windows:20H2 AS base
 
 # Build Arguments
 ARG VS_YEAR=2019
