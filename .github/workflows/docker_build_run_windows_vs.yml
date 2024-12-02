@@ -39,15 +39,12 @@ jobs:
           fetch-depth: 0
 
       - name: Define Docker Image Tag
-        id: set_tag
         run: |
           echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}"
+          echo "Docker Image Tag set to: ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}"
 
       - name: Log Build Configuration
         shell: pwsh
-        env:
-          DOCKER_IMAGE_TAG: ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}
         run: |
           echo "Visual Studio Version: ${{ matrix.vs_version.version }} (${{ matrix.vs_version.tag }})"
           echo "Build Configuration: ${{ matrix.config }}"
