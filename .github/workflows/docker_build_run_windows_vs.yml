@@ -23,25 +23,28 @@ jobs:
           fetch-depth: 0
 
       - name: Build Docker Image
+        shell: pwsh
         run: |
-          docker build --no-cache \
-            --build-arg VS_VERSION=${{ matrix.vs_version }} \
-            --build-arg CMAKE_VERSION=3.21.3 \
-            -t crossplatformapp-vs${{ matrix.vs_version }} \
+          docker build --no-cache `
+            --build-arg VS_VERSION=${{ matrix.vs_version }} `
+            --build-arg CMAKE_VERSION=3.21.3 `
+            -t crossplatformapp-vs${{ matrix.vs_version }} `
             -f Dockerfile .
 
       - name: Run Build Script Inside Docker
+        shell: pwsh
         run: |
-          docker run --rm \
-            -e CONFIG=${{ matrix.config }} \
-            -v "${{ github.workspace }}:C:\\app" \
-            crossplatformapp-vs${{ matrix.vs_version }} \
-            cmd.exe /c C:\\scripts\\windows\\build.vs${{ matrix.vs_version }}.cmd
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:C:\app" `
+            crossplatformapp-vs${{ matrix.vs_version }} `
+            cmd.exe /c C:\scripts\windows\build.vs${{ matrix.vs_version }}.cmd
 
       - name: Run Application Inside Docker
+        shell: pwsh
         run: |
-          docker run --rm \
-            -e CONFIG=${{ matrix.config }} \
-            -v "${{ github.workspace }}:C:\\app" \
-            crossplatformapp-vs${{ matrix.vs_version }} \
-            cmd.exe /c C:\\scripts\\windows\\run.cmd
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:C:\app" `
+            crossplatformapp-vs${{ matrix.vs_version }} `
+            cmd.exe /c C:\scripts\windows\run.cmd
