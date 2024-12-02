@@ -11,6 +11,7 @@ on:
 env:
   CMAKE_VERSION: 3.21.3  # Global environment variable for CMake version
   DOCKERFILE_PATH: Dockerfile.windows.vs  # Default Dockerfile path
+  CROSSPLATFORMAPP_IMAGE_PREFIX: crossplatformapp  # Image prefix for Docker
 
 jobs:
   build-and-run-windows-docker:
@@ -36,6 +37,7 @@ jobs:
           echo "Build Configuration: ${{ matrix.config }}"
           echo "CMake Version: ${{ env.CMAKE_VERSION }}"
           echo "Using Dockerfile: ${{ env.DOCKERFILE_PATH }}"
+          echo "Image Prefix: ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}"
 
       - name: Build Docker Image
         shell: pwsh
@@ -43,7 +45,7 @@ jobs:
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t crossplatformapp-${{ matrix.vs_version.tag }} `
+            -t ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
       - name: Run Build Script Inside Docker
@@ -51,7 +53,7 @@ jobs:
         run: |
           docker run --rm `
             -v "${{ github.workspace }}:C:\app" `
-            crossplatformapp-${{ matrix.vs_version.tag }} `
+            ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
             cmd.exe /c C:\scripts\windows\build.cmd ${{ matrix.vs_version.version }} ${{ matrix.config }}
 
       - name: Run Application Inside Docker
@@ -59,5 +61,5 @@ jobs:
         run: |
           docker run --rm `
             -v "${{ github.workspace }}:C:\app" `
-            crossplatformapp-${{ matrix.vs_version.tag }} `
+            ${{ env.CROSSPLATFORMAPP_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
             cmd.exe /c C:\scripts\windows\run.cmd
