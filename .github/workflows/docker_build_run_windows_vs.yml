@@ -10,6 +10,7 @@ on:
 
 env:
   CMAKE_VERSION: 3.21.3  # Global environment variable for CMake version
+  DOCKERFILE_PATH: Dockerfile.windows.ws  # Default Dockerfile path
 
 jobs:
   build-and-run-windows-docker:
@@ -34,6 +35,7 @@ jobs:
           echo "Visual Studio Version: ${{ matrix.vs_version.version }} (${ matrix.vs_version.tag })"
           echo "Build Configuration: ${{ matrix.config }}"
           echo "CMake Version: ${{ env.CMAKE_VERSION }}"
+          echo "Using Dockerfile: ${{ env.DOCKERFILE_PATH }}"
 
       - name: Build Docker Image
         shell: pwsh
@@ -42,7 +44,7 @@ jobs:
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
             -t crossplatformapp-${{ matrix.vs_version.tag }} `
-            -f Dockerfile .
+            -f ${{ env.DOCKERFILE_PATH }} .
 
       - name: Run Build Script Inside Docker
         shell: pwsh
