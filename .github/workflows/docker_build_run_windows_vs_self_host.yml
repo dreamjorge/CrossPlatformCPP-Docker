@@ -41,7 +41,7 @@ jobs:
       - name: Build Docker Image
         shell: powershell
         run: |
-          docker build --no-cache `
+          docker build --isolation=process --no-cache `
             -t $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }} `
             -f Dockerfile.windows10.base .
           Write-Host "INFO: Built Docker image: $env:DOCKER_NAME_BASE-vs${{ matrix.vs_year }}"
