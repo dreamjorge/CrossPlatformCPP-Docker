@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  CMAKE_VERSION: 3.21.3  # Global environment variable for CMake version
+
 jobs:
   build-and-run-windows-docker:
     name: Build and Run Docker (Windows)
@@ -28,15 +31,16 @@ jobs:
       - name: Log Build Configuration
         shell: pwsh
         run: |
-          echo "Visual Studio Version: ${{ matrix.vs_version.version }} (${ matrix.vs_version.tag }})"
+          echo "Visual Studio Version: ${{ matrix.vs_version.version }} (${ matrix.vs_version.tag })"
           echo "Build Configuration: ${{ matrix.config }}"
+          echo "CMake Version: ${{ env.CMAKE_VERSION }}"
 
       - name: Build Docker Image
         shell: pwsh
         run: |
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
-            --build-arg CMAKE_VERSION=3.21.3 `
+            --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
             -t crossplatformapp-${{ matrix.vs_version.tag }} `
             -f Dockerfile .
 
