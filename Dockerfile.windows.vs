@@ -56,12 +56,15 @@ RUN echo "[LOG] Downloading Visual Studio installer and CMake..." && `
     powershell -Command "Expand-Archive -Path %TEMP_DIR%\cmake.zip -DestinationPath %CMAKE_DIR%" && `
     echo "[LOG] Adding CMake to PATH..." && `
     setx PATH "%CMAKE_DIR%\bin;%PATH%" && `
-    echo "[LOG] Installing Visual Studio Build Tools..." && `
+    echo "[LOG] Installing Visual Studio Build Tools silently..." && `
     %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
         --channelUri %TEMP_DIR%\VisualStudio.chman `
         --installChannelUri %TEMP_DIR%\VisualStudio.chman `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-        --installPath %BUILD_TOOLS_PATH%
+        --installPath %BUILD_TOOLS_PATH% `
+        --passive `
+        --noUpdateInstaller `
+        --norestart
 
 # ===================================================================
 # Clean Up Temporary Files
