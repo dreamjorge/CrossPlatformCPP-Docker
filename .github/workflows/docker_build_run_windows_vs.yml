@@ -15,7 +15,6 @@
 # 4. Run a build script inside the container to compile the project.
 # 5. Run the compiled application inside the container.
 
-
 name: Docker Build and Run on Windows
 
 on:
@@ -58,7 +57,12 @@ jobs:
         with:
           fetch-depth: 0  # Fetch the entire history for accurate builds
 
-      # Step 2: Log the build configuration for transparency
+      # Step 2: Define Docker Image Tag
+      - name: Define Docker Image Tag
+        id: docker_tag
+        run: echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}" >> $GITHUB_ENV
+
+      # Step 3: Log Build Configuration for Transparency
       - name: Log Build Configuration
         shell: pwsh
         run: |
@@ -67,12 +71,12 @@ jobs:
           echo "Build Configuration: ${{ matrix.config }}"
           echo "CMake Version: ${{ env.CMAKE_VERSION }}"
           echo "Using Dockerfile: ${{ env.DOCKERFILE_PATH }}"
-          echo "Image Prefix: ${{ env.DOCKER_IMAGE_PREFIX }}"
+          echo "Docker Image Tag: ${{ env.DOCKER_IMAGE_TAG }}"
           echo "Build Script: ${{ env.BUILD_SCRIPT }}"
           echo "Run Script: ${{ env.RUN_SCRIPT }}"
           echo "Mount Path: ${{ env.MOUNT_PATH }}"
 
-      # Step 3: Build the Docker image
+      # Step 4: Build the Docker Image
       - name: Build Docker Image
         shell: pwsh
         run: |
@@ -80,25 +84,25 @@ jobs:
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=${{ env.CMAKE_VERSION }} `
-            -t ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
+            -t ${{ env.DOCKER_IMAGE_TAG }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
-      # Step 4: Run the build script inside the container
+      # Step 5: Run the Build Script Inside Docker
       - name: Run Build Script Inside Docker
         shell: pwsh
         run: |
           # Execute the build script in the container, passing necessary arguments
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `  # Mount the workspace into the container
-            ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
-            cmd.exe /c ${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}
+            ${{ env.DOCKER_IMAGE_TAG }} `
+            cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
 
-      # Step 5: Run the application inside the container
+      # Step 6: Run the Application Inside Docker
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
           # Execute the run script in the container
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `  # Mount the workspace into the container
-            ${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }} `
-            cmd.exe /c ${{ env.RUN_SCRIPT }}
+            ${{ env.DOCKER_IMAGE_TAG }} `
+            cmd.exe /c "${{ env.RUN_SCRIPT }}"
