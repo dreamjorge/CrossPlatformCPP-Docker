@@ -13,12 +13,12 @@ on:
       - main
 
 env:
-  CMAKE_VERSION: 3.21.3
-  DOCKERFILE_PATH: Dockerfile.windows.vs
-  DOCKER_IMAGE_PREFIX: crossplatformapp
-  MOUNT_PATH: C:\app
-  BUILD_SCRIPT: C:\app\scripts\windows\build.cmd
-  RUN_SCRIPT: C:\app\scripts\windows\run.cmd
+  CMAKE_VERSION: 3.21.3         # Version of CMake used in Docker build
+  DOCKERFILE_PATH: Dockerfile.windows.vs  # Path to the Dockerfile
+  DOCKER_IMAGE_PREFIX: crossplatformapp  # Prefix for Docker image tags
+  MOUNT_PATH: C:\app            # Path to mount the workspace inside the container
+  BUILD_SCRIPT: C:\app\scripts\windows\build.cmd  # Path to the build script
+  RUN_SCRIPT: C:\app\scripts\windows\run.cmd      # Path to the run script
 
 jobs:
   build-and-run-windows-docker:
@@ -31,7 +31,7 @@ jobs:
           - { version: "15", tag: "vs2017" }
           - { version: "16", tag: "vs2019" }
           - { version: "17", tag: "vs2022" }
-        config: [Debug, Release]
+        config: [Debug, Release]  # Configuration used only during execution
 
     steps:
       # Step 1: Checkout the repository
@@ -44,9 +44,7 @@ jobs:
       - name: Define Docker Image Tag
         id: set_tag
         run: |
-          # Explicitly convert matrix.config to lowercase
-          CONFIG=$(echo "${{ matrix.config }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_TAG="${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${CONFIG}-${{ github.run_number }}"
+          IMAGE_TAG="${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${{ github.run_number }}"
           echo "DOCKER_IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "Docker Image Tag set to: $IMAGE_TAG"
         shell: bash
