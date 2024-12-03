@@ -80,7 +80,7 @@ if errorlevel 1 (
 :: Log Before Calling VsDevCmd.bat
 :: ============================
 CALL :Log "Calling VsDevCmd.bat..."
-CALL "C:\BuildTools\VC\Auxiliary\Build\VsDevCmd.bat" ^
+CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ^
     && CALL :Log "VsDevCmd.bat executed successfully." ^
     || CALL :ErrorExit "VsDevCmd.bat failed to execute."
 
