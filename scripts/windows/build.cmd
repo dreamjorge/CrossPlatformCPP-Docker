@@ -4,7 +4,7 @@
 :: Helper Functions
 :: ============================
 :Log
-echo [%DATE% %TIME%] INFO: %~1
+echo [%DATE% %TIME%] %~1
 goto :EOF
 
 :ErrorExit
@@ -61,17 +61,18 @@ CALL :Log "Current Directory: %CD%"
 :: Verify CMakeLists.txt Presence
 :: ============================
 CALL :Log "Verifying CMakeLists.txt presence..."
-IF NOT EXIST "CMakeLists.txt" (
+if exist "CMakeLists.txt" (
+    CALL :Log "CMakeLists.txt found."
+) else (
     CALL :ErrorExit "CMakeLists.txt not found!"
 )
-CALL :Log "CMakeLists.txt found."
 
 :: ============================
 :: Verify CMake Installation
 :: ============================
 CALL :Log "Verifying CMake installation..."
 cmake --version >nul 2>&1
-IF ERRORLEVEL 1 (
+if errorlevel 1 (
     CALL :ErrorExit "CMake is not installed or not in PATH!"
 )
 
@@ -83,10 +84,11 @@ CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ^
     && cmake -S . -B build -G "%VS_GENERATOR%" -A x64 ^
     && cmake --build build --config %CONFIG%
 
-IF ERRORLEVEL 1 (
+if errorlevel 1 (
     CALL :ErrorExit "Build failed!"
+) else (
+    CALL :Log "Build completed successfully."
 )
-CALL :Log "Build completed successfully."
 
 :: ============================
 :: Exit Successfully
