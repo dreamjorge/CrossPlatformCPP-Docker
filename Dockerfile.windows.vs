@@ -23,7 +23,6 @@ ARG VS_VERSION=17
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
-ARG CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
 
 # ===================================================================
 # Environment Variables
@@ -41,42 +40,48 @@ SHELL ["cmd", "/S", "/C"]
 # ===================================================================
 # Create Temporary Directory for Downloads
 # ===================================================================
-RUN echo "[LOG] Creating temporary directories..." && `
-    mkdir %TEMP_DIR% && mkdir %CMAKE_DIR%
+RUN mkdir %TEMP_DIR%
 
 # ===================================================================
-# Download and Install Tools
+# Install Chocolatey Package Manager
 # ===================================================================
-RUN echo "[LOG] Downloading Visual Studio installer and CMake..." && `
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# ===================================================================
+# Install CMake via Chocolatey
+# ===================================================================
+RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+# ===================================================================
+# Install Visual Studio Build Tools with C++ Workload
+# ===================================================================
+RUN echo "[LOG] Downloading Visual Studio installer..." && `
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     Invoke-WebRequest -Uri '%CHANNEL_URL%' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
-    Invoke-WebRequest -Uri '%VS_BUILD_TOOLS_URL%' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'; `
-    Invoke-WebRequest -Uri '%CMAKE_URL%' -OutFile '%TEMP_DIR%\\cmake.zip'" && `
-    echo "[LOG] Extracting CMake..." && `
-    powershell -Command "Expand-Archive -Path '%TEMP_DIR%\\cmake.zip' -DestinationPath '%CMAKE_DIR%'" && `
-    echo "[LOG] Adding CMake to PATH..." && `
-    setx PATH "%CMAKE_DIR%\bin;%PATH%" && `
+    Invoke-WebRequest -Uri '%VS_BUILD_TOOLS_URL%' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'" && `
     echo "[LOG] Installing Visual Studio Build Tools silently..." && `
     "%TEMP_DIR%\\vs_buildtools.exe" --quiet --wait --norestart `
         --channelUri "%TEMP_DIR%\\VisualStudio.chman" `
         --installChannelUri "%TEMP_DIR%\\VisualStudio.chman" `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
+        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended `
         --installPath "%BUILD_TOOLS_PATH%" `
         --noUpdateInstaller && `
     echo "[LOG] Verifying VsDevCmd.bat location..." && `
-    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat"
-
-# ===================================================================
-# Set System PATH
-# ===================================================================
-ENV PATH="C:\\CMake\\bin;%PATH%"
-
+    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat" || (echo "VsDevCmd.bat not found!" && exit /b 1)
 
 # ===================================================================
 # Clean Up Temporary Files
 # ===================================================================
-RUN echo "[LOG] Cleaning up temporary files..." && `
-    powershell -Command "Remove-Item -Recurse -Force '%TEMP_DIR%'"
+RUN rmdir /S /Q %TEMP_DIR%
+
+# ===================================================================
+# Set PATH to include CMake and Build Tools
+# ===================================================================
+ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%PATH%"
 
 # ===================================================================
 # Set Working Directory
@@ -86,19 +91,12 @@ WORKDIR C:\app
 # ===================================================================
 # Copy Scripts Directory
 # ===================================================================
-COPY scripts/windows C:\app\scripts\windows
-
-# ===================================================================
-# Verify Copied Scripts
-# ===================================================================
-RUN echo "[LOG] Verifying copied scripts directory:" && `
-    dir C:\app\scripts\windows
+COPY scripts/windows C:\scripts\windows
 
 # ===================================================================
 # Verify BUILD_DIR Environment Variable
 # ===================================================================
-RUN echo "[LOG] Verifying BUILD_DIR environment variable:" && `
-    echo BUILD_DIR=%BUILD_DIR%
+RUN echo BUILD_DIR=%BUILD_DIR%
 
 # ===================================================================
 # Default Command
