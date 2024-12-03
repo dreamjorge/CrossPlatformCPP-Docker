@@ -56,7 +56,7 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
 RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
-# Install Visual Studio Build Tools with C++ Workload
+# Install Visual Studio Build Tools with C++ Workload and Core Build Tools
 # ===================================================================
 RUN echo "[LOG] Downloading Visual Studio installer..." && `
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
@@ -69,6 +69,7 @@ RUN echo "[LOG] Downloading Visual Studio installer..." && `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
         --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended `
         --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --includeRecommended `
+        --add Microsoft.VisualStudio.Component.CoreBuildTools --includeRecommended `
         --installPath "%BUILD_TOOLS_PATH%" `
         --noUpdateInstaller && `
     echo "[LOG] Verifying VsDevCmd.bat location..." && `
