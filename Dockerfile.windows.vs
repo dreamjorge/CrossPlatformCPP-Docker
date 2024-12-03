@@ -19,7 +19,7 @@ LABEL maintainer="jorge-kun@live.com" `
 # ===================================================================
 # Build Arguments
 # ===================================================================
-ARG VS_VERSION=17
+ARG VS_VERSION=16
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
 ARG CMAKE_VERSION=3.21.3
@@ -58,7 +58,7 @@ RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PA
 # ===================================================================
 # Download and Install Visual Studio Build Tools
 # ===================================================================
-RUN powershell.exe -Command " `
+RUN powershell.exe -NoProfile -Command " `
     Write-Output '[LOG] Downloading Visual Studio installer...'; `
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     Invoke-WebRequest -Uri '%CHANNEL_URL%' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
@@ -73,16 +73,13 @@ RUN powershell.exe -Command " `
     & '%TEMP_DIR%\\vs_buildtools.exe' --quiet --wait --norestart `
         --channelUri '%TEMP_DIR%\\VisualStudio.chman' `
         --installChannelUri '%TEMP_DIR%\\VisualStudio.chman' `
-        --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended `
-        --add $sdk --includeRecommended `
-        --add Microsoft.VisualStudio.Component.CoreBuildTools --includeRecommended `
+        --add Microsoft.VisualStudio.Workload.VCTools `
+        --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+        --add $sdk `
         --installPath '%BUILD_TOOLS_PATH%' `
         --noUpdateInstaller; `
-    Write-Output '[LOG] Verifying VsDevCmd.bat location...'; `
     if (-Not (Test-Path '%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat')) { `
-        Write-Error 'VsDevCmd.bat not found!'; exit 1 `
-    }"
+        Write-Error 'VsDevCmd.bat not found!'; exit 1 }"
 
 # ===================================================================
 # Clean Up Temporary Files
@@ -95,16 +92,12 @@ RUN rmdir /S /Q %TEMP_DIR%
 WORKDIR C:\app
 
 # ===================================================================
-# Copy Scripts Directory
+# Copy Build and Run Scripts
 # ===================================================================
 COPY scripts/windows C:\scripts\windows
 
 # ===================================================================
-# Verify BUILD_DIR Environment Variable
-# ===================================================================
-RUN echo BUILD_DIR=%BUILD_DIR%
-
-# ===================================================================
 # Default Command
 # ===================================================================
-ENTRYPOINT ["C:\\BuildTools\\VC\\Auxiliary\\Build\\VsDevCmd.bat", "&&", "cmd.exe"]
+ENTRYPOINT ["cmd.exe", "/C", "C:\\BuildTools\\VC\\Auxiliary\\Build\\VsDevCmd.bat && cmd"]
+
