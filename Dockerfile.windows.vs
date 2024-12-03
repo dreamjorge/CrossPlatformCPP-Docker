@@ -30,7 +30,7 @@ ARG CMAKE_VERSION=3.21.3
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV TEMP_DIR=C:\TEMP
 ENV CMAKE_DIR=C:\CMake
-ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\VC\\Auxiliary\\Build;C:\\Windows\\System32;%PATH%"
+ENV PATH="C:\\Windows\\System32;C:\\Program Files\\PowerShell;C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\VC\\Auxiliary\\Build;%PATH%"
 
 # ===================================================================
 # Set Shell to cmd
@@ -45,7 +45,7 @@ RUN mkdir %TEMP_DIR%
 # ===================================================================
 # Install Chocolatey Package Manager
 # ===================================================================
-RUN powershell.exe -NoProfile -ExecutionPolicy Bypass -Command " `
+RUN "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command " `
     Set-ExecutionPolicy Bypass -Scope Process -Force; `
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
@@ -58,7 +58,7 @@ RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PA
 # ===================================================================
 # Download and Install Visual Studio Build Tools
 # ===================================================================
-RUN powershell.exe -NoProfile -Command " `
+RUN "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command " `
     Write-Output '[LOG] Downloading Visual Studio installer...'; `
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
     Invoke-WebRequest -Uri '%CHANNEL_URL%' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
@@ -92,7 +92,7 @@ RUN rmdir /S /Q %TEMP_DIR%
 WORKDIR C:\app
 
 # ===================================================================
-# Copy Build and Run Scripts
+# Copy Scripts Directory
 # ===================================================================
 COPY scripts/windows C:\scripts\windows
 
@@ -100,4 +100,3 @@ COPY scripts/windows C:\scripts\windows
 # Default Command
 # ===================================================================
 ENTRYPOINT ["cmd.exe", "/C", "C:\\BuildTools\\VC\\Auxiliary\\Build\\VsDevCmd.bat && cmd"]
-
