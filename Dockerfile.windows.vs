@@ -3,7 +3,7 @@
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # ===================================================================
 # Metadata
@@ -28,9 +28,9 @@ ARG CMAKE_VERSION=3.21.3
 # Environment Variables
 # ===================================================================
 ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV BUILD_DIR=C:\app
 ENV TEMP_DIR=C:\TEMP
 ENV CMAKE_DIR=C:\CMake
+ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\VC\\Auxiliary\\Build;%PATH%"
 
 # ===================================================================
 # Set Shell to cmd
@@ -55,33 +55,40 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
 # ===================================================================
 RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
+# ===================================================================
 # Download and Install Visual Studio Build Tools
 # ===================================================================
-RUN echo "[LOG] Downloading Visual Studio installer..." && `
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri '%CHANNEL_URL%' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
-    Invoke-WebRequest -Uri '%VS_BUILD_TOOLS_URL%' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'" && `
-    echo "[LOG] Installing Visual Studio Build Tools silently..." && `
-    "%TEMP_DIR%\\vs_buildtools.exe" --quiet --wait --norestart `
-        --channelUri "%TEMP_DIR%\\VisualStudio.chman" `
-        --installChannelUri "%TEMP_DIR%\\VisualStudio.chman" `
+RUN powershell -Command " `
+    Write-Output '[LOG] Downloading Visual Studio installer...'; `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri '$env:CHANNEL_URL' -OutFile '$env:TEMP_DIR\VisualStudio.chman'; `
+    Invoke-WebRequest -Uri '$env:VS_BUILD_TOOLS_URL' -OutFile '$env:TEMP_DIR\vs_buildtools.exe'; `
+    Write-Output '[LOG] Installing Visual Studio Build Tools silently...'; `
+    switch ($env:VS_VERSION) { `
+        '15' { $sdk = 'Microsoft.VisualStudio.Component.Windows10SDK.17763' } `
+        '16' { $sdk = 'Microsoft.VisualStudio.Component.Windows10SDK.18362' } `
+        '17' { $sdk = 'Microsoft.VisualStudio.Component.Windows10SDK.19041' } `
+        default { Write-Error 'Invalid VS_VERSION'; exit 1 } `
+    }; `
+    & '$env:TEMP_DIR\vs_buildtools.exe' --quiet --wait --norestart `
+        --channelUri '$env:TEMP_DIR\VisualStudio.chman' `
+        --installChannelUri '$env:TEMP_DIR\VisualStudio.chman' `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
         --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended `
-        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --includeRecommended `
+        --add $sdk --includeRecommended `
         --add Microsoft.VisualStudio.Component.CoreBuildTools --includeRecommended `
-        --installPath "%BUILD_TOOLS_PATH%" `
-        --noUpdateInstaller && `
-    echo "[LOG] Verifying VsDevCmd.bat location..." && `
-    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat"
+        --installPath '$env:BUILD_TOOLS_PATH' `
+        --noUpdateInstaller; `
+    Write-Output '[LOG] Verifying VsDevCmd.bat location...'; `
+    if (-Not (Test-Path '$env:BUILD_TOOLS_PATH\VC\Auxiliary\Build\VsDevCmd.bat')) { `
+        Write-Error 'VsDevCmd.bat not found!'; exit 1 `
+    }"
+
 # ===================================================================
 # Clean Up Temporary Files
 # ===================================================================
 RUN rmdir /S /Q %TEMP_DIR%
 
-# ===================================================================
-# Set PATH to include CMake and Build Tools
-# ===================================================================
-ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\VC\\Auxiliary\\Build;%PATH%"
 # ===================================================================
 # Set Working Directory
 # ===================================================================
