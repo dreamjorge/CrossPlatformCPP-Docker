@@ -93,4 +93,4 @@ RUN echo BUILD_DIR=%BUILD_DIR%
 # ===================================================================
 # Default Command
 # ===================================================================
-ENTRYPOINT ["cmd.exe", "/C", "C:\\BuildTools\\VC\\Auxiliary\\Build\\VsDevCmd.bat && cmd"]
+ENTRYPOINT ["cmd.exe", "/C", "C:\BuildTools\Common7\Tools\VsDevCmd.bat && cmd"]
