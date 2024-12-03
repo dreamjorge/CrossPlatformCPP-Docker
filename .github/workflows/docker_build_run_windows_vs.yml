@@ -43,7 +43,7 @@ jobs:
       - name: Define Docker Image Tag
         id: set_tag
         run: |
-          echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${{ matrix.config | lower }}-${{ github.run_number }}" >> $GITHUB_ENV
 
       # Step 3: Log configuration for debugging
       - name: Log Build Configuration
