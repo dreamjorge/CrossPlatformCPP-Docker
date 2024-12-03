@@ -13,7 +13,7 @@ on:
       - main
 
 env:
-  # Global configuration variables
+  # Global environment variables for consistent configuration
   CMAKE_VERSION: 3.21.3
   DOCKERFILE_PATH: Dockerfile.windows.vs
   DOCKER_IMAGE_PREFIX: crossplatformapp
@@ -73,16 +73,25 @@ jobs:
             -t ${{ env.DOCKER_IMAGE_TAG }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
-      # Step 5: Validate Mounted Scripts Inside Docker
+      # Step 5: Debug Mounted Directory Inside Docker
+      - name: Debug Mounted Directory
+        shell: pwsh
+        run: |
+          docker run --rm `
+            -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `
+            ${{ env.DOCKER_IMAGE_TAG }} `
+            cmd.exe /c "dir C:\app\scripts\windows"
+
+      # Step 6: Validate Scripts Inside Docker
       - name: Validate Scripts Inside Docker
         shell: pwsh
         run: |
           docker run --rm `
-            -v "${{ github.workspace }}:C:\app" `
+            -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `
             ${{ env.DOCKER_IMAGE_TAG }} `
-            cmd.exe /c "if not exist C:\app\scripts\windows\build.cmd exit 1"
-      
-      # Step 6: Run Build Script Inside Docker
+            cmd.exe /c "if not exist C:\app\scripts\windows\build.cmd (echo File not found && exit 1)"
+
+      # Step 7: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
         shell: pwsh
         run: |
@@ -91,7 +100,7 @@ jobs:
             ${{ env.DOCKER_IMAGE_TAG }} `
             cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
 
-      # Step 7: Run Application Inside Docker
+      # Step 8: Run Application Inside Docker
       - name: Run Application Inside Docker
         shell: pwsh
         run: |

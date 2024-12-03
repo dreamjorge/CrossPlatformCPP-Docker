@@ -78,13 +78,21 @@ WORKDIR C:\app
 # ===================================================================
 # Copy Scripts Directory
 # ===================================================================
-# Copy scripts directory into the container
 COPY scripts/windows C:\app\scripts\windows
 
-# Verify the scripts exist
-RUN dir C:\app\scripts\windows
-
+# ===================================================================
+# Verify Copied Scripts
+# ===================================================================
+RUN echo "[LOG] Verifying copied scripts directory:" && `
+    dir C:\app\scripts\windows
 
 # ===================================================================
 # Verify BUILD_DIR Environment Variable
-# ============
+# ===================================================================
+RUN echo "[LOG] Verifying BUILD_DIR environment variable:" && `
+    echo BUILD_DIR=%BUILD_DIR%
+
+# ===================================================================
+# Default Command
+# ===================================================================
+CMD ["cmd.exe"]
