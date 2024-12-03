@@ -55,8 +55,7 @@ RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
 # ===================================================================
 RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-# ===================================================================
-# Install Visual Studio Build Tools with C++ Workload and Core Build Tools
+# Download and Install Visual Studio Build Tools
 # ===================================================================
 RUN echo "[LOG] Downloading Visual Studio installer..." && `
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
@@ -73,8 +72,7 @@ RUN echo "[LOG] Downloading Visual Studio installer..." && `
         --installPath "%BUILD_TOOLS_PATH%" `
         --noUpdateInstaller && `
     echo "[LOG] Verifying VsDevCmd.bat location..." && `
-    dir "%BUILD_TOOLS_PATH%\Common7\Tools\VsDevCmd.bat" || (echo "VsDevCmd.bat not found!" && exit /b 1)
-
+    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat"
 # ===================================================================
 # Clean Up Temporary Files
 # ===================================================================
@@ -83,8 +81,7 @@ RUN rmdir /S /Q %TEMP_DIR%
 # ===================================================================
 # Set PATH to include CMake and Build Tools
 # ===================================================================
-ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\Common7\\Tools;%PATH%"
-
+ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\VC\\Auxiliary\\Build;%PATH%"
 # ===================================================================
 # Set Working Directory
 # ===================================================================
@@ -103,4 +100,4 @@ RUN echo BUILD_DIR=%BUILD_DIR%
 # ===================================================================
 # Default Command
 # ===================================================================
-CMD ["cmd.exe"]
+ENTRYPOINT ["C:\\BuildTools\\VC\\Auxiliary\\Build\\VsDevCmd.bat", "&&", "cmd.exe"]
