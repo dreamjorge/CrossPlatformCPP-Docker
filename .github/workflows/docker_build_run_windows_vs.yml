@@ -47,7 +47,6 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.DOCKER_IMAGE_PREFIX }}-${{ matrix.vs_version.tag }}-${{ github.run_number }}"
           echo "DOCKER_IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          echo "Docker Image Tag set to: $IMAGE_TAG"
         shell: bash
 
       # Step 3: Log Build Configuration
@@ -73,8 +72,8 @@ jobs:
             -t ${{ env.DOCKER_IMAGE_TAG }} `
             -f ${{ env.DOCKERFILE_PATH }} .
 
-      # Step 5: Debug Mounted Directory Inside Docker
-      - name: Debug Mounted Directory
+      # Step 5: Debug Mounted Scripts
+      - name: Debug Mounted Scripts
         shell: pwsh
         run: |
           docker run --rm `
@@ -82,7 +81,7 @@ jobs:
             ${{ env.DOCKER_IMAGE_TAG }} `
             cmd.exe /c "dir C:\app\scripts\windows"
 
-      # Step 6: Validate Scripts Inside Docker
+      # Step 6: Validate Scripts in Container
       - name: Validate Scripts Inside Docker
         shell: pwsh
         run: |
@@ -100,7 +99,16 @@ jobs:
             ${{ env.DOCKER_IMAGE_TAG }} `
             cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
 
-      # Step 8: Run Application Inside Docker
+      # Step 8: Debug Build Directory
+      - name: Debug Build Directory
+        shell: pwsh
+        run: |
+          docker run --rm `
+            -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `
+            ${{ env.DOCKER_IMAGE_TAG }} `
+            cmd.exe /c "dir C:\app\build\${{ matrix.config }}"
+
+      # Step 9: Run Application Inside Docker
       - name: Run Application Inside Docker
         shell: pwsh
         run: |
