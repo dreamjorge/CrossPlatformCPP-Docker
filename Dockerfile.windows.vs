@@ -68,10 +68,11 @@ RUN echo "[LOG] Downloading Visual Studio installer..." && `
         --installChannelUri "%TEMP_DIR%\\VisualStudio.chman" `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
         --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended `
+        --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --includeRecommended `
         --installPath "%BUILD_TOOLS_PATH%" `
         --noUpdateInstaller && `
     echo "[LOG] Verifying VsDevCmd.bat location..." && `
-    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat" || (echo "VsDevCmd.bat not found!" && exit /b 1)
+    dir "%BUILD_TOOLS_PATH%\Common7\Tools\VsDevCmd.bat" || (echo "VsDevCmd.bat not found!" && exit /b 1)
 
 # ===================================================================
 # Clean Up Temporary Files
@@ -81,7 +82,7 @@ RUN rmdir /S /Q %TEMP_DIR%
 # ===================================================================
 # Set PATH to include CMake and Build Tools
 # ===================================================================
-ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%PATH%"
+ENV PATH="C:\\ProgramData\\chocolatey\\bin;C:\\CMake\\bin;%BUILD_TOOLS_PATH%\\Common7\\Tools;%PATH%"
 
 # ===================================================================
 # Set Working Directory
