@@ -81,14 +81,19 @@ if errorlevel 1 (
 :: ============================
 CALL :Log "Starting build process..."
 CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ^
-    && cmake -S . -B build -G "%VS_GENERATOR%" -A x64 ^
-    && cmake --build build --config %CONFIG%
+    && cmake -S . -B build -G "%VS_GENERATOR%" -A x64 > build_logs.txt 2>&1 ^
+    && cmake --build build --config %CONFIG% --verbose >> build_logs.txt 2>&1
 
 if errorlevel 1 (
-    CALL :ErrorExit "Build failed!"
+    CALL :ErrorExit "Build failed! See build_logs.txt for details."
 ) else (
-    CALL :Log "Build completed successfully."
+    CALL :Log "Build completed successfully. See build_logs.txt for details."
 )
+
+:: ============================
+:: Display Build Logs
+:: ============================
+type build_logs.txt
 
 :: ============================
 :: Exit Successfully
