@@ -80,13 +80,13 @@ jobs:
             ${{ steps.tag_step.outputs.docker_tag }} `
             cmd.exe /c "if not exist C:\app\scripts\windows\build.cmd (echo Build script not found && exit 1)"
 
-      # Run Build Script Inside Docker
+      # Step 6: Run Build Script Inside Docker
       - name: Run Build Script Inside Docker
         shell: pwsh
         run: |
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `
-            ${{ env.DOCKER_IMAGE_TAG }} `
+            ${{ steps.tag_step.outputs.docker_tag }} `
             cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
 
       # Step 7: Validate Run Script Inside Docker
