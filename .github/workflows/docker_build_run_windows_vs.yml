@@ -62,7 +62,7 @@ jobs:
 
       # Step 4: Build Docker Image
       - name: Build Docker Image
-        if: matrix.config == 'Debug'  # Build Docker image only once for Debug
+        #if: matrix.config == 'Debug'  # Build Docker image only once for Debug
         shell: pwsh
         run: |
           docker build --no-cache `
