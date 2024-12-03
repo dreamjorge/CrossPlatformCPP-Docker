@@ -77,6 +77,15 @@ if errorlevel 1 (
 )
 
 :: ============================
+:: Set Up Build Directory
+:: ============================
+CALL :Log "Setting up build directory..."
+if exist "build" (
+    rmdir /S /Q build
+)
+mkdir build
+
+:: ============================
 :: Log Before Calling VsDevCmd.bat
 :: ============================
 CALL :Log "Calling VsDevCmd.bat..."
