@@ -77,13 +77,23 @@ if errorlevel 1 (
 )
 
 :: ============================
+:: Log Before Calling VsDevCmd.bat
+:: ============================
+CALL :Log "Calling VsDevCmd.bat..."
+CALL "C:\BuildTools\VC\Auxiliary\Build\VsDevCmd.bat" ^
+    && CALL :Log "VsDevCmd.bat executed successfully." ^
+    || CALL :ErrorExit "VsDevCmd.bat failed to execute."
+
+:: ============================
 :: Start Build Process
 :: ============================
 CALL :Log "Starting build process..."
-CALL "C:\BuildTools\Common7\Tools\VsDevCmd.bat" ^
-    && cmake -S . -B build -G "%VS_GENERATOR%" -A x64 > build_logs.txt 2>&1 ^
-    && cmake --build build --config %CONFIG% --verbose >> build_logs.txt 2>&1
+cmake -S . -B build -G "%VS_GENERATOR%" -A x64 > build_logs.txt 2>&1
+if errorlevel 1 (
+    CALL :ErrorExit "CMake configuration failed! See build_logs.txt for details."
+)
 
+cmake --build build --config %CONFIG% --verbose >> build_logs.txt 2>&1
 if errorlevel 1 (
     CALL :ErrorExit "Build failed! See build_logs.txt for details."
 ) else (

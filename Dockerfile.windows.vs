@@ -62,7 +62,15 @@ RUN echo "[LOG] Downloading Visual Studio installer and CMake..." && `
         --installChannelUri "%TEMP_DIR%\\VisualStudio.chman" `
         --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
         --installPath "%BUILD_TOOLS_PATH%" `
-        --noUpdateInstaller
+        --noUpdateInstaller && `
+    echo "[LOG] Verifying VsDevCmd.bat location..." && `
+    dir "%BUILD_TOOLS_PATH%\VC\Auxiliary\Build\VsDevCmd.bat"
+
+# ===================================================================
+# Set System PATH
+# ===================================================================
+ENV PATH="C:\\CMake\\bin;%PATH%"
+
 
 # ===================================================================
 # Clean Up Temporary Files

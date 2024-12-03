@@ -87,7 +87,7 @@ jobs:
           docker run --rm `
             -v "${{ github.workspace }}:${{ env.MOUNT_PATH }}" `
             ${{ steps.tag_step.outputs.docker_tag }} `
-            cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}"
+            cmd.exe /c "${{ env.BUILD_SCRIPT }} ${{ matrix.vs_version.version }} ${{ matrix.config }}" | Out-String -Stream
 
       # Step 7: Validate Run Script Inside Docker
       - name: Validate Run Script Inside Docker
