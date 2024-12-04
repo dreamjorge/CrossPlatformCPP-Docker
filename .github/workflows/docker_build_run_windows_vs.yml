@@ -43,12 +43,14 @@ jobs:
             -f Dockerfile.windows.vs .
 
       - name: Run Build Script Inside Docker
+        shell: pwsh
         run: |
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -v "${{ github.workspace }}:$env:APP_WORKDIR" `
             ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }} `
-            cmd.exe /c $env:BUILD_SCRIPT${{ matrix.vs_version }}.cmd
+            cmd.exe /c "C:\scripts\windows\build.vs${{ matrix.vs_version }}.cmd"
+          
 
       - name: Run Application Inside Docker
         run: |
