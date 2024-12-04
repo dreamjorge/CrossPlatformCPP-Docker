@@ -1,54 +1,59 @@
 @echo off
 
-:: Unified build script with minimized redundancy
+:: Log start
+echo Starting build.cmd > C:\app\build.log
+echo CONFIG: %1 >> C:\app\build.log
+echo VS_VERSION: %2 >> C:\app\build.log
 
-:: Function: Print error message and exit
-:exitWithError
-echo ERROR: %1
-exit /b 1
-
-:: Input arguments
-SET CONFIG=%1
-SET VS_VERSION=%2
-
-:: Default values if not provided
-IF "%CONFIG%"=="" SET CONFIG=Release
-IF "%VS_VERSION%"=="" SET VS_VERSION=17
-
-:: Set the build type
-SET BUILD_TYPE=%CONFIG%
-echo CONFIG: %CONFIG%
-echo VS_VERSION: %VS_VERSION%
-echo BUILD_TYPE: %BUILD_TYPE%
-
-:: Verify the presence of CMakeLists.txt
-echo Verifying CMakeLists.txt presence:
-if not exist "CMakeLists.txt" call :exitWithError "CMakeLists.txt not found!"
-
-:: Verify CMake installation
-echo Verifying CMake installation:
-cmake --version >nul 2>&1 || call :exitWithError "CMake is not installed or not in PATH!"
-
-:: Determine the Visual Studio environment script and CMake generator
-SET CMAKE_GENERATOR=
-IF "%VS_VERSION%"=="15" (
-    SET VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
-    SET CMAKE_GENERATOR="Visual Studio 15 2017"
-) ELSE IF "%VS_VERSION%"=="16" (
-    SET VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
-    SET CMAKE_GENERATOR="Visual Studio 16 2019"
-) ELSE IF "%VS_VERSION%"=="17" (
-    SET VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
-    SET CMAKE_GENERATOR="Visual Studio 17 2022"
-) ELSE (
-    call :exitWithError "Unsupported Visual Studio version: %VS_VERSION%"
+:: Validate arguments
+if "%~1"=="" (
+    echo ERROR: Missing CONFIG argument (Debug/Release) >> C:\app\build.log
+    exit /b 1
+)
+if "%~2"=="" (
+    echo ERROR: Missing VS_VERSION argument (15/16/17) >> C:\app\build.log
+    exit /b 1
 )
 
-:: Build process
-echo Starting build process with VS_VERSION=%VS_VERSION% and CONFIG=%CONFIG%...
-CALL %VS_DEV_CMD% ^
-    && cmake -S . -B build -G %CMAKE_GENERATOR% -A x64 ^
-    && cmake --build build --config %BUILD_TYPE% || call :exitWithError "Build failed!"
+:: Set variables from arguments
+set CONFIG=%1
+set VS_VERSION=%2
 
-echo Build completed successfully!
+:: Log environment
+echo Using CONFIG=%CONFIG% and VS_VERSION=%VS_VERSION% >> C:\app\build.log
+
+:: Initialize Visual Studio environment
+if "%VS_VERSION%"=="15" (
+    set VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
+) else if "%VS_VERSION%"=="16" (
+    set VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
+) else if "%VS_VERSION%"=="17" (
+    set VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
+) else (
+    echo ERROR: Unsupported VS_VERSION=%VS_VERSION% >> C:\app\build.log
+    exit /b 1
+)
+
+:: Call Visual Studio environment
+call %VS_DEV_CMD% >> C:\app\build.log 2>&1
+if errorlevel 1 (
+    echo ERROR: Failed to initialize Visual Studio environment >> C:\app\build.log
+    exit /b 1
+)
+
+:: Run CMake commands
+cmake -S C:\app -B C:\app\build -DCMAKE_BUILD_TYPE=%CONFIG% >> C:\app\build.log 2>&1
+if errorlevel 1 (
+    echo ERROR: CMake configuration failed >> C:\app\build.log
+    exit /b 1
+)
+
+cmake --build C:\app\build --config %CONFIG% >> C:\app\build.log 2>&1
+if errorlevel 1 (
+    echo ERROR: Build failed >> C:\app\build.log
+    exit /b 1
+)
+
+:: Success
+echo Build completed successfully >> C:\app\build.log
 exit /b 0
