@@ -1,84 +1,80 @@
 name: Docker Build and Run on Windows
 
-# Triggers for the workflow
-# This workflow runs on push and pull request events targeting the 'main' branch.
+# This workflow automates the process of building and running a C++ application
+# inside Docker containers. It supports multiple Visual Studio versions (2017, 
+# 2019, 2022) and build configurations (Debug, Release) using a matrix strategy.
+# Steps:
+# 1. Checkout the code repository.
+# 2. Build a Docker image specific to the Visual Studio version and configuration.
+# 3. Run a build script inside the container to compile the application.
+# 4. Run the compiled application inside the container.
+
 on:
   push:
     branches:
-      - main              # Trigger on pushes to the main branch
+      - main
   pull_request:
     branches:
-      - main              # Trigger on pull requests targeting the main branch
+      - main
 
-# Global environment variables
-# Reused across the workflow to ensure consistency and reduce redundancy.
 env:
-  CMAKE_VERSION: 3.21.3       # Version of CMake used in the Dockerfile
+  CMAKE_VERSION: 3.21.3         # Version of CMake used in the Dockerfile
   IMAGE_PREFIX: crossplatformapp-vs  # Prefix for Docker image tags
-  APP_WORKDIR: C:\app         # Working directory inside the Docker container
+  APP_WORKDIR: C:\app           # Working directory inside the Docker container
   SCRIPTS_PATH: C:\scripts\windows  # Path to the scripts directory in the container
-  BUILD_SCRIPT: build.cmd     # Build script filename executed in the container
-  RUN_SCRIPT: run.cmd         # Run script filename executed in the container
+  BUILD_SCRIPT: build.cmd       # Build script filename executed in the container
+  RUN_SCRIPT: run.cmd           # Run script filename executed in the container
   DOCKERFILE_PATH: Dockerfile.windows.vs  # Path to the Dockerfile used for building images
 
 jobs:
   build-and-run-windows-docker:
-    name: Build and Run Docker (Windows) # Job to build and run the application using Docker
-    runs-on: windows-latest             # Specify a Windows-based runner for compatibility with Windows containers
+    name: Build and Run Docker (Windows)
+    runs-on: windows-latest
 
-    # Strategy matrix
-    # Test the application with multiple Visual Studio versions and build configurations.
     strategy:
       matrix:
-        vs_version: [15, 16, 17]        # Visual Studio versions: 2017, 2019, 2022
-        config: [Debug, Release]        # Build configurations to validate: Debug and Release
+        vs_version: [15, 16, 17]
+        config: [Debug, Release]
 
-    # Default shell for running commands
-    # PowerShell is used for all commands to ensure consistent behavior on Windows.
     defaults:
       run:
         shell: pwsh
 
     steps:
-      # Step 1: Checkout code
-      # Fetch the code repository for building and testing the application.
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0                # Fetch the entire commit history for full context (useful for submodules or detailed logging)
+          fetch-depth: 0
 
-      # Step 2: Build Docker image
-      # Create a Docker image tailored for the specified Visual Studio version and configuration.
       - name: Build Docker Image
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }} # Dynamically construct the image tag using the prefix and Visual Studio version
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         run: |
-          docker build --no-cache `     # Force rebuild to avoid using stale intermediate layers
-            --build-arg VS_VERSION=${{ matrix.vs_version }} ` # Pass Visual Studio version as a build argument
-            --build-arg CMAKE_VERSION=$env:CMAKE_VERSION `    # Pass the specified CMake version from environment variables
-            -t $env:IMAGE_TAG `        # Tag the image with the dynamically constructed name
-            -f $env:DOCKERFILE_PATH .  # Specify the Dockerfile path and build context
+          # Build a Docker image for the specified Visual Studio version and configuration.
+          docker build --no-cache `
+            --build-arg VS_VERSION=${{ matrix.vs_version }} `
+            --build-arg CMAKE_VERSION=$env:CMAKE_VERSION `
+            -t $env:IMAGE_TAG `
+            -f $env:DOCKERFILE_PATH .
 
-      # Step 3: Run build script inside Docker
-      # Execute the build process for the application within the Docker container.
       - name: Run Build Script Inside Docker
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }} # Reuse the same image tag as the build step
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         run: |
-          docker run --rm `             # Remove the container after execution to avoid clutter
-            -e CONFIG=${{ matrix.config }} ` # Pass the build configuration (Debug or Release) as an environment variable
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" ` # Mount the GitHub workspace into the container
-            $env:IMAGE_TAG `            # Use the previously built Docker image
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.BUILD_SCRIPT }} ${{ matrix.config }} ${{ matrix.vs_version }}" # Run the build script with parameters
+          # Run the build script inside the Docker container to compile the application.
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            $env:IMAGE_TAG `
+            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.BUILD_SCRIPT }} ${{ matrix.config }} ${{ matrix.vs_version }}"
 
-      # Step 4: Run application inside Docker
-      # Execute the compiled application within the Docker container.
       - name: Run Application Inside Docker
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }} # Use the same Docker image tag as earlier steps
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         run: |
-          docker run --rm `             # Remove the container after execution
-            -e CONFIG=${{ matrix.config }} ` # Pass the build configuration (Debug or Release)
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" ` # Mount the GitHub workspace for runtime dependencies
-            $env:IMAGE_TAG `            # Use the built Docker image
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.RUN_SCRIPT }}" # Run the application script
+          # Execute the compiled application inside the Docker container.
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            $env:IMAGE_TAG `
+            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.RUN_SCRIPT }}"
