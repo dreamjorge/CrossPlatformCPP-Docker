@@ -62,9 +62,9 @@ jobs:
         run: |
           $hostPath = Get-Content host_path.txt
           docker run --rm `
-            -v "$hostPath:$env:APP_WORKDIR" `
+            -v "${hostPath}:${env:APP_WORKDIR}" `
             $env:IMAGE_TAG `
-            cmd.exe /c "dir %APP_WORKDIR%"
+            cmd.exe /c "dir $env:APP_WORKDIR"
 
       - name: Run Build Script Inside Docker
         env:
@@ -75,7 +75,9 @@ jobs:
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
-            -v "$hostPath:$env:APP_WORKDIR" `
+            -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
+            -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
+            -v "${hostPath}:${env:APP_WORKDIR}" `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%BUILD_SCRIPT% %CONFIG% %VS_VERSION%"
 
@@ -95,7 +97,8 @@ jobs:
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
-            -v "$hostPath:$env:APP_WORKDIR" `
+            -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
+            -e RUN_SCRIPT=$env:RUN_SCRIPT `
+            -v "${hostPath}:${env:APP_WORKDIR}" `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%RUN_SCRIPT%"
-
