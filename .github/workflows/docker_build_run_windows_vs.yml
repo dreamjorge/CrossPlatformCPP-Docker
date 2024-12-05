@@ -59,7 +59,7 @@ jobs:
             -t $env:IMAGE_TAG `
             -f $env:DOCKERFILE_PATH .
 
-      - name: Execute Build Script in Docker for Visual Studio ${{ matrix.vs_version.year }} ({{ matrix.config }})
+      - name: Execute Build Script in Docker for Visual Studio ${{ matrix.vs_version.year }} (${{matrix.config}})
         # Executes the build script inside the Docker container for the application.
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version.version }}
@@ -98,7 +98,7 @@ jobs:
             Write-Host "build.log not found."
           }
 
-      - name: Execute Application in Docker for Visual Studio ${{ matrix.vs_version.year }} ({{ matrix.config }})
+      - name: Execute Application in Docker for Visual Studio ${{ matrix.vs_version.year }} (${{matrix.config}})
         # Runs the application inside the Docker container after a successful build.
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version.version }}
