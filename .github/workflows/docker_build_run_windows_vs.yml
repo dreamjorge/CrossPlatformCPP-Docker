@@ -46,6 +46,15 @@ jobs:
             -t $env:IMAGE_TAG `
             -f $env:DOCKERFILE_PATH .
 
+      - name: Debug Mounted Volume
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+        run: |
+          docker run --rm `
+            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            $env:IMAGE_TAG `
+            cmd.exe /c "dir $env:APP_WORKDIR"
+
       - name: Run Build Script Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
@@ -59,15 +68,4 @@ jobs:
       - name: Display Build Logs (if failure)
         if: failure()
         run: |
-          # Display logs from the build process
           type $env:APP_WORKDIR\build.log
-
-      - name: Run Application Inside Docker
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
-        run: |
-          docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
-            $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.RUN_SCRIPT }}"
