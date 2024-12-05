@@ -72,17 +72,17 @@ jobs:
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-
+      
           Write-Host "CONFIG: $env:CONFIG"
           Write-Host "VS_VERSION: $env:VS_VERSION"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
-
+      
           $scriptPath = "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT"
-          $command = "powershell.exe -ExecutionPolicy Bypass -File `"$scriptPath`""
-
+          $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
+      
           Write-Host "Command to execute: $command"
-
+      
           docker run --rm `
             -e CONFIG=$env:CONFIG `
             -e VS_VERSION=$env:VS_VERSION `
@@ -90,6 +90,7 @@ jobs:
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
+      
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -110,19 +111,20 @@ jobs:
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-
+      
           Write-Host "CONFIG: $env:CONFIG"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
-
+      
           $scriptPath = "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
-          $command = "powershell.exe -ExecutionPolicy Bypass -File `"$scriptPath`""
-
+          $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
+      
           Write-Host "Command to execute: $command"
-
+      
           docker run --rm `
             -e CONFIG=$env:CONFIG `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
+      
