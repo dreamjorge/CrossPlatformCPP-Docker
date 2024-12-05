@@ -1,16 +1,9 @@
 @echo off
 
 :: Initialize logging
-set LOG_FILE=%APP_WORKDIR%\build.log
+set LOG_FILE=C:\app\build.log
 echo Starting build process at %date% %time% > %LOG_FILE%
 echo Logging to %LOG_FILE%
-
-:: Log initial environment variables
-echo === Environment Variables === >> %LOG_FILE%
-echo APP_WORKDIR: %APP_WORKDIR% >> %LOG_FILE%
-echo CONFIG: %1 >> %LOG_FILE%
-echo VS_VERSION: %2 >> %LOG_FILE%
-echo ============================= >> %LOG_FILE%
 
 :: Validate arguments
 if "%~1"=="" (
@@ -32,7 +25,7 @@ echo === Current Directory: %cd% === >> %LOG_FILE%
 dir >> %LOG_FILE%
 echo ================================= >> %LOG_FILE%
 
-:: Determine Visual Studio version and initialize environment
+:: Initialize Visual Studio environment
 if "%VS_VERSION%"=="15" (
     set VS_DEV_CMD="C:\BuildTools\Common7\Tools\VsDevCmd.bat"
 ) else if "%VS_VERSION%"=="16" (
@@ -62,7 +55,7 @@ if errorlevel 1 (
 
 :: Run CMake configuration
 echo Running CMake configuration... >> %LOG_FILE%
-cmake -S %APP_WORKDIR% -B %APP_WORKDIR%\build -DCMAKE_BUILD_TYPE=%CONFIG% >> %LOG_FILE% 2>&1
+cmake -S C:\app -B C:\app\build -DCMAKE_BUILD_TYPE=%CONFIG% >> %LOG_FILE% 2>&1
 if errorlevel 1 (
     echo ERROR: CMake configuration failed >> %LOG_FILE%
     exit /b 1
@@ -70,7 +63,7 @@ if errorlevel 1 (
 
 :: Build project
 echo Building project... >> %LOG_FILE%
-cmake --build %APP_WORKDIR%\build --config %CONFIG% >> %LOG_FILE% 2>&1
+cmake --build C:\app\build --config %CONFIG% >> %LOG_FILE% 2>&1
 if errorlevel 1 (
     echo ERROR: Build failed >> %LOG_FILE%
     exit /b 1

@@ -53,7 +53,7 @@ jobs:
           docker run --rm `
             -v "${{ github.workspace }}:$env:APP_WORKDIR" `
             $env:IMAGE_TAG `
-            cmd.exe /c "dir $env:APP_WORKDIR"
+            cmd.exe /c "dir C:\\app"
 
       - name: Run Build Script Inside Docker
         env:
@@ -69,3 +69,13 @@ jobs:
         if: failure()
         run: |
           type $env:APP_WORKDIR\build.log
+
+      - name: Run Application Inside Docker
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+        run: |
+          docker run --rm `
+            -e CONFIG=${{ matrix.config }} `
+            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            $env:IMAGE_TAG `
+            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.RUN_SCRIPT }}"
