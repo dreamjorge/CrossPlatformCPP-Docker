@@ -65,28 +65,32 @@ jobs:
           BUILD_SCRIPT: ${{ env.BUILD_SCRIPT }}
           CONFIG: ${{ matrix.config }}
           VS_VERSION: ${{ matrix.vs_version }}
+          APP_WORKDIR: C:\app
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-
+      
           Write-Host "CONFIG: $env:CONFIG"
           Write-Host "VS_VERSION: $env:VS_VERSION"
+          Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
-
+      
           $scriptPath = "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-
+      
           Write-Host "Command to execute: $command"
-
+      
           docker run --rm `
             -e CONFIG=$env:CONFIG `
             -e VS_VERSION=$env:VS_VERSION `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
+        
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -101,23 +105,27 @@ jobs:
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
           CONFIG: ${{ matrix.config }}
+          APP_WORKDIR: C:\app
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-
+      
           Write-Host "CONFIG: $env:CONFIG"
+          Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
-
+      
           $scriptPath = "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-
+      
           Write-Host "Command to execute: $command"
-
+      
           docker run --rm `
             -e CONFIG=$env:CONFIG `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
+        

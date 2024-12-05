@@ -5,12 +5,19 @@ Param (
 
 # Determine the root of the repository
 if (-not $env:APP_WORKDIR) {
-    # Get the directory of the script
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    # Assume the root of the repository is the parent directory of the script directory
-    $env:APP_WORKDIR = Split-Path -Parent $scriptDir
-    Write-Host "APP_WORKDIR not set. Using repository root: $env:APP_WORKDIR"
+    # Check if C:\app exists (Docker environment)
+    if (Test-Path "C:\app") {
+        $env:APP_WORKDIR = "C:\app"
+        Write-Host "APP_WORKDIR not set. Using Docker app directory: $env:APP_WORKDIR"
+    } else {
+        # Get the directory of the script
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        # Assume the root of the repository is the parent directory of the script directory
+        $env:APP_WORKDIR = Split-Path -Parent $scriptDir
+        Write-Host "APP_WORKDIR not set. Using repository root: $env:APP_WORKDIR"
+    }
 }
+
 
 # Initialize logging
 $LOG_FILE = "$env:APP_WORKDIR\build.log"
