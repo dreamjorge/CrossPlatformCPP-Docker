@@ -1,7 +1,7 @@
 @echo off
 
 :: Initialize logging
-set LOG_FILE=C:\app\build.log
+set LOG_FILE=%APP_WORKDIR%\build.log
 echo Starting build process at %date% %time% > %LOG_FILE%
 echo Logging to %LOG_FILE%
 
@@ -55,7 +55,7 @@ if errorlevel 1 (
 
 :: Run CMake configuration
 echo Running CMake configuration... >> %LOG_FILE%
-cmake -S C:\app -B C:\app\build -DCMAKE_BUILD_TYPE=%CONFIG% >> %LOG_FILE% 2>&1
+cmake -S %APP_WORKDIR% -B %APP_WORKDIR%\build -DCMAKE_BUILD_TYPE=%CONFIG% >> %LOG_FILE% 2>&1
 if errorlevel 1 (
     echo ERROR: CMake configuration failed >> %LOG_FILE%
     exit /b 1
@@ -63,7 +63,7 @@ if errorlevel 1 (
 
 :: Build project
 echo Building project... >> %LOG_FILE%
-cmake --build C:\app\build --config %CONFIG% >> %LOG_FILE% 2>&1
+cmake --build %APP_WORKDIR%\build --config %CONFIG% >> %LOG_FILE% 2>&1
 if errorlevel 1 (
     echo ERROR: Build failed >> %LOG_FILE%
     exit /b 1

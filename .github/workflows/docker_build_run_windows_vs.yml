@@ -11,8 +11,8 @@ on:
 env:
   CMAKE_VERSION: 3.21.3
   IMAGE_PREFIX: crossplatformapp-vs
-  APP_WORKDIR: C:\app
-  SCRIPTS_PATH: C:\scripts\windows
+  APP_WORKDIR: /app
+  SCRIPTS_PATH: /scripts/windows
   BUILD_SCRIPT: build.cmd
   RUN_SCRIPT: run.cmd
   DOCKERFILE_PATH: Dockerfile.windows.vs
@@ -36,6 +36,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Convert Host Path
+        shell: pwsh
+        run: |
+          $driveLetter = $env:GITHUB_WORKSPACE.Substring(0,1).ToLower()
+          $pathRest = $env:GITHUB_WORKSPACE.Substring(2) -replace '\\', '/'
+          $dockerHostPath = '/' + $driveLetter + $pathRest
+          Write-Host "Converted host path: $dockerHostPath"
+          "$dockerHostPath" | Out-File -FilePath host_path.txt -Encoding utf8
+
       - name: Build Docker Image
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
@@ -49,33 +58,44 @@ jobs:
       - name: Debug Mounted Volume
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+        shell: pwsh
         run: |
+          $hostPath = Get-Content host_path.txt
           docker run --rm `
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            -v "$hostPath:$env:APP_WORKDIR" `
             $env:IMAGE_TAG `
-            cmd.exe /c "dir C:\\app"
+            cmd.exe /c "dir %APP_WORKDIR%"
 
       - name: Run Build Script Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+        shell: pwsh
         run: |
+          $hostPath = Get-Content host_path.txt
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
+            -v "$hostPath:$env:APP_WORKDIR" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.BUILD_SCRIPT }} ${{ matrix.config }} ${{ matrix.vs_version }}"
+            cmd.exe /c "%SCRIPTS_PATH%\%BUILD_SCRIPT% %CONFIG% %VS_VERSION%"
 
       - name: Display Build Logs (if failure)
         if: failure()
+        shell: pwsh
         run: |
-          type $env:APP_WORKDIR\build.log
+          $hostPath = Get-Content host_path.txt
+          type "$hostPath\build.log"
 
       - name: Run Application Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+        shell: pwsh
         run: |
+          $hostPath = Get-Content host_path.txt
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
-            -v "${{ github.workspace }}:$env:APP_WORKDIR" `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
+            -v "$hostPath:$env:APP_WORKDIR" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.RUN_SCRIPT }}"
+            cmd.exe /c "%SCRIPTS_PATH%\%RUN_SCRIPT%"
+
