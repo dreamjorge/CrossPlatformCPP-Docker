@@ -72,9 +72,10 @@ jobs:
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
+            -e VS_VERSION=${{ matrix.vs_version }} `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "%SCRIPTS_PATH%\%BUILD_SCRIPT% %CONFIG% %VS_VERSION%"
+            cmd.exe /c "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT $env:CONFIG $env:VS_VERSION"
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -98,4 +99,4 @@ jobs:
             -e RUN_SCRIPT=$env:RUN_SCRIPT `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "%SCRIPTS_PATH%\%RUN_SCRIPT%"
+            cmd.exe /c "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
