@@ -11,8 +11,8 @@ on:
 env:
   CMAKE_VERSION: 3.21.3
   IMAGE_PREFIX: crossplatformapp-vs
-  APP_WORKDIR: C:/app
-  SCRIPTS_PATH: C:/scripts/windows
+  APP_WORKDIR: C:\app
+  SCRIPTS_PATH: C:\scripts\windows
   BUILD_SCRIPT: build.cmd
   RUN_SCRIPT: run.cmd
   DOCKERFILE_PATH: Dockerfile.windows.vs
@@ -52,12 +52,12 @@ jobs:
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:/app'
+          $containerPath = 'C:\app'
           Write-Host "Host Path: $hostPath"
           Write-Host "Container Path: $containerPath"
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           Write-Host "Mount Spec: $mountSpec"
-          docker run --rm --mount "$mountSpec" $env:IMAGE_TAG cmd.exe /c "dir $containerPath"
+          docker run --rm --mount "$mountSpec" $env:IMAGE_TAG cmd.exe /c dir $containerPath
 
       - name: Run Build Script Inside Docker
         env:
@@ -65,8 +65,8 @@ jobs:
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:/app'
-          $scriptsPath = 'C:/scripts/windows'
+          $containerPath = 'C:\app'
+          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
@@ -89,7 +89,8 @@ jobs:
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:/app'
+          $containerPath = 'C:\app'
+          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
