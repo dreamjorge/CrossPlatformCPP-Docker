@@ -62,20 +62,25 @@ jobs:
       - name: Run Build Script Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          APP_WORKDIR: ${{ env.APP_WORKDIR }}
+          SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
+          BUILD_SCRIPT: ${{ env.BUILD_SCRIPT }}
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
+          $CONFIG = "${{ matrix.config }}"
+          $VS_VERSION = "${{ matrix.vs_version }}"
           docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
+            -e CONFIG=$CONFIG `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
-            -e VS_VERSION=${{ matrix.vs_version }} `
+            -e VS_VERSION=$VS_VERSION `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT $env:CONFIG $env:VS_VERSION"
+            cmd.exe /c "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT $CONFIG $VS_VERSION"
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -87,13 +92,17 @@ jobs:
       - name: Run Application Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          APP_WORKDIR: ${{ env.APP_WORKDIR }}
+          SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
+          RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
+          $CONFIG = "${{ matrix.config }}"
           docker run --rm `
-            -e CONFIG=${{ matrix.config }} `
+            -e CONFIG=$CONFIG `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e RUN_SCRIPT=$env:RUN_SCRIPT `
