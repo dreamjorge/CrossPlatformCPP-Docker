@@ -9,8 +9,10 @@ on:
       - main
 
 env:
+  # Global configuration parameters
   CMAKE_VERSION: 3.21.3
   IMAGE_PREFIX: crossplatformapp-vs
+  APP_WORKDIR: C:\app
   SCRIPTS_PATH: C:\scripts\windows
   BUILD_SCRIPT: build.ps1
   RUN_SCRIPT: run.ps1
@@ -38,25 +40,14 @@ jobs:
       - name: Build Docker Image
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          DOCKERFILE_PATH: ${{ env.DOCKERFILE_PATH }}
+          CMAKE_VERSION: ${{ env.CMAKE_VERSION }}
         run: |
           docker build --no-cache `
             --build-arg VS_VERSION=${{ matrix.vs_version }} `
             --build-arg CMAKE_VERSION=$env:CMAKE_VERSION `
             -t $env:IMAGE_TAG `
             -f $env:DOCKERFILE_PATH .
-
-      - name: Debug Mounted Volume
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
-        shell: pwsh
-        run: |
-          $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:\app'
-          Write-Host "Host Path: $hostPath"
-          Write-Host "Container Path: $containerPath"
-          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-          Write-Host "Mount Spec: $mountSpec"
-          docker run --rm --mount "$mountSpec" $env:IMAGE_TAG cmd.exe /c dir $containerPath
 
       - name: Run Build Script Inside Docker
         env:
@@ -65,24 +56,23 @@ jobs:
           BUILD_SCRIPT: ${{ env.BUILD_SCRIPT }}
           CONFIG: ${{ matrix.config }}
           VS_VERSION: ${{ matrix.vs_version }}
-          APP_WORKDIR: C:\app
-        shell: pwsh
+          APP_WORKDIR: ${{ env.APP_WORKDIR }}
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:\app'
-          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-      
+          $mountSpec = "type=bind,source=$hostPath,target=$env:APP_WORKDIR"
+
+          Write-Host "Running build script inside Docker..."
           Write-Host "CONFIG: $env:CONFIG"
           Write-Host "VS_VERSION: $env:VS_VERSION"
           Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
-      
+
           $scriptPath = "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-      
+
           Write-Host "Command to execute: $command"
-      
+
           docker run --rm `
             -e CONFIG=$env:CONFIG `
             -e VS_VERSION=$env:VS_VERSION `
@@ -90,14 +80,18 @@ jobs:
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
-        
 
       - name: Display Build Logs (if failure)
         if: failure()
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE
-          type "$hostPath\build.log"
+          if (Test-Path "$hostPath\build.log") {
+            Write-Host "Displaying build.log:"
+            Get-Content "$hostPath\build.log"
+          } else {
+            Write-Host "build.log not found."
+          }
 
       - name: Run Application Inside Docker
         env:
@@ -105,27 +99,25 @@ jobs:
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
           CONFIG: ${{ matrix.config }}
-          APP_WORKDIR: C:\app
-        shell: pwsh
+          APP_WORKDIR: ${{ env.APP_WORKDIR }}
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          $containerPath = 'C:\app'
-          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-      
+          $mountSpec = "type=bind,source=$hostPath,target=$env:APP_WORKDIR"
+
+          Write-Host "Running application inside Docker..."
           Write-Host "CONFIG: $env:CONFIG"
           Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
-      
+
           $scriptPath = "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-      
+
           Write-Host "Command to execute: $command"
-      
+
           docker run --rm `
             -e CONFIG=$env:CONFIG `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
-        
