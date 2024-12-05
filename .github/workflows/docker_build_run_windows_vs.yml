@@ -76,10 +76,13 @@ jobs:
           Write-Host "VS_VERSION: $VS_VERSION"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
+          $scriptPath = $env:SCRIPTS_PATH + '\' + $env:BUILD_SCRIPT
+          $command = "\"$scriptPath\" \"$CONFIG\" \"$VS_VERSION\""
+          Write-Host "Command to execute: $command"
           docker run --rm `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "`"$env:SCRIPTS_PATH\$($env:BUILD_SCRIPT)`" `"$CONFIG`" `"$VS_VERSION`""
+            cmd.exe /S /C $command
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -100,7 +103,13 @@ jobs:
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           $CONFIG = "${{ matrix.config }}"
+          Write-Host "CONFIG: $CONFIG"
+          Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
+          Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
+          $scriptPath = $env:SCRIPTS_PATH + '\' + $env:RUN_SCRIPT
+          $command = "\"$scriptPath\""
+          Write-Host "Command to execute: $command"
           docker run --rm `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "`"$env:SCRIPTS_PATH\$($env:RUN_SCRIPT)`""
+            cmd.exe /S /C $command
