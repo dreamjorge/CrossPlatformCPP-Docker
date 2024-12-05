@@ -72,15 +72,14 @@ jobs:
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           $CONFIG = "${{ matrix.config }}"
           $VS_VERSION = "${{ matrix.vs_version }}"
+          Write-Host "CONFIG: $CONFIG"
+          Write-Host "VS_VERSION: $VS_VERSION"
+          Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
+          Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
           docker run --rm `
-            -e CONFIG=$CONFIG `
-            -e APP_WORKDIR=$env:APP_WORKDIR `
-            -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
-            -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
-            -e VS_VERSION=$VS_VERSION `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT $CONFIG $VS_VERSION"
+            cmd.exe /c "`"$env:SCRIPTS_PATH\$($env:BUILD_SCRIPT)`" `"$CONFIG`" `"$VS_VERSION`""
 
       - name: Display Build Logs (if failure)
         if: failure()
@@ -93,7 +92,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
           APP_WORKDIR: ${{ env.APP_WORKDIR }}
-          SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
+          SCRIPTS_PATH: ${{ env:SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
         shell: pwsh
         run: |
@@ -102,10 +101,6 @@ jobs:
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
           $CONFIG = "${{ matrix.config }}"
           docker run --rm `
-            -e CONFIG=$CONFIG `
-            -e APP_WORKDIR=$env:APP_WORKDIR `
-            -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
-            -e RUN_SCRIPT=$env:RUN_SCRIPT `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
+            cmd.exe /c "`"$env:SCRIPTS_PATH\$($env:RUN_SCRIPT)`""
