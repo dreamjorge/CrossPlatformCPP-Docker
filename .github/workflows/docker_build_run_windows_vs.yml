@@ -13,8 +13,8 @@ env:
   IMAGE_PREFIX: crossplatformapp-vs
   APP_WORKDIR: C:\app
   SCRIPTS_PATH: C:\scripts\windows
-  BUILD_SCRIPT: build.cmd
-  RUN_SCRIPT: run.cmd
+  BUILD_SCRIPT: build.ps1
+  RUN_SCRIPT: run.ps1
   DOCKERFILE_PATH: Dockerfile.windows.vs
 
 jobs:
@@ -65,21 +65,28 @@ jobs:
           APP_WORKDIR: ${{ env.APP_WORKDIR }}
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           BUILD_SCRIPT: ${{ env.BUILD_SCRIPT }}
+          CONFIG: ${{ matrix.config }}
+          VS_VERSION: ${{ matrix.vs_version }}
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-          $CONFIG = "${{ matrix.config }}"
-          $VS_VERSION = "${{ matrix.vs_version }}"
-          Write-Host "CONFIG: $CONFIG"
-          Write-Host "VS_VERSION: $VS_VERSION"
+
+          Write-Host "CONFIG: $env:CONFIG"
+          Write-Host "VS_VERSION: $env:VS_VERSION"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
-          $scriptPath = $env:SCRIPTS_PATH + '\' + $env:BUILD_SCRIPT
-          $command = '"{0}" "{1}" "{2}"' -f $scriptPath, $CONFIG, $VS_VERSION
+
+          $scriptPath = "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT"
+          $command = "powershell.exe -ExecutionPolicy Bypass -File `"$scriptPath`""
+
           Write-Host "Command to execute: $command"
+
           docker run --rm `
+            -e CONFIG=$env:CONFIG `
+            -e VS_VERSION=$env:VS_VERSION `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
@@ -97,19 +104,25 @@ jobs:
           APP_WORKDIR: ${{ env.APP_WORKDIR }}
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
+          CONFIG: ${{ matrix.config }}
         shell: pwsh
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $containerPath = 'C:\app'
           $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
-          $CONFIG = "${{ matrix.config }}"
-          Write-Host "CONFIG: $CONFIG"
+
+          Write-Host "CONFIG: $env:CONFIG"
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
-          $scriptPath = $env:SCRIPTS_PATH + '\' + $env:RUN_SCRIPT
-          $command = '"{0}"' -f $scriptPath
+
+          $scriptPath = "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
+          $command = "powershell.exe -ExecutionPolicy Bypass -File `"$scriptPath`""
+
           Write-Host "Command to execute: $command"
+
           docker run --rm `
+            -e CONFIG=$env:CONFIG `
+            -e APP_WORKDIR=$env:APP_WORKDIR `
             --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
