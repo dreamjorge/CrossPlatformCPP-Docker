@@ -54,18 +54,18 @@ jobs:
             -e CONFIG=${{ matrix.config }} `
             -v "${{ github.workspace }}:$env:APP_WORKDIR" `
             $env:IMAGE_TAG `
-            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.BUILD_SCRIPT }} ${{ matrix.config }} ${{ matrix.vs_version }} > $env:APP_WORKDIR\build.log 2>&1"
+            cmd.exe /c "$env:SCRIPTS_PATH\${{ env.BUILD_SCRIPT }} ${{ matrix.config }} ${{ matrix.vs_version }}"
 
       - name: Display Build Logs (if failure)
         if: failure()
         run: |
-          type C:\app\build.log
+          # Display logs from the build process
+          type $env:APP_WORKDIR\build.log
 
       - name: Run Application Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         run: |
-          # Execute the compiled application inside the Docker container.
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -v "${{ github.workspace }}:$env:APP_WORKDIR" `
