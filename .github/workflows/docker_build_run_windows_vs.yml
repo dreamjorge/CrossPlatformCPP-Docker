@@ -11,8 +11,8 @@ on:
 env:
   CMAKE_VERSION: 3.21.3
   IMAGE_PREFIX: crossplatformapp-vs
-  APP_WORKDIR: /app
-  SCRIPTS_PATH: /scripts/windows
+  APP_WORKDIR: C:\app
+  SCRIPTS_PATH: C:\scripts\windows
   BUILD_SCRIPT: build.cmd
   RUN_SCRIPT: run.cmd
   DOCKERFILE_PATH: Dockerfile.windows.vs
@@ -36,15 +36,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Convert Host Path
-        shell: pwsh
-        run: |
-          $driveLetter = $env:GITHUB_WORKSPACE.Substring(0,1).ToLower()
-          $pathRest = $env:GITHUB_WORKSPACE.Substring(2) -replace '\\', '/'
-          $dockerHostPath = '/' + $driveLetter + $pathRest
-          Write-Host "Converted host path: $dockerHostPath"
-          "$dockerHostPath" | Out-File -FilePath host_path.txt -Encoding utf8
-
       - name: Build Docker Image
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
@@ -60,24 +51,29 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = Get-Content host_path.txt
+          $hostPath = $env:GITHUB_WORKSPACE
+          $containerPath = "C:\app"
+          $volumeSpec = '"' + $hostPath + '":"' + $containerPath + '"'
+          Write-Host "Volume Specification: $volumeSpec"
           docker run --rm `
-            -v "${hostPath}:${env:APP_WORKDIR}" `
+            -v $volumeSpec `
             $env:IMAGE_TAG `
-            cmd.exe /c "dir $env:APP_WORKDIR"
+            cmd.exe /c "dir $containerPath"
 
       - name: Run Build Script Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = Get-Content host_path.txt
+          $hostPath = $env:GITHUB_WORKSPACE
+          $containerPath = "C:\app"
+          $volumeSpec = '"' + $hostPath + '":"' + $containerPath + '"'
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
-            -v "${hostPath}:${env:APP_WORKDIR}" `
+            -v $volumeSpec `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%BUILD_SCRIPT% %CONFIG% %VS_VERSION%"
 
@@ -85,7 +81,7 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          $hostPath = Get-Content host_path.txt
+          $hostPath = $env:GITHUB_WORKSPACE
           type "$hostPath\build.log"
 
       - name: Run Application Inside Docker
@@ -93,12 +89,14 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = Get-Content host_path.txt
+          $hostPath = $env:GITHUB_WORKSPACE
+          $containerPath = "C:\app"
+          $volumeSpec = '"' + $hostPath + '":"' + $containerPath + '"'
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e RUN_SCRIPT=$env:RUN_SCRIPT `
-            -v "${hostPath}:${env:APP_WORKDIR}" `
+            -v $volumeSpec `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%RUN_SCRIPT%"
