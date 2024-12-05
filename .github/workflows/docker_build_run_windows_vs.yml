@@ -1,76 +1,80 @@
-name: Docker Build and Run on Windows
+# This workflow automates the process of building and running a Windows-based
+# Docker application using GitHub Actions. It builds a Docker image configured 
+# for Visual Studio and CMake, executes build scripts within the container, and 
+# runs the resulting application. The workflow supports multiple Visual Studio versions and configurations.
+
+name: Windows Docker Build and Run Workflow
 
 on:
   push:
     branches:
-      - main
+      - main  # Trigger the workflow on pushes to the 'main' branch.
   pull_request:
     branches:
-      - main
+      - main  # Trigger the workflow on pull requests targeting the 'main' branch.
 
 env:
-  # Global configuration parameters
-  CMAKE_VERSION: 3.21.3
-  IMAGE_PREFIX: crossplatformapp-vs
-  APP_WORKDIR: C:\app
-  SCRIPTS_PATH: C:\scripts\windows
-  BUILD_SCRIPT: build.ps1
-  RUN_SCRIPT: run.ps1
-  DOCKERFILE_PATH: Dockerfile.windows.vs
+  # Global configuration parameters for the workflow.
+  CMAKE_VERSION: 3.21.3  # Specifies the CMake version used in the Dockerfile.
+  IMAGE_PREFIX: crossplatformapp-vs  # Prefix for Docker image tags.
+  APP_WORKDIR: C:\app  # Directory within the container where the application resides.
+  SCRIPTS_PATH: C:\scripts\windows  # Directory for scripts executed inside the container.
+  BUILD_SCRIPT: build.ps1  # Build script filename.
+  RUN_SCRIPT: run.ps1  # Run script filename.
+  DOCKERFILE_PATH: Dockerfile.windows.vs  # Path to the Dockerfile.
 
 jobs:
   build-and-run-windows-docker:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Use the latest available Windows runner.
 
     strategy:
       matrix:
-        vs_version: [15, 16, 17]
-        config: [Debug, Release]
+        # Visual Studio versions with associated years as friendly tags.
+        vs_version: 
+          - { version: 15, year: 2017 }
+          - { version: 16, year: 2019 }
+          - { version: 17, year: 2022 }
+        config: [Debug, Release]  # Build configurations.
 
     defaults:
       run:
-        shell: pwsh
+        shell: pwsh  # Use PowerShell Core for all run steps.
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Clone the entire history for accurate change tracking.
 
-      - name: Build Docker Image
+      - name: Build Docker Image for Visual Studio ${{ matrix.vs_version.year }}
+        # Builds a Docker image for the specified Visual Studio version and CMake version.
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version.version }}
           DOCKERFILE_PATH: ${{ env.DOCKERFILE_PATH }}
           CMAKE_VERSION: ${{ env.CMAKE_VERSION }}
         run: |
           docker build --no-cache `
-            --build-arg VS_VERSION=${{ matrix.vs_version }} `
+            --build-arg VS_VERSION=${{ matrix.vs_version.version }} `
             --build-arg CMAKE_VERSION=$env:CMAKE_VERSION `
             -t $env:IMAGE_TAG `
             -f $env:DOCKERFILE_PATH .
 
-      - name: Run Build Script Inside Docker
+      - name: Execute Build Script in Docker for Visual Studio ${{ matrix.vs_version.year }} (${matrix.config})
+        # Executes the build script inside the Docker container for the application.
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version.version }}
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           BUILD_SCRIPT: ${{ env.BUILD_SCRIPT }}
           CONFIG: ${{ matrix.config }}
-          VS_VERSION: ${{ matrix.vs_version }}
+          VS_VERSION: ${{ matrix.vs_version.version }}
           APP_WORKDIR: ${{ env.APP_WORKDIR }}
         run: |
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $mountSpec = "type=bind,source=$hostPath,target=$env:APP_WORKDIR"
 
-          Write-Host "Running build script inside Docker..."
-          Write-Host "CONFIG: $env:CONFIG"
-          Write-Host "VS_VERSION: $env:VS_VERSION"
-          Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
-          Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
-          Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
-
+          Write-Host "Executing build script in Docker..."
           $scriptPath = "$env:SCRIPTS_PATH\$env:BUILD_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-
           Write-Host "Command to execute: $command"
 
           docker run --rm `
@@ -81,7 +85,8 @@ jobs:
             $env:IMAGE_TAG `
             cmd.exe /S /C $command
 
-      - name: Display Build Logs (if failure)
+      - name: Display Build Logs (on Failure)
+        # Displays build logs if the build script fails.
         if: failure()
         shell: pwsh
         run: |
@@ -93,9 +98,10 @@ jobs:
             Write-Host "build.log not found."
           }
 
-      - name: Run Application Inside Docker
+      - name: Execute Application in Docker for Visual Studio ${{ matrix.vs_version.year }} (${matrix.config})
+        # Runs the application inside the Docker container after a successful build.
         env:
-          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
+          IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version.version }}
           SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
           CONFIG: ${{ matrix.config }}
@@ -104,15 +110,9 @@ jobs:
           $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
           $mountSpec = "type=bind,source=$hostPath,target=$env:APP_WORKDIR"
 
-          Write-Host "Running application inside Docker..."
-          Write-Host "CONFIG: $env:CONFIG"
-          Write-Host "APP_WORKDIR: $env:APP_WORKDIR"
-          Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
-          Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
-
+          Write-Host "Executing application in Docker..."
           $scriptPath = "$env:SCRIPTS_PATH\$env:RUN_SCRIPT"
           $command = "powershell.exe -ExecutionPolicy Bypass -File $scriptPath"
-
           Write-Host "Command to execute: $command"
 
           docker run --rm `
