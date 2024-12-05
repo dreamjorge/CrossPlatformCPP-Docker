@@ -92,7 +92,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
           APP_WORKDIR: ${{ env.APP_WORKDIR }}
-          SCRIPTS_PATH: ${{ env:SCRIPTS_PATH }}
+          SCRIPTS_PATH: ${{ env.SCRIPTS_PATH }}
           RUN_SCRIPT: ${{ env.RUN_SCRIPT }}
         shell: pwsh
         run: |
