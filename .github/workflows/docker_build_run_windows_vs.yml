@@ -77,7 +77,7 @@ jobs:
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "BUILD_SCRIPT: $env:BUILD_SCRIPT"
           $scriptPath = $env:SCRIPTS_PATH + '\' + $env:BUILD_SCRIPT
-          $command = "\"$scriptPath\" \"$CONFIG\" \"$VS_VERSION\""
+          $command = '"{0}" "{1}" "{2}"' -f $scriptPath, $CONFIG, $VS_VERSION
           Write-Host "Command to execute: $command"
           docker run --rm `
             --mount "$mountSpec" `
@@ -107,7 +107,7 @@ jobs:
           Write-Host "SCRIPTS_PATH: $env:SCRIPTS_PATH"
           Write-Host "RUN_SCRIPT: $env:RUN_SCRIPT"
           $scriptPath = $env:SCRIPTS_PATH + '\' + $env:RUN_SCRIPT
-          $command = "\"$scriptPath\""
+          $command = '"{0}"' -f $scriptPath
           Write-Host "Command to execute: $command"
           docker run --rm `
             --mount "$mountSpec" `
