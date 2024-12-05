@@ -11,8 +11,8 @@ on:
 env:
   CMAKE_VERSION: 3.21.3
   IMAGE_PREFIX: crossplatformapp-vs
-  APP_WORKDIR: C:\app
-  SCRIPTS_PATH: C:\scripts\windows
+  APP_WORKDIR: C:/app
+  SCRIPTS_PATH: C:/scripts/windows
   BUILD_SCRIPT: build.cmd
   RUN_SCRIPT: run.cmd
   DOCKERFILE_PATH: Dockerfile.windows.vs
@@ -51,28 +51,28 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = $env:GITHUB_WORKSPACE
-          $containerPath = "C:\app"
+          $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          $containerPath = 'C:/app'
           Write-Host "Host Path: $hostPath"
           Write-Host "Container Path: $containerPath"
-          docker run --rm `
-            --mount type=bind,source="$hostPath",target="$containerPath" `
-            $env:IMAGE_TAG `
-            cmd.exe /c "dir $containerPath"
+          $mountSpec = "type=bind,source=$hostPath,target=$containerPath"
+          Write-Host "Mount Spec: $mountSpec"
+          docker run --rm --mount "$mountSpec" $env:IMAGE_TAG cmd.exe /c "dir $containerPath"
 
       - name: Run Build Script Inside Docker
         env:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = $env:GITHUB_WORKSPACE
-          $containerPath = "C:\app"
+          $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          $containerPath = 'C:/app'
+          $scriptsPath = 'C:/scripts/windows'
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e BUILD_SCRIPT=$env:BUILD_SCRIPT `
-            --mount type=bind,source="$hostPath",target="$containerPath" `
+            --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%BUILD_SCRIPT% %CONFIG% %VS_VERSION%"
 
@@ -88,13 +88,13 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_PREFIX }}-${{ matrix.vs_version }}
         shell: pwsh
         run: |
-          $hostPath = $env:GITHUB_WORKSPACE
-          $containerPath = "C:\app"
+          $hostPath = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          $containerPath = 'C:/app'
           docker run --rm `
             -e CONFIG=${{ matrix.config }} `
             -e APP_WORKDIR=$env:APP_WORKDIR `
             -e SCRIPTS_PATH=$env:SCRIPTS_PATH `
             -e RUN_SCRIPT=$env:RUN_SCRIPT `
-            --mount type=bind,source="$hostPath",target="$containerPath" `
+            --mount "$mountSpec" `
             $env:IMAGE_TAG `
             cmd.exe /c "%SCRIPTS_PATH%\%RUN_SCRIPT%"
