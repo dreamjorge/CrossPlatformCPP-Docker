@@ -1,16 +1,20 @@
-# escape=`
+# escape=
 
 # ===================================================================
 # Base Image
 # ===================================================================
-FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS builder
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
 # ===================================================================
 # Metadata
 # ===================================================================
-LABEL maintainer="jorge-kun@live.com" `
-      description="Minimal Docker image for building C++ projects" `
-      version="1.0.0"
+LABEL maintainer="jorge-kun@live.com" \
+      description="Docker image for building and running CrossPlatformApp" \
+      version="1.0.0" \
+      repository="https://github.com/dreamjorge/CrossPlatformCPP-Docker" \
+      documentation="https://github.com/dreamjorge/CrossPlatformCPP-Docker#readme" \
+      issues="https://github.com/dreamjorge/CrossPlatformCPP-Docker/issues" \
+      license="MIT"
 
 # ===================================================================
 # Build Arguments
@@ -24,8 +28,7 @@ ARG CMAKE_VERSION=3.21.3
 # Environment Variables
 # ===================================================================
 ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV TEMP_DIR=C:\TEMP
-ENV PATH=%PATH%;C:\ProgramData\chocolatey\bin
+ENV BUILD_DIR=C:\app
 
 # ===================================================================
 # Set Shell to cmd
@@ -33,60 +36,44 @@ ENV PATH=%PATH%;C:\ProgramData\chocolatey\bin
 SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Install Visual Studio Build Tools
+# Install Dependencies & Cleanup in One Layer
 # ===================================================================
-RUN mkdir %TEMP_DIR% && `
-    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile %TEMP_DIR%\VisualStudio.chman; `
-    Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile %TEMP_DIR%\vs_buildtools.exe" && `
-    %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
-        --channelUri %TEMP_DIR%\VisualStudio.chman `
-        --installChannelUri %TEMP_DIR%\VisualStudio.chman `
-        --add Microsoft.VisualStudio.Workload.VCTools `
-        --installPath %BUILD_TOOLS_PATH% && `
-    rmdir /S /Q %TEMP_DIR%
+RUN mkdir C:\TEMP && \
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
+         Invoke-WebRequest -Uri %CHANNEL_URL% -OutFile C:\TEMP\VisualStudio.chman; ^
+         Invoke-WebRequest -Uri %VS_BUILD_TOOLS_URL% -OutFile C:\TEMP\vs_buildtools.exe; ^
+         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; ^
+         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && ^
+    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && ^
+    C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache ^
+       --channelUri C:\TEMP\VisualStudio.chman ^
+       --installChannelUri C:\TEMP\VisualStudio.chman ^
+       --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended ^
+       --installPath %BUILD_TOOLS_PATH% && ^
+    rem -- Cleanup: remove installers, caches, logs, etc. -- && ^
+    rmdir /S /Q C:\TEMP && ^
+    rmdir /S /Q C:\ProgramData\chocolatey\logs && ^
+    rmdir /S /Q C:\ProgramData\chocolatey\cache && ^
+    powershell Remove-Item -Recurse -Force $env:TMP\* || echo "No TMP files" && ^
+    powershell Remove-Item -Recurse -Force $env:TEMP\* || echo "No TEMP files"
 
 # ===================================================================
-# Install Chocolatey
+# (Optional) Further Cleanup with DISM (test carefully)
 # ===================================================================
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-    [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-
-# ===================================================================
-# Install CMake Using Chocolatey
-# ===================================================================
-RUN setx PATH "%PATH%;C:\ProgramData\chocolatey\bin" && `
-    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+# RUN dism /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
 # ===================================================================
 # Set Working Directory
 # ===================================================================
-WORKDIR C:\build
+WORKDIR %BUILD_DIR%
 
 # ===================================================================
-# Copy Project Files
+# Copy Scripts
 # ===================================================================
-COPY . .
-
-# Generate Visual Studio solution file if needed
-RUN cmake -G "Visual Studio 17 2022" -A x64 . && `
-    if not exist MyProject.sln ( echo ERROR: MyProject.sln not generated && exit /b 1 )
+COPY scripts/windows C:\scripts\windows
 
 # ===================================================================
-# Build C++ Project
+# Default Command
 # ===================================================================
-RUN "C:\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && `
-    msbuild /p:Configuration=Release /p:Platform=x64 MyProject.sln
-
-# ===================================================================
-# Runtime Stage
-# ===================================================================
-FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS runtime
-
-# Copy compiled binaries from the build stage
-COPY --from=builder C:\build\bin\Release C:\app
-
-# Set working directory and default command
-WORKDIR C:\app
-CMD ["MyProject.exe"]
+CMD ["cmd.exe"]
