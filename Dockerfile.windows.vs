@@ -25,6 +25,7 @@ ARG CMAKE_VERSION=3.21.3
 # ===================================================================
 ENV BUILD_TOOLS_PATH=C:\BuildTools
 ENV TEMP_DIR=C:\TEMP
+ENV PATH=%PATH%;C:\ProgramData\chocolatey\bin
 
 # ===================================================================
 # Set Shell to cmd
@@ -32,7 +33,7 @@ ENV TEMP_DIR=C:\TEMP
 SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Install Visual Studio Build Tools and CMake
+# Install Visual Studio Build Tools
 # ===================================================================
 RUN mkdir %TEMP_DIR% && `
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
@@ -43,11 +44,20 @@ RUN mkdir %TEMP_DIR% && `
         --installChannelUri %TEMP_DIR%\VisualStudio.chman `
         --add Microsoft.VisualStudio.Workload.VCTools `
         --installPath %BUILD_TOOLS_PATH% && `
-    powershell -NoProfile -ExecutionPolicy Bypass -Command " `
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
-    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
     rmdir /S /Q %TEMP_DIR%
+
+# ===================================================================
+# Install Chocolatey
+# ===================================================================
+RUN powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+    [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+
+# ===================================================================
+# Install CMake Using Chocolatey
+# ===================================================================
+RUN setx PATH "%PATH%;C:\ProgramData\chocolatey\bin" && `
+    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
 # ===================================================================
 # Set Working Directory
@@ -59,7 +69,7 @@ WORKDIR C:\build
 # ===================================================================
 COPY . .
 
-# Generate Visual Studio solution file
+# Generate Visual Studio solution file if needed
 RUN cmake -G "Visual Studio 17 2022" -A x64 . && `
     if not exist MyProject.sln ( echo ERROR: MyProject.sln not generated && exit /b 1 )
 
