@@ -45,17 +45,23 @@ RUN mkdir %TEMP_DIR% && `
     rmdir /S /Q %TEMP_DIR%
 
 # ===================================================================
-# Set Working Directory
+# Set Working Directory for Build
 # ===================================================================
 WORKDIR C:\build
 
 # ===================================================================
-# Copy Source Code
+# Copy Project Files
 # ===================================================================
+# Copy everything to the build directory
 COPY . .
 
+# Validate the presence of MyProject.sln
+RUN dir && `
+    if not exist MyProject.sln ( `
+        echo ERROR: MyProject.sln not found in C:\build && exit /b 1 )
+
 # ===================================================================
-# Build C++ Code
+# Build C++ Project
 # ===================================================================
 RUN "C:\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && `
     msbuild /p:Configuration=Release /p:Platform=x64 MyProject.sln
@@ -70,4 +76,4 @@ COPY --from=builder C:\build\bin\Release C:\app
 
 # Set working directory and default command
 WORKDIR C:\app
-CMD ["cmd.exe"]
+CMD ["MyProject.exe"]
