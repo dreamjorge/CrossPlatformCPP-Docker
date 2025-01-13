@@ -18,6 +18,7 @@ LABEL maintainer="jorge-kun@live.com" `
 ARG VS_VERSION=17
 ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
 ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ARG CMAKE_VERSION=3.21.3
 
 # ===================================================================
 # Environment Variables
@@ -31,7 +32,7 @@ ENV TEMP_DIR=C:\TEMP
 SHELL ["cmd", "/S", "/C"]
 
 # ===================================================================
-# Install Visual Studio Build Tools
+# Install Visual Studio Build Tools and CMake
 # ===================================================================
 RUN mkdir %TEMP_DIR% && `
     powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
@@ -42,23 +43,25 @@ RUN mkdir %TEMP_DIR% && `
         --installChannelUri %TEMP_DIR%\VisualStudio.chman `
         --add Microsoft.VisualStudio.Workload.VCTools `
         --installPath %BUILD_TOOLS_PATH% && `
+    powershell -NoProfile -ExecutionPolicy Bypass -Command " `
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" && `
+    choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y && `
     rmdir /S /Q %TEMP_DIR%
 
 # ===================================================================
-# Set Working Directory for Build
+# Set Working Directory
 # ===================================================================
 WORKDIR C:\build
 
 # ===================================================================
 # Copy Project Files
 # ===================================================================
-# Copy everything to the build directory
 COPY . .
 
-# Validate the presence of MyProject.sln
-RUN dir && `
-    if not exist MyProject.sln ( `
-        echo ERROR: MyProject.sln not found in C:\build && exit /b 1 )
+# Generate Visual Studio solution file
+RUN cmake -G "Visual Studio 17 2022" -A x64 . && `
+    if not exist MyProject.sln ( echo ERROR: MyProject.sln not generated && exit /b 1 )
 
 # ===================================================================
 # Build C++ Project
