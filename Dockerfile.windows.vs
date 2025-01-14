@@ -1,81 +1,64 @@
-# We do not need `# escape=` here because we are NOT using cmd.exe for line escapes.
-
+# escape=`
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
 LABEL maintainer="jorge-kun@live.com" `
       description="Docker image for building and running CrossPlatformApp" `
       version="1.0.0"
 
-# -----------------------------------------------------------------
-# Build Arguments
-# -----------------------------------------------------------------
-ARG VS_VERSION=17
-ARG CHANNEL_URL="https://aka.ms/vs/${VS_VERSION}/release/channel"
-ARG VS_BUILD_TOOLS_URL="https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe"
+#
+# ------------------------------------------------------------------
+# Build Arguments (one line each, no backticks needed)
+# ------------------------------------------------------------------
+ARG VS_VERSION=15
 ARG CMAKE_VERSION=3.21.3
 
-# -----------------------------------------------------------------
+#
+# ------------------------------------------------------------------
 # Environment Variables
-# -----------------------------------------------------------------
-ENV BUILD_TOOLS_PATH="C:\BuildTools"
-ENV BUILD_DIR="C:\app"
-ENV TEMP_DIR="C:\TEMP"
+# ------------------------------------------------------------------
+ENV BUILD_TOOLS_PATH="C:\BuildTools" `
+    BUILD_DIR="C:\app" `
+    TEMP_DIR="C:\TEMP" `
+    ChocolateyInstall="C:\ProgramData\chocolatey" `
+    PATH="%ChocolateyInstall%\bin;%PATH%"
 
-# Preemptively define Chocolatey env so subsequent layers see 'choco' on PATH
-ENV ChocolateyInstall="C:\ProgramData\chocolatey"
-ENV PATH="$Env:ChocolateyInstall\bin;$Env:PATH"
+#
+# ------------------------------------------------------------------
+# We stick with cmd.exe as shell, but Docker uses backticks (\`) for
+# line continuation in Docker instructions (like RUN).
+# ------------------------------------------------------------------
+SHELL ["cmd", "/S", "/C"]
 
-# -----------------------------------------------------------------
-# Switch the default Dockerfile shell to PowerShell
-# -----------------------------------------------------------------
-SHELL ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"]
-
-# -----------------------------------------------------------------
-# 1) Create TEMP folder
-# -----------------------------------------------------------------
-RUN New-Item -ItemType Directory -Path $Env:TEMP_DIR -Force | Out-Null
-
-# -----------------------------------------------------------------
-# 2) Download Visual Studio Channel Manifest & Installer
-# -----------------------------------------------------------------
-RUN `
-    [Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri $Env:CHANNEL_URL -OutFile "$Env:TEMP_DIR\VisualStudio.chman"; `
-    Invoke-WebRequest -Uri $Env:VS_BUILD_TOOLS_URL -OutFile "$Env:TEMP_DIR\vs_buildtools.exe"
-
-# -----------------------------------------------------------------
-# 3) Install Chocolatey
-# -----------------------------------------------------------------
-RUN `
-    [Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# -----------------------------------------------------------------
-# 4) Install CMake via Chocolatey
-# -----------------------------------------------------------------
-RUN choco install cmake --version=$Env:CMAKE_VERSION --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-# -----------------------------------------------------------------
-# 5) Install Visual Studio Build Tools
-# -----------------------------------------------------------------
-RUN & "$Env:TEMP_DIR\vs_buildtools.exe" --quiet --wait --norestart --nocache `
-    --channelUri "$Env:TEMP_DIR\VisualStudio.chman" `
-    --installChannelUri "$Env:TEMP_DIR\VisualStudio.chman" `
+#
+# ------------------------------------------------------------------
+# 1) Create TEMP folder, download VS Build Tools + Chocolatey installer,
+#    install CMake, install VS Build Tools, and clean up.
+# ------------------------------------------------------------------
+RUN mkdir %TEMP_DIR% `
+ && powershell -NoProfile -ExecutionPolicy Bypass -Command `
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/channel' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
+     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/vs_buildtools.exe' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'; `
+     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));" `
+ && choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y `
+ && %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
+    --channelUri %TEMP_DIR%\VisualStudio.chman `
+    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
     --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath $Env:BUILD_TOOLS_PATH
+    --installPath %BUILD_TOOLS_PATH% `
+ && rmdir /S /Q %TEMP_DIR% `
+ && rmdir /S /Q C:\ProgramData\chocolatey\logs `
+ && rmdir /S /Q C:\ProgramData\chocolatey\cache
 
-# -----------------------------------------------------------------
-# 6) Clean up
-# -----------------------------------------------------------------
-RUN Remove-Item -Recurse -Force $Env:TEMP_DIR -ErrorAction Ignore; `
-    Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey\logs' -ErrorAction Ignore; `
-    Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey\cache' -ErrorAction Ignore
-
-# (Optional) Further reduce image size:
+#
+# ------------------------------------------------------------------
+# (Optional) Additional DISM Cleanup to reduce image size
+# ------------------------------------------------------------------
 # RUN dism /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
-# -----------------------------------------------------------------
-# Set working directory and default command
-# -----------------------------------------------------------------
-WORKDIR $Env:BUILD_DIR
-CMD ["powershell.exe"]
+#
+# ------------------------------------------------------------------
+# Working Directory & Default Command
+# ------------------------------------------------------------------
+WORKDIR %BUILD_DIR%
+CMD ["cmd.exe"]
