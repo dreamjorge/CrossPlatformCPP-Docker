@@ -5,14 +5,12 @@ LABEL maintainer="jorge-kun@live.com" `
       description="Docker image for building and running CrossPlatformApp" `
       version="1.0.0"
 
-#
 # ------------------------------------------------------------------
-# Build Arguments (one line each, no backticks needed)
+# Build Arguments (keep each ARG on a single line)
 # ------------------------------------------------------------------
-ARG VS_VERSION=15
+ARG VS_VERSION=16
 ARG CMAKE_VERSION=3.21.3
 
-#
 # ------------------------------------------------------------------
 # Environment Variables
 # ------------------------------------------------------------------
@@ -22,43 +20,38 @@ ENV BUILD_TOOLS_PATH="C:\BuildTools" `
     ChocolateyInstall="C:\ProgramData\chocolatey" `
     PATH="%ChocolateyInstall%\bin;%PATH%"
 
-#
 # ------------------------------------------------------------------
-# We stick with cmd.exe as shell, but Docker uses backticks (\`) for
-# line continuation in Docker instructions (like RUN).
+# We'll continue using cmd.exe as our Docker shell
+# and use '^' for line continuation.
 # ------------------------------------------------------------------
 SHELL ["cmd", "/S", "/C"]
 
-#
 # ------------------------------------------------------------------
-# 1) Create TEMP folder, download VS Build Tools + Chocolatey installer,
-#    install CMake, install VS Build Tools, and clean up.
+# 1) Create TEMP folder, download vs_buildtools.exe & channel, 
+#    install Chocolatey + CMake, install Build Tools, cleanup.
+#    Key Fix: call PowerShell by full path.
 # ------------------------------------------------------------------
-RUN mkdir %TEMP_DIR% `
- && powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/channel' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
-     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/vs_buildtools.exe' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'; `
-     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));" `
- && choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y `
- && %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri %TEMP_DIR%\VisualStudio.chman `
-    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath %BUILD_TOOLS_PATH% `
- && rmdir /S /Q %TEMP_DIR% `
- && rmdir /S /Q C:\ProgramData\chocolatey\logs `
+RUN mkdir %TEMP_DIR% ^
+ && C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; ^
+     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/channel' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; ^
+     Invoke-WebRequest -Uri 'https://aka.ms/vs/%VS_VERSION%/release/vs_buildtools.exe' -OutFile '%TEMP_DIR%\\vs_buildtools.exe'; ^
+     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));" ^
+ && choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y ^
+ && %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache ^
+    --channelUri %TEMP_DIR%\VisualStudio.chman ^
+    --installChannelUri %TEMP_DIR%\VisualStudio.chman ^
+    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended ^
+    --installPath %BUILD_TOOLS_PATH% ^
+ && rmdir /S /Q %TEMP_DIR% ^
+ && rmdir /S /Q C:\ProgramData\chocolatey\logs ^
  && rmdir /S /Q C:\ProgramData\chocolatey\cache
 
-#
-# ------------------------------------------------------------------
-# (Optional) Additional DISM Cleanup to reduce image size
-# ------------------------------------------------------------------
+# (Optional) Additional DISM Cleanup
 # RUN dism /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
-#
 # ------------------------------------------------------------------
-# Working Directory & Default Command
+# Set Working Directory & Default Command
 # ------------------------------------------------------------------
 WORKDIR %BUILD_DIR%
 CMD ["cmd.exe"]
