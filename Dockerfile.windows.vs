@@ -1,55 +1,81 @@
-# escape=`
+# We do not need `# escape=` here because we are NOT using cmd.exe for line escapes.
+
 FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022
 
 LABEL maintainer="jorge-kun@live.com" `
       description="Docker image for building and running CrossPlatformApp" `
       version="1.0.0"
 
+# -----------------------------------------------------------------
+# Build Arguments
+# -----------------------------------------------------------------
 ARG VS_VERSION=17
-ARG CHANNEL_URL=https://aka.ms/vs/${VS_VERSION}/release/channel
-ARG VS_BUILD_TOOLS_URL=https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe
+ARG CHANNEL_URL="https://aka.ms/vs/${VS_VERSION}/release/channel"
+ARG VS_BUILD_TOOLS_URL="https://aka.ms/vs/${VS_VERSION}/release/vs_buildtools.exe"
 ARG CMAKE_VERSION=3.21.3
 
-ENV BUILD_TOOLS_PATH=C:\BuildTools
-ENV BUILD_DIR=C:\app
-ENV TEMP_DIR=C:\TEMP
+# -----------------------------------------------------------------
+# Environment Variables
+# -----------------------------------------------------------------
+ENV BUILD_TOOLS_PATH="C:\BuildTools"
+ENV BUILD_DIR="C:\app"
+ENV TEMP_DIR="C:\TEMP"
 
-# Setting these environment variables ensures that any new shell session in subsequent layers
-# will automatically know about Chocolatey.
+# Preemptively define Chocolatey env so subsequent layers see 'choco' on PATH
 ENV ChocolateyInstall="C:\ProgramData\chocolatey"
-ENV PATH="%ChocolateyInstall%\bin;%PATH%"
+ENV PATH="$Env:ChocolateyInstall\bin;$Env:PATH"
 
-SHELL ["cmd", "/S", "/C"]
+# -----------------------------------------------------------------
+# Switch the default Dockerfile shell to PowerShell
+# -----------------------------------------------------------------
+SHELL ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"]
 
-# 1) Create temp folder and download files
-RUN mkdir %TEMP_DIR% ` 
- && powershell -NoProfile -ExecutionPolicy Bypass -Command `
-    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-     Invoke-WebRequest -Uri '%CHANNEL_URL%' -OutFile '%TEMP_DIR%\\VisualStudio.chman'; `
-     Invoke-WebRequest -Uri '%VS_BUILD_TOOLS_URL%' -OutFile '%TEMP_DIR%\\vs_buildtools.exe';"
+# -----------------------------------------------------------------
+# 1) Create TEMP folder
+# -----------------------------------------------------------------
+RUN New-Item -ItemType Directory -Path $Env:TEMP_DIR -Force | Out-Null
 
-# 2) Install Chocolatey (and set up environment)
-RUN powershell -NoProfile -ExecutionPolicy Bypass -Command- `
-    "[Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
-     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));"
+# -----------------------------------------------------------------
+# 2) Download Visual Studio Channel Manifest & Installer
+# -----------------------------------------------------------------
+RUN `
+    [Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    Invoke-WebRequest -Uri $Env:CHANNEL_URL -OutFile "$Env:TEMP_DIR\VisualStudio.chman"; `
+    Invoke-WebRequest -Uri $Env:VS_BUILD_TOOLS_URL -OutFile "$Env:TEMP_DIR\vs_buildtools.exe"
 
-# 3) Install CMake via Chocolatey
-RUN choco install cmake --version=%CMAKE_VERSION% --installargs 'ADD_CMAKE_TO_PATH=System' -y
+# -----------------------------------------------------------------
+# 3) Install Chocolatey
+# -----------------------------------------------------------------
+RUN `
+    [Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; `
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# 4) Install Visual Studio Build Tools
-RUN %TEMP_DIR%\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri %TEMP_DIR%\VisualStudio.chman `
-    --installChannelUri %TEMP_DIR%\VisualStudio.chman `
+# -----------------------------------------------------------------
+# 4) Install CMake via Chocolatey
+# -----------------------------------------------------------------
+RUN choco install cmake --version=$Env:CMAKE_VERSION --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+# -----------------------------------------------------------------
+# 5) Install Visual Studio Build Tools
+# -----------------------------------------------------------------
+RUN & "$Env:TEMP_DIR\vs_buildtools.exe" --quiet --wait --norestart --nocache `
+    --channelUri "$Env:TEMP_DIR\VisualStudio.chman" `
+    --installChannelUri "$Env:TEMP_DIR\VisualStudio.chman" `
     --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended `
-    --installPath %BUILD_TOOLS_PATH%
+    --installPath $Env:BUILD_TOOLS_PATH
 
-# 5) Cleanup
-RUN rmdir /S /Q %TEMP_DIR% ` 
- && rmdir /S /Q C:\ProgramData\chocolatey\logs ` 
- && rmdir /S /Q C:\ProgramData\chocolatey\cache
+# -----------------------------------------------------------------
+# 6) Clean up
+# -----------------------------------------------------------------
+RUN Remove-Item -Recurse -Force $Env:TEMP_DIR -ErrorAction Ignore; `
+    Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey\logs' -ErrorAction Ignore; `
+    Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey\cache' -ErrorAction Ignore
 
-# (Optional) More cleanup with DISM
+# (Optional) Further reduce image size:
 # RUN dism /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
-WORKDIR %BUILD_DIR%
-CMD ["cmd.exe"]
+# -----------------------------------------------------------------
+# Set working directory and default command
+# -----------------------------------------------------------------
+WORKDIR $Env:BUILD_DIR
+CMD ["powershell.exe"]
